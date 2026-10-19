@@ -14,11 +14,11 @@ No module hooks besides `build` and `build_context` (no `card`, `verdict`, `adju
 4. "Scope and coverage" (H2): two key/value columns.
 5. "Observed targets" (H3) + KPI tiles.
 6. Coverage statement (body), method statement (note).
-7. "Organisation profile" (H3) + description (note) + "Review flag RF-x: …" notes.
+7. "Organisation profile" (H3) + description (note) + "Review flag RF-x: …" notes (the flag notes print on their own when there is no description).
 8. "Rating overview" (H2) → "Aspect scores" (H3) with "100% = best", one meter row per scored aspect.
 9. "All aspects" (H3): two-column checklist (7 left, 6 right) of sections 03–15: linked name, one result line, state chip.
 10. "Sector comparison" (H2): intro, bar rows, key/value rows (or a state card).
-11. Next pointer: "**Next**  02 Priority actions, page n  ·  N actions (…)" (kept with block 10, or with block 9 when there is no sector block).
+11. Next pointer: "**Next**  02 Priority actions, page n  ·  N actions (…)" (N = the rows 02 prints) (kept with block 10, or with block 9 when there is no sector block).
 
 ## From the system (payload)
 
@@ -27,7 +27,7 @@ No module hooks besides `build` and `build_context` (no `card`, `verdict`, `adju
 | `summary` | Verdict row text next to "Summary" | Row omitted (no chip for `findings`) |
 | `title`, `intro_source` | H1, intro | Title falls back to "Executive overview" |
 | `state`, `state_reason`, `reason_code`, `empty_state_source`, `what_checked`, `next_step` | Chip + card (shared) | See States |
-| `rating_overview.rating_ref` | Dotted path to the rating object | Defaults to `rating` (`:664`) |
+| `rating_overview.rating_ref` | Dotted path to the rating object | Defaults to `rating` (`:652`) |
 | `rating.rating_name` | Panel label (eyebrow style) | "Rating" (`:182`) |
 | `rating.grade` (AAA…D, case-insensitive) | Big grade, highlighted segment of the scale, panel rule colour | "Grade not available" + reason (`:186`) |
 | `rating.grade_reason_code` | Reason under "Grade not available" | "Reason not recorded." |
@@ -46,16 +46,16 @@ No module hooks besides `build` and `build_context` (no `card`, `verdict`, `adju
 | `identity.organisation_id` | "Organisation ID" | Not available (…) |
 | `snapshot.assessment_id` | "Assessment ID" | Not available (…) |
 | `scope_and_coverage.eligible_targets` | "Eligible targets" (`{value:12, unit:"targets"}` → "12 targets") | Not available (…) |
-| `scope_and_coverage.coverage_percent` | "Coverage" (`{value:100, unit:"percent"}` → "100%"; a bare number prints without "%") | Not available (…) |
+| `scope_and_coverage.coverage_percent` | "Coverage" (`{value:100, unit:"percent"}` → "100%"; a bare number is read as a percent: `87` → "87%") | Not available (…) |
 | `scope_and_coverage.observed_targets[]` (Metric) | KPI tiles: value + unit, `label`; chip when `state` ≠ `findings` | Heading + tiles omitted |
 | `scope_and_coverage.coverage_statement_source` | Body paragraph, verbatim | Omitted |
 | `scope_and_coverage.method_statement_source` | Note, verbatim | Omitted |
 | `identity.description_source` | "Organisation profile" note, verbatim | Heading, note and flags omitted |
-| `identity.review_flags[]` + top-level `review_flags[] {id, text}` | "Review flag RF-x: <text>" (only with `description_source`) | Omitted |
+| `identity.review_flags[]` + top-level `review_flags[] {id, text}` | "Review flag RF-x: <text>" (inside "Organisation profile" with `description_source`, else as notes after the scope block) | Omitted |
 | `sections.<03–15>.title` | Checklist / meter name (linked) | Registry title |
 | `sections.<03–15>.state` | Checklist chip | Missing section → `unavailable`; no state → "State not recorded" |
 | `sections.<03–15>.aspect_score` (`{value 0–100, unit:"percent"}` or number) | Meter + "n%" (clamped 0–100); takes precedence over everything | See Conditional rules |
-| `sections.<scored>.metrics[]` `privacy_score` (or `policy.metrics[]`), `vulnerability_score`, `credential_score`, `data_leak_score`, `compliance_score` | Meter + "n%" for 03/04/05/06/13 (capped at 100) | Fallback to `aspect_breakdown` |
+| `sections.<scored>.metrics[]` `privacy_score` (or `policy.metrics[]`), `vulnerability_score`, `credential_score`, `data_leak_score`, `compliance_score` | Meter + "n%" for 03/04/05/06/13 (clamped 0–100, like `aspect_score`) | Fallback to `aspect_breakdown` |
 | `rating_overview.aspect_breakdown[] {section, value, unit}` | Score fallback only when `unit` = `percent` and `section` matches | "Score not available" |
 | Section result inputs (03–15) | One result line per aspect | "No result" (see Computed) |
 | `sector_comparison` (alias `industry_comparison`) `.state` | No-result → card | — |
@@ -64,7 +64,7 @@ No module hooks besides `build` and `build_context` (no `card`, `verdict`, `adju
 | `sector_comparison.sector` (alias `industry`) | "Sector" (sector block) | Not available (…) |
 | `sector_comparison.performance_gap` | "Performance gap" (string or `{value}` verbatim) | Not available (…) |
 | `sector_comparison.cohort {cohort_size, period, percentile_method}` | "Peer cohort": "120 organisations · 2026 Q3 · nearest rank" | No `cohort_size` → Not available (cohort's own reason) |
-| `sections.priority_actions.actions[].priority`, `.state`, `.title` | Next pointer count + split; link title | Pointer omitted when 02 is absent |
+| `sections.priority_actions.actions[].priority`, `.state`, `.title` (+ `sections.certifications` via `s02.action_rows`) | Next pointer count + split; link title | Pointer omitted when 02 is absent |
 
 ## Hardcoded in the generator
 
@@ -79,18 +79,18 @@ No module hooks besides `build` and `build_context` (no `card`, `verdict`, `adju
 | "Wording as printed in the source; it differs from the {g} definition in Appendix B and is held for review." | Panel note | `:164` |
 | "Meaning of every grade: " + "Appendix B <title>, page n" | Panel last row | `:202`, `section_ref :67` |
 | "<Reason>: <label>, <label>." (e.g. "Not provided in the assessment data: net score, point pool.") | Under a key/value list when ≥2 nulls share one reason | `kv_block :100` |
-| "Scope and coverage", "Organisation", "Primary domain", "Sector", "Assessment date", "Organisation ID", "Assessment ID", "Eligible targets", "Coverage" | Scope block | `:225-233` |
-| "Observed targets", "Organisation profile" | H3 | `:238`, `:244` |
+| "Scope and coverage", "Organisation", "Primary domain", "Sector", "Assessment date", "Organisation ID", "Assessment ID", "Eligible targets", "Coverage" | Scope block | `:225-236` |
+| "Observed targets", "Organisation profile" | H3 | `:241`, `:248` |
 | "Review flag {id}: {text}" | Profile notes | `text.flag_notes` |
-| "Rating overview", "Aspect scores", "100% = best", "All aspects" | Overview headings | `:541`, `:565`, `:572` |
-| "Score not available" | Meter track, no score | `Meter.LABEL :497` |
-| "Not compared" | Meter track, `aspect_score` null with `no_preference_set` | `SCORE_LABELS :443` |
-| "No result" | Checklist result, muted | `:477` |
-| Result phrases (see Computed) | Checklist result lines | `:298-413` |
-| "Sector comparison", "Sector comparison: <card title lower-case>" | H2, state card title | `:602`, `:605` |
-| "Your score", "Sector average", "Sector top 10%" | Sector row labels by metric `id` (payload `label` ignored for these ids) | `SECTOR_LABELS :597` |
-| "Performance gap", "Peer cohort", "organisations" | Sector key/value | `:640-642` |
-| "Next", "N action(s) (k high, …)", "not rated", "no actions listed" | Next pointer | `:654-659` |
+| "Rating overview", "Aspect scores", "100% = best", "All aspects" | Overview headings | `:527`, `:551`, `:558` |
+| "Score not available" | Meter track, no score | `Meter.LABEL :483` |
+| "Not compared" | Meter track, `aspect_score` null with `no_preference_set` | `SCORE_LABELS :429` |
+| "No result" | Checklist result, muted | `:463` |
+| Result phrases (see Computed) | Checklist result lines | `:283-399` |
+| "Sector comparison", "Sector comparison: <card title lower-case>" | H2, state card title | `:588`, `:591` |
+| "Your score", "Sector average", "Sector top 10%" | Sector row labels by metric `id` (payload `label` ignored for these ids) | `SECTOR_LABELS :583` |
+| "Performance gap", "Peer cohort", "organisations" | Sector key/value | `:626-628` |
+| "Next", "N action(s) (k critical, k high, …)", "not rated", "no actions listed" | Next pointer | `:640-647` |
 | "Not available (<reason>)" | Any null value | shared (README §5) |
 
 No long-list policy keys are read directly. Indirect: the vendor "needs a look" count uses
@@ -101,7 +101,7 @@ No long-list policy keys are read directly. Indirect: the vendor "needs a look" 
 | Condition | What prints | Code |
 |---|---|---|
 | `state` = `findings` | No chip; "Summary" + `summary` | `sections/__init__.py:195` |
-| `state` no-result and `scope_and_coverage` present | Card, then the scope block only | `build_context :684` |
+| `state` no-result and `scope_and_coverage` present | Card, then the scope block only | `build_context :672` |
 | `rating.grade` not in AAA…D | "Grade not available" + reason; no segment highlighted; grey panel rule | `:183-187` |
 | `risk_band` unknown and no label | No band chip | `:174` |
 | No label, or label equals the code (case-insensitive) | "<Band> risk band" | `:176` |
@@ -109,45 +109,47 @@ No long-list policy keys are read directly. Indirect: the vendor "needs a look" 
 | `band_description_source` present and differs from Appendix B `meaning_source` of that grade | Band text + the "Wording as printed…" note | `:157-166`, `:196-201` |
 | ≥2 key/value nulls with the same reason | One collapsed note line instead of per-row "Not available" | `kv_block :100-113` |
 | One null | "Not available (<reason>)" in the row | `kv_block` |
-| `scope_and_coverage.observed_targets` has dict items | "Observed targets" + tiles | `:236-238` |
-| `identity.description_source` present | "Organisation profile" + note + review-flag notes | `:243-245` |
-| Aspect has `aspect_score` (number) | Meter + "n%" (0–100 clamp) | `backend_score :446` |
-| `aspect_score` null, `reason_code` = `no_preference_set` | Track label "Not compared", no % | `:454` |
-| `aspect_score` null, other reason (or non-number) | "Score not available" | `:454` |
-| No `aspect_score`, aspect in 03/04/05/06/13 | Score metric; else `aspect_breakdown` percent; else "Score not available". No-result state → "Score not available" | `aspect_score :425` |
-| No `aspect_score`, aspect not in 03/04/05/06/13 | Not listed under "Aspect scores" (checklist only) | `aspect_rows :466-468` |
+| `scope_and_coverage.observed_targets` has dict items | "Observed targets" + tiles | `:239-241` |
+| `identity.description_source` present | "Organisation profile" + note + review-flag notes | `:246-248` |
+| `identity.description_source` absent, `identity.review_flags` present | Review-flag notes alone, after the scope block | `:249-250` |
+| Aspect has `aspect_score` (number) | Meter + "n%" (0–100 clamp) | `backend_score :432` |
+| `aspect_score` null, `reason_code` = `no_preference_set` | Track label "Not compared", no % | `:440` |
+| `aspect_score` null, other reason (or non-number) | "Score not available" | `:440` |
+| No `aspect_score`, aspect in 03/04/05/06/13 | Score metric; else `aspect_breakdown` percent (clamped 0–100); else "Score not available". No-result state → "Score not available" | `aspect_score :411` |
+| No `aspect_score`, aspect not in 03/04/05/06/13 | Not listed under "Aspect scores" (checklist only) | `aspect_rows :452-454` |
 | Privacy `policy.policy_state` = `excluded_no_policy` | Score "Score not available" (never 0%) | `s03._metrics` |
-| Section state no-result (and not `_no_preference`) or `_card_only` | Result "No result" | `:464` |
-| Checklist chip | `theme.shown_state(state, key)`: `findings` → "Identified" for 12, 13, 14, 15 | `:553` |
-| Section page known (previous pass) | Name / ref is a link with ", page n" | `:74-77`, `:486` |
-| `sector_comparison` absent | No sector block; Next pointer travels with the checklist | `:677-680` |
-| `sector_comparison.state` no-result | H2 + card "Sector comparison: <title>" + reason; nothing else | `:604-605` |
-| Metric `id` = `your_score` | Bold label/value, sapphire bar; others grey | `:610-620` |
-| Metric value null | Label + "Not available (…)", no bar | `:613-616` |
-| `cohort.cohort_size` present | "N organisations · period · method" (empty parts dropped) | `:633-636` |
-| `sections.priority_actions` absent/empty | No Next pointer | `:650-651` |
-| 02 has actions | "N actions (k high, k medium, …)" in first-seen order; missing priority → "not rated" | `:653-656` |
-| 02 has no actions | Shown state label of 02 (e.g. "No findings"); unknown state → "no actions listed" | `:658` |
+| Section state no-result (and not `_no_preference`) or `_card_only` | Result "No result" | `:450` |
+| Checklist chip | `theme.shown_state(state, key)`: `findings` → "Identified" for 12, 13, 14, 15 | `:539` |
+| Section page known (previous pass) | Name / ref is a link with ", page n" | `:74-77`, `:472` |
+| `sector_comparison` absent | No sector block; Next pointer travels with the checklist | `:665-668` |
+| `sector_comparison.state` no-result | H2 + card "Sector comparison: <title>" + reason; nothing else | `:590-591` |
+| Metric `id` = `your_score` | Bold label/value, sapphire bar; others grey | `:596-606` |
+| Metric value null | Label + "Not available (…)", no bar | `:599-602` |
+| `cohort.cohort_size` present | "N organisations · period · method" (empty parts dropped) | `:619-622` |
+| `sections.priority_actions` absent/empty | No Next pointer | `:636-637` |
+| 02 state no-result (`not_assessed`/`not_applicable`/`unavailable`) | No count (02 prints no rows): its state label | `:639`, `:646` |
+| 02 prints rows | "N actions (k critical, k high, k medium, k low, …)" worst first (other words after); N = `s02.action_rows` (payload actions + the added certificate-review action); missing priority → "not rated" | `:638-644` |
+| 02 has no actions | Shown state label of 02 (e.g. "No findings"); unknown state → "no actions listed" | `:646` |
 
 ## Computed by the generator
 
 | Value | Formula / source fields | Code |
 |---|---|---|
-| Checklist result format | "<n> <noun> · <qualifier>, <qualifier>"; n bold; singular when n = 1 | `result_markup :473` |
-| 03 Privacy | `excluded_no_policy` → "No privacy policy (excluded)"; else metric `active_issues`, else `len(policy.issues)` → "n active privacy issue(s)"; neither → No result | `:298-306` |
-| 04 Vulnerabilities | metric `finding_types`, else `len(findings)` → "n finding type(s)" · "k Critical, k High, k Medium, k Low" (zero tiers dropped; tier counts from findings' `severity`, or `finding_types_<tier>` metrics when no list) | `:309-317`, `s04._severity_groups` |
-| 05 Credential exposure | Register rows at `register_ref` minus rows whose `email_domain` contains "@" or "*": >0 or state `clear` → "n exposed account record(s)"; 0 rows but a headline (`metrics[found_headline]` or register `counts.headline_found`) → "No register rows listed"; else No result | `:320-326`, `s05.derive` |
-| 06 Data leak history | `events[]` merged by `canonical_event_id`, else metric `events_reported`, `clear` → 0. 0 → "0 breach or leak events"; else "n event(s)" · "k resolved, k reported inaccurate" (`validity_state`) | `:329-340` |
-| 07 Data sovereignty | `match_state`: "Matches the preference" / "Does not match the preference" / "Cannot be compared" (missing or `unknown`) / "Not compared: no preference set" (no preference) | `:343-345`, `_shared.MATCH` |
-| 08 Data residency | Countries from `observed_hosting[] {country_code \| country}` vs `allowed_set`: none resolved but rows → "Hosting countries not identified"; no preference → "n hosting country/countries"; else "x of n hosting countries outside the preference" (x = distinct `mismatch`, payload `match_state` wins over derived) | `:348-359`, `geo_map.entries` |
-| 09 Legal terms | `portal_detected` (or a `rows[]` label with "portal") + rows labelled "protect" and "notif"/"breach" (yes/no words) → "k of 2 customer-protection clauses found"; `portal_detected` false → "No login or payment portal detected" | `:362-367`, `s09._clauses` |
-| 10 AI risk | metric `ai_issues` (`clear` → 0) → "n AI governance issue(s)" | `:370-376`, `:418` |
-| 11 Quantum | metric `high_risk` (`clear` → 0) → "n high-risk finding(s)" | `:420` |
-| 12 Resourcing | `privacy_role_evidence`, `security_role_evidence` ∈ `detected`/`not_detected` → "k of 2 privacy and security roles with public evidence" · "g not recorded"; neither recognised → No result | `:379-386` |
-| 13 Certifications | Distinct `standard` among non-rejected certificates → "n certification(s)" · "k awaiting approval, k rejected" (`approval_state`; legacy origin `approved` = approved) | `:389-395` |
-| 14 Fourth parties | No vendors → "0 connected organisations"; else "n connected organisation(s)" · "k need(s) a look" (s14 "Needs a look" rule) | `:398-405` |
-| 15 Cloud | metric `cloud_providers_detected`, else `len(providers)`, `clear` → 0 → "n cloud provider(s)" | `:408-413` |
-| Next pointer count | `len(actions)` of the payload and a per-priority split | `next_pointer :647` |
+| Checklist result format | "<n> <noun> · <qualifier>, <qualifier>"; n bold; singular when n = 1 | `result_markup :459` |
+| 03 Privacy | `excluded_no_policy` → "No privacy policy (excluded)"; else metric `active_issues`, else `len(policy.issues)` → "n active privacy issue(s)"; neither and state `clear` → "0 active privacy issues"; else No result | `:283-292` |
+| 04 Vulnerabilities | metric `finding_types`, else `len(findings)` → "n finding type(s)" · "k Critical, k High, k Medium, k Low" (zero tiers dropped; tier counts from findings' `severity`, or `finding_types_<tier>` metrics when no list) | `:295-303`, `s04._severity_groups` |
+| 05 Credential exposure | Register rows at `register_ref` minus rows whose `email_domain` contains "@" or "*": >0 or state `clear` → "n exposed account record(s)"; 0 rows but a headline (`metrics[found_headline]` or register `counts.headline_found`) → "No register rows listed"; else No result | `:306-312`, `s05.derive` |
+| 06 Data leak history | `events[]` merged by `canonical_event_id`, else metric `events_reported`, `clear` → 0. 0 → "0 breach or leak events"; else "n event(s)" · "k resolved, k reported inaccurate" (`validity_state`) | `:315-326` |
+| 07 Data sovereignty | `match_state`: "Matches the preference" / "Does not match the preference" / "Cannot be compared" (missing, `unknown` or any other value) / "Not compared: no preference set" (no preference) | `:329-331`, `_shared.MATCH` |
+| 08 Data residency | Countries from `observed_hosting[] {country_code \| country}` vs `allowed_set`: none resolved but rows → "Hosting countries not identified"; no preference → "n hosting country/countries"; else "x of n hosting countries outside the preference" (x = distinct `mismatch`, payload `match_state` wins over derived) | `:334-345`, `geo_map.entries` |
+| 09 Legal terms | `portal_detected` (or a `rows[]` label with "portal") + rows labelled "protect" and "notif"/"breach" (yes/no words) → "k of 2 customer-protection clauses found"; `portal_detected` false → "No login or payment portal detected" | `:348-353`, `s09._clauses` |
+| 10 AI risk | metric `ai_issues` (`clear` → 0) → "n AI governance issue(s)" | `:356-362`, `:404` |
+| 11 Quantum | metric `high_risk` (`clear` → 0) → "n high-risk finding(s)" | `:406` |
+| 12 Resourcing | `privacy_role_evidence`, `security_role_evidence` ∈ `detected`/`not_detected` → "k of 2 privacy and security roles with public evidence" · "g not recorded"; neither recognised → No result | `:365-372` |
+| 13 Certifications | Distinct `standard` among non-rejected certificates → "n certification(s)" · "k awaiting approval, k rejected" (`approval_state`; legacy origin `approved` = approved) | `:375-381` |
+| 14 Fourth parties | No vendors → "0 connected organisations"; else "n connected organisation(s)" · "k need(s) a look" (s14 "Needs a look" rule) | `:384-391` |
+| 15 Cloud | metric `cloud_providers_detected`, else `len(providers)`, `clear` → 0 → "n cloud provider(s)" | `:394-399` |
+| Next pointer count | `len(s02.action_rows(...))`, the rows 02 prints (payload actions + added certificate action; none when 02 is no-result), and a per-priority split | `next_pointer :633` |
 | Band mismatch | whitespace-normalised `band_description_source` ≠ Appendix B `meaning_source` | `band_note :157` |
 
 ## Read but never printed
@@ -155,11 +157,11 @@ No long-list policy keys are read directly. Indirect: the vendor "needs a look" 
 | Field | Why it is read (QA, ordering, ...) |
 |---|---|
 | `rating_overview.aspect_breakdown[].value` (unit `percent`) | Score fallback only; non-percent values, `aspect`, `state`, `display_label_source`, `summary_label_source`, `secondary`, `review_flags` are ignored |
-| `rating_overview.note` | Owner decision: never printed (`:571`) |
-| `sector_comparison.note` | Owner decision: never printed (`:643`) |
+| `rating_overview.note` | Owner decision: never printed (`:557`) |
+| `sector_comparison.note` | Owner decision: never printed (`:629`) |
 | `sector_comparison.cohort.cohort_id`, `.state` | Not printed (state/reason only matter when `cohort_size` is missing) |
 | `sector_comparison.metrics[].label` for the three known ids | Replaced by the kit labels |
-| Demerit ledger | Never printed (`ledger_table :255` exists but is not called) |
+| Demerit ledger | Never read or printed by this section |
 | `rating.grade_source`, `grade_table_id`, `stored_vs_calculated`, `review_flags` | Not read by this section |
 | `snapshot.score_context` | Not printed |
 | `sections.<03–15>` internals | Only to derive the result line / score (see Computed) |

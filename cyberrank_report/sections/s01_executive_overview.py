@@ -11,7 +11,7 @@ prints its name without a page or link.
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.platypus import Flowable, Spacer, Table, TableStyle
 
-from . import DEMERIT_RULES, REGISTRY
+from . import REGISTRY
 from .. import components as c
 from .. import theme as T
 
@@ -226,10 +226,13 @@ def scope_block(data, ctx):
             ('Primary domain', scope.get('primary_domain') or ident.get('domain') or nr),
             ('Sector', ident.get('sector') or ident.get('industry') or nr),
             ('Assessment date', c.fmt_date(snap.get('assessed_at')) if snap.get('assessed_at') else nr)]
+    cov = scope.get('coverage_percent', nr)
+    if isinstance(cov, (int, float)) and not isinstance(cov, bool):      # a bare number is a percent
+        cov = {'value': cov, 'unit': 'percent'}
     right = [('Organisation ID', ident.get('organisation_id', nr)),
              ('Assessment ID', snap.get('assessment_id', nr)),
              ('Eligible targets', scope.get('eligible_targets', nr)),
-             ('Coverage', scope.get('coverage_percent', nr))]
+             ('Coverage', cov)]
     out = [c.heading('Scope and coverage', 2),
            two_up(kv_block(left, width=T.COL2, label_width=96),
                   kv_block(right, width=T.COL2, label_width=96))]
@@ -240,30 +243,12 @@ def scope_block(data, ctx):
         out.append(c.P(scope['coverage_statement_source'], 'body'))
     if scope.get('method_statement_source'):
         out.append(c.note(scope['method_statement_source']))
+    flags = c.flag_notes(ident, ctx.report)      # e.g. a source typo, printed as recorded
     if ident.get('description_source'):   # long source copy: note type keeps 01 to two pages
-        out.append(c.keep(c.heading('Organisation profile', 3), c.note(ident['description_source']),
-                          *c.flag_notes(ident, ctx.report)))      # e.g. a source typo, printed as recorded
+        out.append(c.keep(c.heading('Organisation profile', 3), c.note(ident['description_source']), *flags))
+    else:
+        out += flags
     return out
-
-
-def rule_section(rule):
-    """Section number for a ledger rule ('E' or 'E Sovereignty' -> '07'), else ''."""
-    spec = spec_for(DEMERIT_RULES.get(str(rule or '').strip()[:1].upper()))
-    return spec.number if spec else ''
-
-
-def ledger_table(ledger):
-    nr = {'value': None, 'reason_code': 'not_printed_in_source'}
-    rows, spans = [], []
-    for i, r in enumerate(ledger, start=1):
-        nums = [r.get(k, nr) for k in ('flags', 'demerit', 'cap')]
-        if all(c.is_missing(v) for v in nums):     # one reason across the numeric cells
-            nums, spans = [nums[0], '', ''], spans + [('SPAN', (3, i), (5, i))]
-        rows.append([r.get('rule'), rule_section(r.get('rule')), r.get('label') or r.get('check')] + nums)
-    t = c.compact_table(['Rule', 'Section', 'Check', 'Flags', 'Demerit', 'Cap'], rows, numeric_cols=(3, 4, 5),
-                        widths=[38, 52, T.CW - 90 - 3 * 76, 76, 76, 76])
-    t.setStyle(TableStyle(spans))
-    return t
 
 
 # --- rating overview (concept A, approved 2026-10-19) -------------------------------
@@ -303,6 +288,7 @@ def _privacy(sec, report):
     n = _metric(_metrics(sec), 'active_issues')
     issues = [i for i in policy.get('issues') or [] if isinstance(i, dict)]
     n = len(issues) if n is None and issues else n
+    n = 0 if n is None and sec.get('state') == 'clear' else n
     return None if n is None else count(n, 'active privacy issue', 'active privacy issues')
 
 
@@ -342,7 +328,7 @@ def _leaks(sec, report):
 
 def _sovereignty(sec, report):
     from ._shared import MATCH, matched
-    return worded(MATCH[matched(sec)][0])
+    return worded((MATCH.get(matched(sec)) or MATCH['unknown'])[0])     # unknown value: as match_chip
 
 
 def _residency(sec, report):
@@ -423,7 +409,7 @@ RESULTS = {'privacy': _privacy, 'vulnerabilities': _vulnerabilities, 'credential
 
 
 def aspect_score(key, sec, breakdown):
-    """The system's percent score as given (at most 100%), NA when this payload has none. Never computed."""
+    """The system's percent score as given (clamped 0-100%), NA when this payload has none. Never computed."""
     if sec.get('state') in NO_RESULT:
         return NA
     if key == 'privacy':
@@ -435,7 +421,7 @@ def aspect_score(key, sec, breakdown):
     if m is None and (breakdown.get(key) or {}).get('unit') == 'percent':
         m = breakdown[key]
     v = (m or {}).get('value')
-    return min(v, 100) if isinstance(v, (int, float)) and not isinstance(v, bool) else NA
+    return max(0, min(v, 100)) if isinstance(v, (int, float)) and not isinstance(v, bool) else NA
 
 
 # Backend-computed aspect score (owner decision 2026-10-19: the backend computes every aspect percent, e.g.
@@ -565,7 +551,7 @@ def checklist_block(rows, pages):
     return c.keep(c.P('All aspects', 'h3'), Spacer(0, 4), two)
 
 
-def rating_overview(data, ctx, rating):
+def rating_overview(data, ctx):
     ro = data.get('rating_overview') or {}
     rows = aspect_rows(ctx.report, ro.get('aspect_breakdown') or [])
     # the payload's own overview note and the demerit ledger stay internal: never printed (user decisions)
@@ -649,10 +635,12 @@ def next_pointer(report, pages):
     pa = section_data(report, spec) if spec else None
     if not pa:
         return None
-    acts = [a for a in pa.get('actions') or [] if isinstance(a, dict)]
+    from .s02_priority_actions import LEVELS, action_rows      # the rows 02 prints (incl. its added action)
+    acts = action_rows(pa, report) if pa.get('state') not in NO_RESULT else []
     if acts:
         levels = [str(a.get('priority') or 'not rated').lower() for a in acts]
-        split = ', '.join(f'{levels.count(p)} {p}' for p in dict.fromkeys(levels))
+        tiers = sorted(dict.fromkeys(levels), key=lambda p: LEVELS.index(p) if p in LEVELS else len(LEVELS))
+        split = ', '.join(f'{levels.count(p)} {p}' for p in tiers)      # worst first, as 02's KPI strip
         what = f'{c.fmt_value(len(acts), "actions")} ({split})'
     else:
         what = T.STATE.get(T.shown_state(pa.get('state'), 'priority_actions'), {}).get('label', 'no actions listed')
@@ -670,7 +658,7 @@ def build(data, ctx):
     snap = ctx.report.get('snapshot') or {}
     out = [Deferred(lambda pages: rating_panel(rating, snap, ctx.report, pages))]
     out += scope_block(data, ctx)
-    out += rating_overview(data, ctx, rating)
+    out += rating_overview(data, ctx)
     # the Next pointer never starts a page alone: it travels with the whole sector block
     # (short, ~200 pt), or with the block before it when there is none
     nxt = Deferred(lambda pages: next_pointer(ctx.report, pages) or Spacer(0, 0))

@@ -313,6 +313,27 @@ def test_remediation_credentials_apart():
     assert 'Exposed credentials 40 (counted separately; not part of the active issues)' in text
 
 
+def test_s02_card_state_cert_action_and_remediation_text():              # code review fixes, 2026-10-19
+    from cyberrank_report.sections.s02_priority_actions import action_rows, remediation_block
+    rep = json.loads((FIXTURE.parent / 'demo-preview.json').read_text(encoding='utf-8'))
+    pa = rep['sections']['priority_actions']
+    assert len(action_rows(pa, rep)) == 6                          # 5 payload + certificate review
+    rep['sections']['certifications'].update(state='not_assessed', reason_code='module_not_assessed')
+    assert len(action_rows(pa, rep)) == 5                          # no Next step in 13: no added action
+    qa.ISSUES.clear()
+    remediation_block({'current': {'grade': 'BB'}, 'active_issues': {'total': 5, 'privacy': 'two', 'vulnerability': 3}})
+    assert not any(i['check'] == 'data_mismatch' for i in qa.ISSUES), qa.ISSUES     # text count: no false mismatch
+
+    def clear(r):
+        r['sections']['certifications'].update(state='not_assessed', reason_code='module_not_assessed')
+        r['sections']['priority_actions'] = {'title': 'Priority actions', 'state': 'clear', 'actions': [],
+                                             'state_reason': 'Nothing needs action this quarter.'}
+    t = _demo_text(clear, ['s02'])
+    assert t.count('Nothing needs action this quarter') == 1, t
+    t = _demo_text(lambda r: None, ['s02'])
+    assert 'Projected Rating After Remediation' in t and 'Estimated improvement upon completion' in t, t
+
+
 def test_vendor_technology_display_cap():
     text, _ = _gap('vendors_profile')
     assert '2,000+ more (source display limit)' in text and '2,005' not in text and '573 technologies' in text
@@ -569,6 +590,48 @@ def test_s01_rating_overview_grammar_and_missing_scores():
     assert 'the&nbsp;preference' in result_markup(('1 of 6', 'hosting countries outside the preference', []))
 
 
+def _demo_text(edit, only):
+    """Rendered text of demo-preview after edit(report) mutates a copy of it."""
+    import copy
+    import pymupdf
+    rep = copy.deepcopy(json.loads((FIXTURE.parent / 'demo-preview.json').read_text(encoding='utf-8')))
+    edit(rep)
+    qa.ISSUES.clear()
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / 'r.pdf'
+        build(rep, out, only=only)
+        return ' '.join(' '.join(p.get_text() for p in pymupdf.open(out)).split())
+
+
+def test_s01_edge_values_and_pointer_counts_02_rows():                  # code review fixes, 2026-10-19
+    from cyberrank_report.sections import adjust_report
+    from cyberrank_report.sections.s01_executive_overview import aspect_rows
+    report = adjust_report({'sections': {
+        'privacy': {'state': 'clear'},
+        'data_sovereignty': {'state': 'findings', 'enabled': True, 'allowed_set': ['Australia'], 'match_state': 'odd'},
+        'vulnerabilities': {'state': 'findings', 'metrics': [{'id': 'vulnerability_score', 'value': -5, 'unit': 'percent'}]},
+        'credential_exposure': {'state': 'findings', 'aspect_score': -5}}})
+    rows = {r[0].key: r for r in aspect_rows(report, [])}
+    assert rows['privacy'][3] == ('0', 'active privacy issues', [])          # clear reads 0, like the others
+    assert rows['data_sovereignty'][3] == ('', 'Cannot be compared', [])     # unknown match_state: no KeyError
+    assert rows['vulnerabilities'][2] == 0 and rows['credential_exposure'][2] == 0     # both paths clamp 0-100
+
+    def edit(rep):
+        rep['identity'].pop('description_source')
+        rep['identity']['review_flags'] = ['RF-T1']
+        rep['review_flags'] = [{'id': 'RF-T1', 'text': 'Organisation name differs between source pages.'}]
+        rep['sections']['executive_overview']['scope_and_coverage']['coverage_percent'] = 87
+        rep['sections']['priority_actions']['actions'].append(
+            {'rank': 9, 'priority': 'critical', 'title_source': 'Rotate the signing keys',
+             'action_required_source': 'Rotate them.', 'linked_sections': []})
+    t = _demo_text(edit, ['s01', 's02'])
+    assert 'Review flag RF-T1: Organisation name differs' in t and 'Organisation profile' not in t, t
+    assert 'Coverage 87%' in t, t
+    # 01 counts what 02 prints: 5 payload actions + the critical one + the added certificate action
+    assert '7 actions (1 critical, 2 high, 2 medium, 2 low)' in t, t
+    assert 'Critical priority' in t and 'Priority not rated' not in t and 'Rotate the signing keys' in t, t
+
+
 def test_certifications_without_records_are_none_identified():   # business rule 2026-10-19
     from cyberrank_report.sections import BY_ID, adjusted
     qa.ISSUES.clear()
@@ -766,15 +829,12 @@ SUBAREA_MARKERS = ('Accepted jurisdictions', 'Governing law', 'Preferred countri
 
 def test_section_order_follows_ledger():
     from cyberrank_report.sections import DEMERIT_RULES, REGISTRY
-    from cyberrank_report.sections.s01_executive_overview import ledger_table, rule_section, spec_for
+    from cyberrank_report.sections.s01_executive_overview import spec_for
     assert [(s.id, s.number, s.title) for s in REGISTRY if s.source == 'sections'] == LAYOUT
     assert [s.number for s in REGISTRY if s.source == 'appendices'] == ['A', 'B', 'C', 'D']
     # ledger A-J -> sections 03..12 (A vulnerabilities 04 and B privacy 03 swap, as in the ledger)
     assert [spec_for(DEMERIT_RULES[r]).number for r in 'ABCDEFGHIJ'] == \
         ['04', '03', '05', '06', '07', '08', '09', '10', '11', '12']
-    assert rule_section('E Sovereignty') == '07' and rule_section('j') == '12' and rule_section('Z') == ''
-    tbl = ledger_table([{'rule': 'F', 'label': 'Residency', 'flags': 1, 'demerit': 10, 'cap': 10}])
-    assert [c if isinstance(c, str) else c.getPlainText() for c in tbl._cellvalues[1][:2]] == ['F', '08']
 
 
 def _layout_report(sid, state):
