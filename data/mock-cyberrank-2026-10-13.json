@@ -753,7 +753,7 @@
       ],
       "old_section_label": "SECTION 2 OF 8 · VULNERABILITY",
       "intro_source": "Covers external security posture including network vulnerabilities, open ports, SSL/TLS configuration, and DNS security controls protecting digital assets.",
-      "summary": "12 finding types were reported: 1 high, 4 medium and 7 low, across the apex domain and 4 scanned subdomains.",
+      "summary": "12 finding types were reported: 1 high, 4 medium and 7 low, across the main domain and 4 scanned subdomains.",
       "metrics": [
         {
           "id": "vulnerability_score",
@@ -1790,7 +1790,7 @@
         }
       ],
       "scope_register_ref": "appendices.d_evidence_registers.quantum_scope_register",
-      "aggregation_note": "Row cyberrank.site is labelled the apex aggregate. Its rows sum to fewer findings than the headline (RF-M03).",
+      "aggregation_note": "Row cyberrank.site is labelled the main domain total. Its rows sum to fewer findings than the headline (RF-M03).",
       "scope_and_limitations_source": {
         "title": "Our Post-Quantum Safety Scan Results",
         "scope_and_limitations": {

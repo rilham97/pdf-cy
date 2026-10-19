@@ -536,7 +536,7 @@ quantum_security = sec(
          'pqc_source': 'No PQC available on TLS 1.2', 'risk_level': 'high'}],
     scope_summary=scope_summary,
     scope_register_ref='appendices.d_evidence_registers.quantum_scope_register',
-    aggregation_note=f'Row {DOMAIN} is the apex aggregate: its rows sum the subdomain rows by algorithm.',
+    aggregation_note=f'Row {DOMAIN} is the main domain total: its rows sum the subdomain rows by algorithm.',
     scope_and_limitations_source={
         'title': 'Our Post-Quantum Safety Scan Results',
         'scope_and_limitations': {

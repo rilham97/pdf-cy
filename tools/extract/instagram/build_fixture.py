@@ -820,7 +820,7 @@ S["quantum_security"] = {
     "source_pages": list(range(367, 372)),
     "old_section_label": "SECTION 8 OF 8 · QUANTUM SECURITY",
     "intro_source": "Assesses exposure to quantum computing threats by analyzing cryptographic primitives found in TLS/SSL configurations and SSH endpoints. Includes detection of post-quantum cryptography (PQC) algorithms that may already provide protection.",
-    "summary": "Across 4 scopes the scan reported 8 high-risk and 28 low-risk findings (apex aggregate). High risk comes from ECDHE and RSA key exchange; ML-KEM was detected on all 4 scopes. Supporting PQC does not prove every connection uses it.",
+    "summary": "Across 4 scopes the scan reported 8 high-risk and 28 low-risk findings (main domain total). High risk comes from ECDHE and RSA key exchange; ML-KEM was detected on all 4 scopes. Supporting PQC does not prove every connection uses it.",
     "beta_notice_source": "Quantum Vulnerability is currently in beta. You may encounter incomplete data or ongoing changes as we refine the experience.",
     "metrics": [
         metric("high_risk", "High Risk", 8, "findings", "findings", "8", count_kind="root_aggregate"),

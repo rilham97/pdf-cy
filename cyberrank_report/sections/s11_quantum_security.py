@@ -12,8 +12,8 @@ with quantum results is a data error rejected at load (build.validate).
 KPI rule: High / Moderate / Low are the source headline. In the 2026-10 samples the headline equals the
 number of scope x algorithm rows at each level (each row counted once at its highest level; Mock
 Cyberrank RF-M03, where the apex aggregate row differs); the note states which relation the data
-shows, and says so when the headline also equals the apex aggregate row. The apex row is labelled
-'apex aggregate' ('headline scope' only when its counts equal the headline); the subdomain-row sum is
+shows, and says so when the headline also equals the apex aggregate row. The apex row is labelled (owner 2026-10-19: printed as 'main domain')
+'main domain total' ('headline scope' only when its counts equal the headline); the subdomain-row sum is
 printed in a note.
 Without scope_level, a row named after the assessed domain whose counts equal the headline is
 taken as the apex aggregate, labelled '(inferred)' (QA apex_inferred).
@@ -88,7 +88,7 @@ def apex_short(sc):
 
 
 def _short_text(out):
-    return ('Subdomain rows exceed the apex aggregate that covers them (' +
+    return ('Subdomain rows exceed the main domain total that covers them (' +
             ', '.join(f'{lbl} {C.fmt_number(c)} vs {C.fmt_number(a)}' for lbl, a, c in out) +
             '); not explained by the source data')
 
@@ -146,7 +146,7 @@ def scope(data, report):
             'summary': {C.val(s.get('subdomain')): s for s in data.get('scope_summary') or []},
             'child_tot': tot(child), 'apex_tot': tot(apex) if apex else None,
             'apex_name': str(apex[0].get('subdomain')) if apex else None, 'pqc_reported': reported,
-            'apex_label': 'apex aggregate (inferred)' if inferred else 'apex aggregate',
+            'apex_label': 'main domain total (inferred)' if inferred else 'main domain total',
             # visual rows: every data row (each apex row prints as A1..An) + one label row per group
             'tier': tier(len(rows) + len(groups) + bool(apex), len(rows)),
             'uniform': src is not None,
@@ -265,8 +265,8 @@ def pivot_table(sc, title, ident, dense=True):
                      C.P('Reference', 'dense_muted' if dense else 'cell_muted')])
     for i, (s, rs) in enumerate(sc['groups'], 1):
         rows.append([C.P(str(i), ZERO), _tech(s, dense), _pqc_chip(sc, s, dense), *sc['tot'](rs),
-                     (_differs(rs, apex_algs) or 'Same as apex') if apex_algs else ''])
-    cols = ['#', 'Subdomain', 'PQC', *_hml_heads(dense), 'Algorithms vs apex']
+                     (_differs(rs, apex_algs) or 'Same as main domain') if apex_algs else ''])
+    cols = ['#', 'Subdomain', 'PQC', *_hml_heads(dense), 'Algorithms vs main domain']
     w0, wn = _num_widths(dense, str(len(sc['groups'])), 'A')
     pqc_w = _pqc_w(sc, dense)
     w = [w0, 0, pqc_w, wn, wn, wn, fit(cols[-1], dense, head=True)]
@@ -310,7 +310,7 @@ def end_line(sec, sc):
                        + f'({_hml(sc["child_tot"])}) from {C.fmt_number(len(sc["child"]))} subdomain × algorithm '
                        f'rows; '
                        + (f'{sc["apex_label"]}, not added, {_hml(sc["apex_tot"])} — {match}' if sc['apex'] else
-                          f'no apex aggregate row; the subdomain total {match}')
+                          f'no main domain total row; the subdomain total {match}')
                        + rows_line + ''.join(f'; {c}' for c in checks))
 
 
@@ -331,7 +331,7 @@ def notes(data, sc):
     """KPI rule: the headline is the apex aggregate the product scores; the subdomain-row sum is printed."""
     out, head = [], _headline(data)
     known = None not in head
-    lead = ('High, Moderate and Low are the source headline: the apex aggregate, as scored in the product.'
+    lead = ('High, Moderate and Low are the source headline: the main domain total, as scored in the product.'
             if known else '')
     n = len(sc['groups'])
     child = f' The subdomain rows sum to {_hml(sc["child_tot"])}; they are not added to the headline.' if n else ''
@@ -349,8 +349,8 @@ def notes(data, sc):
                      f'{_hml(sc["apex_tot"])} findings.')
         out.append(text + child)
     elif sc['apex'] and head == sc['apex_tot']:
-        covers = (f'covers the apex and {_plural(n, "subdomain")} ({_plural(n + 1, "scope")})' if n else
-                  'covers the apex only (1 scope); no subdomain rows are listed')
+        covers = (f'covers the main domain and {_plural(n, "subdomain")} ({_plural(n + 1, "scope")})' if n else
+                  'covers the main domain only (1 scope); no subdomain rows are listed')
         out.append(f'{lead} The {sc["apex_label"]} row for {sc["apex_name"]} matches it and {covers}.{child}')
     elif sc['apex']:
         qa.add('data_mismatch', 'warn', f's11: headline {head} differs from the apex aggregate row '
@@ -359,7 +359,7 @@ def notes(data, sc):
                    f'{_hml(sc["apex_tot"])}, which differs from the headline; not explained by the source data.'
                    f'{child}')
     elif sc['rows']:
-        out.append(f'{lead} No apex aggregate row is recorded.{child}'.strip())
+        out.append(f'{lead} No main domain total row is recorded.{child}'.strip())
     short = apex_short(sc)
     if short:
         out.append(_short_text(short) + '.')
@@ -535,26 +535,26 @@ def breakdown(data, sc):
         grouped.setdefault((sc['tot'](rs), sc['pqc'].get(s), _differs(rs, apex_algs)), []).append(s)
     top = pol(f'{LIST}.top_n', pol('tiers.top_n_default', 10))
     items = list(grouped.items())[:top]      # sc['groups'] is already ordered by High, Moderate, Low, name
-    rows = [[_who(names), *t, _pqc_chip(sc, names[0], dense=False), diff or ('Same as apex' if apex_algs else '')]
+    rows = [[_who(names), *t, _pqc_chip(sc, names[0], dense=False), diff or ('Same as main domain' if apex_algs else '')]
             for (t, _, diff), names in items]      # no apex row: empty cell, as in the D.4.1 pivot
     _, wn = _num_widths(False, '0')
     w = [0, wn, wn, wn, _pqc_w(sc, False),
-         fit('Algorithms vs apex', False, head=True)]
+         fit('Algorithms vs main domain', False, head=True)]
     w[0] = T.CW - sum(w)
     shown = sum(len(n) for _, n in items)
     text = intro(f'{len(sc["groups"])} subdomains in {len(grouped)} groups with identical counts, PQC status and '
                  f'algorithms, ordered by High, then Moderate, then Low findings. Appendix {RID["s11"]} lists one row per '
                  f'subdomain and every scope × algorithm row ({C.fmt_number(len(sc["rows"]))}).')
     out += [text,
-            gap(C.compact_table(['Subdomains', *_hml_heads(False), 'PQC', 'Algorithms vs apex'], rows,
+            gap(C.compact_table(['Subdomains', *_hml_heads(False), 'PQC', 'Algorithms vs main domain'], rows,
                                 numeric_cols=(1, 2, 3), widths=w), 8)]
     lines = [] if shown == len(sc['groups']) else [
         fill(pol('reconciliation.showing', 'Showing {shown} of {total} {unit}.'), shown=shown,
              total=len(sc['groups']), unit='subdomains')]
     if sc['apex']:
-        apex_tpl = next((x.get('text') for x in pol(f'{LIST}.overview_components', []) or []
-                         if x.get('id') == 'apex_aggregate_note' and sc['apex_head']),   # its text says 'headline'
-                        'Apex aggregate (parent, not added to totals): High {h} · Moderate {m} · Low {l}')
+        # owner 2026-10-19: plain 'main domain', not 'apex' (the policy's apex_aggregate_note wording is not used)
+        apex_tpl = ('Main domain total' + (' (the headline scope' if sc['apex_head'] else ' (parent')
+                    + ', not added to subdomain rows): High {h} · Moderate {m} · Low {l}')
         lines.append(fill(apex_tpl, h=sc['apex_tot'][0], m=sc['apex_tot'][1], l=sc['apex_tot'][2]) + '.')
     if sc['uniform']:
         lines.append(f'Source: {sc["source_note"]}.')

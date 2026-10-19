@@ -616,7 +616,7 @@ vulnerabilities = {
     'old_section_label': 'SECTION 2 OF 8 · VULNERABILITY',
     'intro_source': find(r'S C O R E (Covers external .+?digital assets\.)', TEXT[17]),
     'summary': f'{len(findings)} finding types were reported: {sevs.count("high")} high, {sevs.count("medium")} medium '
-               f'and {sevs.count("low")} low, across the apex domain and {len(scan_sub)} scanned subdomains. The active '
+               f'and {sevs.count("low")} low, across the main domain and {len(scan_sub)} scanned subdomains. The active '
                f'scan of {len(results)} hosts reported informational findings only.',
     'metrics': [
         metric('vulnerability_score', 'Vulnerability score', vuln_pct, 'percent', 'findings', f'{vuln_pct}%'),
@@ -752,7 +752,7 @@ quantum = {
     'number': '11', 'title': 'Quantum security', 'group': 'assessment_details', 'state': 'findings',
     'state_label_source': 'Quantum Security Overview', 'source_pages': pages(394, 406),
     'old_section_label': 'SECTION 8 OF 8 · QUANTUM SECURITY', 'intro_source': tq['intro_source'],
-    'summary': f'The scan reported {H} high-risk, {M} moderate-risk and {L} low-risk findings (apex aggregate) across '
+    'summary': f'The scan reported {H} high-risk, {M} moderate-risk and {L} low-risk findings (main domain total) across '
                f'{len(groups)} scopes; ML-KEM was detected on {len(pqc[0]["domains"])} scopes.',
     'beta_notice_source': tq['beta_notice_source'],
     'metrics': [metric('high_risk', 'High Risk', H, 'findings', 'findings', str(H), count_kind='reported_headline'),
@@ -765,9 +765,9 @@ quantum = {
     'findings_by_category': cats, 'pqc_detected': pqc, 'affected_protocols': protocols,
     'scope_summary': scope_summary,
     'scope_register_ref': 'appendices.d_evidence_registers.quantum_scope_register',
-    'aggregation_note': f'Row {DOMAIN} is the apex aggregate: its rows sum to {apex_sum[0]} / {apex_sum[1]} / '
+    'aggregation_note': f'Row {DOMAIN} is the main domain total: its rows sum to {apex_sum[0]} / {apex_sum[1]} / '
                         f'{apex_sum[2]}, the headline. The {len(groups) - 1} subdomain scopes sum to {sub_sum[0]} / '
-                        f'{sub_sum[1]} / {sub_sum[2]} and are already inside the apex aggregate; do not add them.',
+                        f'{sub_sum[1]} / {sub_sum[2]} and are already inside the main domain total; do not add them.',
     'scope_and_limitations_source': copy.deepcopy(tq['scope_and_limitations_source']),
     'review_flags': ['RF-M04', 'RF-G08'],
 }

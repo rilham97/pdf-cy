@@ -551,7 +551,7 @@ def d5_quantum(report, as_of):
     key = str(sec.get('scope_register_ref') or '').rsplit('.', 1)[-1] or 'quantum_scope_register'
     scopes = len(sc['groups']) + bool(sc['apex'])
     n_rows = C.fmt_number(len(sc['rows']))
-    apex = (f' The apex aggregate{sc["apex_scope"].replace("(", "(the source ")} comes first; subdomain rows are '
+    apex = (f' The main domain total{sc["apex_scope"].replace("(", "(the source ")} comes first; subdomain rows are '
             'not added to it.') if sc['apex'] else ''
     src = f' Source: {sc["source_note"]}.' if sc['source_note'] else ''      # omitted when no row has one
     flow = opening(rid, title, 's11', [

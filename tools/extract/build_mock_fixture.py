@@ -350,7 +350,7 @@ vulnerabilities = {
     'old_section_label': 'SECTION 2 OF 8 · VULNERABILITY',
     'intro_source': find(r'S C O R E (Covers external .+?digital assets\.)', TEXT[14]),
     'summary': f'{len(findings)} finding types were reported: {sevs.count("high")} high, {sevs.count("medium")} medium and '
-               f'{sevs.count("low")} low, across the apex domain and 4 scanned subdomains.',
+               f'{sevs.count("low")} low, across the main domain and 4 scanned subdomains.',
     'metrics': [
         metric('vulnerability_score', 'Vulnerability score', vuln_pct, 'percent', 'findings', f'{vuln_pct}%'),
         metric('finding_types', 'Finding types', len(findings), 'finding_types', 'findings',
@@ -575,7 +575,7 @@ quantum = {
     'findings_by_category': cats, 'pqc_detected': pqc, 'affected_protocols': protocols,
     'scope_summary': scope_summary,
     'scope_register_ref': 'appendices.d_evidence_registers.quantum_scope_register',
-    'aggregation_note': f'Row {DOMAIN} is labelled the apex aggregate. Its rows sum to fewer findings than the '
+    'aggregation_note': f'Row {DOMAIN} is labelled the main domain total. Its rows sum to fewer findings than the '
                         'headline (RF-M03).',
     'scope_and_limitations_source': copy.deepcopy(tq['scope_and_limitations_source']),
     'review_flags': ['RF-M03', 'RF-M04'],

@@ -72,6 +72,8 @@ Each was asked for or approved by the product owner; changing one needs their ap
 - Rating panel (section 01): Net score, Point pool, Methodology version only; no "Score context" heading or row.
 - Vulnerabilities (04) "Scanned assets": headline "X of Y scanned domains have at least one finding" + a bar split by worst
   severity; affected hosts first with their siren, the rest grey. Host lists are comma-separated, never middle dots.
+- Plain words for the reader: the root domain is printed as "main domain" (never "apex"); 11 / D.4 label the root row
+  "main domain total". Internal names (`apex`, scope_level) stay in code and QA only.
 - Credential exposure (05): short KPI tiles; "Affected domains" table (domain, rows, with password, latest year)
   only when register rows carry `affected_domain` — then D.2.3 lists every domain and D.2.4 groups rows by domain,
   like the app. Years in fixed buckets: assessment year and the 4 before it one by one, "<year> and before",

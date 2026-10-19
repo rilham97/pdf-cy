@@ -1040,7 +1040,7 @@
    ],
    "old_section_label": "SECTION 2 OF 8 · VULNERABILITY",
    "intro_source": "Covers external security posture including network vulnerabilities, open ports, SSL/TLS configuration, and DNS security controls protecting digital assets.",
-   "summary": "15 finding types were reported: 1 high, 6 medium and 8 low, across the apex domain and 54 scanned subdomains. The active scan of 11 hosts reported informational findings only.",
+   "summary": "15 finding types were reported: 1 high, 6 medium and 8 low, across the main domain and 54 scanned subdomains. The active scan of 11 hosts reported informational findings only.",
    "metrics": [
     {
      "id": "vulnerability_score",
@@ -3552,7 +3552,7 @@
    ],
    "old_section_label": "SECTION 8 OF 8 · QUANTUM SECURITY",
    "intro_source": "Assesses exposure to quantum computing threats by analyzing cryptographic primitives found in TLS/SSL configurations and SSH endpoints. Includes detection of post-quantum cryptography (PQC) algorithms that may already provide protection.",
-   "summary": "The scan reported 30 high-risk, 0 moderate-risk and 104 low-risk findings (apex aggregate) across 15 scopes; ML-KEM was detected on 15 scopes.",
+   "summary": "The scan reported 30 high-risk, 0 moderate-risk and 104 low-risk findings (main domain total) across 15 scopes; ML-KEM was detected on 15 scopes.",
    "beta_notice_source": "Quantum Vulnerability is currently in beta. You may encounter incomplete data or ongoing changes as we refine the experience.",
    "metrics": [
     {
@@ -3918,7 +3918,7 @@
     }
    ],
    "scope_register_ref": "appendices.d_evidence_registers.quantum_scope_register",
-   "aggregation_note": "Row gmail.com is the apex aggregate: its rows sum to 30 / 0 / 104, the headline. The 14 subdomain scopes sum to 28 / 0 / 97 and are already inside the apex aggregate; do not add them.",
+   "aggregation_note": "Row gmail.com is the main domain total: its rows sum to 30 / 0 / 104, the headline. The 14 subdomain scopes sum to 28 / 0 / 97 and are already inside the main domain total; do not add them.",
    "scope_and_limitations_source": {
     "title": "Our Post-Quantum Safety Scan Results",
     "scope_and_limitations": {

@@ -489,11 +489,11 @@ def test_leak_review_fixes():                                            # code 
 def test_gap_quantum():
     text, issues = _gap('quantum_q1')
     assert 'No PQC detected' not in text and 'PQC not reported' in text                         # Q1
-    assert 'apex aggregate (inferred)' in text and ('apex_inferred', 's11') in _checks(issues)  # Q4
+    assert 'main domain total (inferred)' in text and ('apex_inferred', 's11') in _checks(issues)  # Q4
     text, _ = _gap('quantum_q2')
     assert 'Not assessed' in text and 'switched off' in text                                    # Q2
     text, _ = _gap('quantum_q5')
-    assert 'apex only (1 scope)' in text and '1 scopes' not in text and 'No PQC detected' in text  # Q5
+    assert 'main domain only (1 scope)' in text and '1 scopes' not in text and 'No PQC detected' in text  # Q5
 
 
 def test_quantum_review_fixes():                                       # code review 2026-10-19 (11)
@@ -520,9 +520,9 @@ def test_quantum_review_fixes():                                       # code re
     assert not [f for f in s11.breakdown(r['sections']['quantum_security'], sc)
                 if getattr(f, 'style', None) is not None and f.style.name == 'note' and not f.getPlainText().strip()]
     text, _ = _payload_text(r, ['s11', 'appD'])
-    assert 'Same as apex' not in text and 'all rows “None”' not in text and 'Source:' not in text, text
-    assert 'The apex aggregate' not in text and 'apex aggregate, not added' not in text, text
-    assert 'no apex aggregate row; the subdomain total matches the Section 11 headline' in text, text
+    assert 'Same as main domain' not in text and 'all rows “None”' not in text and 'Source:' not in text, text
+    assert 'The main domain total' not in text and 'main domain total, not added' not in text, text
+    assert 'no main domain total row; the subdomain total matches the Section 11 headline' in text, text
     # 7/10: one risk-explained row with a missing count; 8: PQC detected without a scope register
     row = {**G.qrow(1, G.DOMAIN, 1, 0), 'moderate': None, 'moderate_reason_code': 'not_printed_in_source',
            'risk_level': 'low', 'risk_note_source': 'Covered by PQC.'}
@@ -573,7 +573,7 @@ def test_gap_new_conditions():                                          # 2026-1
     assert 'placeholder (“#”)' in text and 'Key exchange' in text and 'NTRU Prime' in text         # N12/N13
     assert 'Risk after PQC coverage' in text and 'Partial coverage' in text                       # N14
     assert 'Affected protocols' in text and 'NTRU Prime available' in text                        # N15
-    assert 'source headline: the apex aggregate' in text and 'differs from the headline' in text  # Q6
+    assert 'source headline: the main domain total' in text and 'differs from the headline' in text  # Q6
     assert 'The subdomain rows sum to' in text
 
 
@@ -1083,9 +1083,9 @@ def test_ai_narrative_printed_in_full():                                        
 def test_quantum_headline_relation_and_full_scope_rows():                             # item 10
     t = _fixture_text('mock-cyberrank-2026-10-13', ['s11', 'appD'])
     assert 'They equal the number of scope × algorithm rows in the scope breakdown at each level (46 rows' in t
-    assert 'The headline is not the apex aggregate row for cyberrank.site, which sums to High 7 · Moderate 0 · ' \
+    assert 'The headline is not the main domain total row for cyberrank.site, which sums to High 7 · Moderate 0 · ' \
            'Low 32' in t
-    assert 'the apex aggregate, as scored in the product' not in t and 'headline scope' not in t
+    assert 'the main domain total, as scored in the product' not in t and 'headline scope' not in t
     assert '13 findings in category · 2 domains' in t
     assert 'D.4.2 Scope × algorithm rows' in t and 'End of register · 46 scope × algorithm rows' in t and 'X2' not in t
 

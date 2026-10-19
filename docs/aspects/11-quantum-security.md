@@ -79,10 +79,10 @@ Appendix D.4 (T2/T3 only, `appD:470-503`):
 | Text or label (exact) | Where it prints | Notes (e.g. policy override key) |
 |---|---|---|
 | "PQC detected (unit not confirmed by source)" | KPI label of `pqc_detected` with `_inferred` unit | `s11:322` |
-| "High, Moderate and Low are the source headline: the apex aggregate, as scored in the product." | Note lead (headline known) | `s11:334-335` |
+| "High, Moderate and Low are the source headline: the main domain total, as scored in the product." | Note lead (headline known) | `s11:334-335` |
 | "High, Moderate and Low are the source headline. They equal the number of scope × algorithm rows in the scope breakdown at each level (<n> rows, each counted once at its highest level; every row is listed <below \| in Appendix D.4>)." — "below" at tier T1 (no D.4 register) | Note | `s11:340-343` |
 | " The <apex label> row for <apex> gives the same High, Moderate and Low findings." / " The headline is not the <apex label> row for <apex>, which sums to <HML> findings." | Appended to the note above | `s11:344-349` |
-| "The <apex label> row for <apex> matches it and covers the apex and <n> subdomains (<n+1> scopes)." / "… covers the apex only (1 scope); no subdomain rows are listed" | Note | `s11:352-354` |
+| "The <apex label> row for <apex> matches it and covers the main domain and <n> subdomains (<n+1> scopes)." / "… covers the main domain only (1 scope); no subdomain rows are listed" | Note | `s11:352-354` |
 | "The <apex label> row for <apex> in the scope register sums to <HML>, which differs from the headline; not explained by the source data." | Note | `s11:358-360` |
 | "No apex aggregate row is recorded." | Note | `s11:362` |
 | " The subdomain rows sum to <HML>; they are not added to the headline." | Appended when subdomains exist | `s11:337` |
@@ -110,13 +110,13 @@ Appendix D.4 (T2/T3 only, `appD:470-503`):
 | Counts cell "High <n><br>Moderate <n><br>Low <n>" ("not available" for a missing count) | "Risk after PQC coverage" | `s11:497-498`; column wide enough for the longest line (`s11:502-504`) |
 | "<n> row(s) prints/print a Risk level that differs from the column holding the count; both are shown as printed." | Note | `s11:514-515` |
 | "Scope breakdown"; register columns "#", "Category", "Algorithm (pre-QC)", "Post-QC", High/Moderate/Low sirens, "Source" | T1 inline and D.4.2 | `s11:217-218` |
-| "  ·  apex aggregate" / "apex aggregate (inferred)", " (headline scope)", "  ·  <A, B> not observed" | Apex / group label rows | `s11:144, 149, 224-225` |
+| "  ·  apex aggregate" / "main domain total (inferred)", " (headline scope)", "  ·  <A, B> not observed" | Apex / group label rows | `s11:144, 149, 224-225` |
 | "A1", "A2", … | Apex row numbers (inline T1 only) | `s11:231` |
 | `POST_QC_NOTE`: "Post-QC “Not listed”: the source prints a dash, so no post-quantum replacement is listed for that algorithm; the source does not say whether one was checked." | After T1 table and D.4.2 | `s11:38-39` |
 | "<G> subdomains in <K> groups with identical counts, PQC status and algorithms, ordered by High, then Moderate, then Low findings. Appendix D.4 lists one row per subdomain and every scope × algorithm row (<N>)." | T2 overview intro | `s11:545-547` |
-| Columns "Subdomains", sirens, "PQC", "Algorithms vs apex"; cell "<n> subdomains"; "Same as apex" (only when an apex row exists; else empty); "No <alg>" / "+<alg>" | T2 overview | `s11:253, 520, 538-539, 549` |
+| Columns "Subdomains", sirens, "PQC", "Algorithms vs main domain"; cell "<n> subdomains"; "Same as main domain" (only when an apex row exists; else empty); "No <alg>" / "+<alg>" | T2 overview | `s11:253, 520, 538-539, 549` |
 | "Showing <shown> of <total> subdomains." | T2 note | policy `reconciliation.showing` (`s11:552`) |
-| "Apex aggregate (parent, not added to totals): High {h} · Moderate {m} · Low {l}." | T2 note | policy `lists.quantum_scope.overview_components[id=apex_aggregate_note].text` replaces it **only** when the headline equals the apex row (`s11:555-557`) |
+| "Main domain total (parent, not added to subdomain rows): High {h} · Moderate {m} · Low {l}." | T2 note | policy `lists.quantum_scope.overview_components[id=apex_aggregate_note].text` replaces it **only** when the headline equals the apex row (`s11:555-557`) |
 | "Source: all rows “<x>”." | T1 note after the table (with the Post-QC note) and T2 note, when every row has the same source | `s11:529-531, 559-560` |
 | (no note) | T2 note paragraph is omitted when it has no line (no "Showing", no apex, no uniform source) | `s11:561-562` |
 | "Full register  D.4 Quantum scope breakdown · <n> scopes · Appendix D, pages a–b" | T2 pointer | title: policy `lists.quantum_scope.register_title`; top N: `lists.quantum_scope.top_n` → `tiers.top_n_default` → 10 (`s11:536, 563-564`) |
@@ -127,10 +127,10 @@ Appendix D.4 (T2/T3 only, `appD:470-503`):
 | "The post-quantum (PQC) scan was switched off when this assessment was created, so quantum exposure was not assessed. This is not a result of no findings." | Card reason when `pqc_scan` is false | `s11:57-59` |
 | "<reason>. This is not a zero result." / "<reason>. Counts below are lower bounds." | unavailable card / partial banner | `appD:118-121` |
 | "Pending review — counts may change before this report is final." | pending_review card without reason | policy `states.overview_messages.pending_review_banner` (`appD:123`) |
-| D.4 opening line 1: "D.4.1 lists one row per scope with its post-quantum (PQC) status, ordered by High, then Moderate, then Low findings.[ The apex aggregate[ (the source headline scope)] comes first; subdomain rows are not added to it.] Showing <S> of <S> scopes. D.4.2 lists every scope × algorithm row (<N> of <N>)." — the apex sentence only when an apex row exists | D.4 | `appD:484-490` |
+| D.4 opening line 1: "D.4.1 lists one row per scope with its post-quantum (PQC) status, ordered by High, then Moderate, then Low findings.[ The main domain total[ (the source headline scope)] comes first; subdomain rows are not added to it.] Showing <S> of <S> scopes. D.4.2 lists every scope × algorithm row (<N> of <N>)." — the apex sentence only when an apex row exists | D.4 | `appD:484-490` |
 | D.4 opening line 2: "Unit: scopes (D.4.1) and scope × algorithm rows (D.4.2); counts are findings.[ Source: <all rows “x” \| per row>.] State: <label>. Snapshot <date>." — no "Source:" when no row has a source | D.4 | `appD:486, 491-492` |
-| "D.4.1  Scopes", "D.4.2  Scope × algorithm rows"; pivot columns "#", "Subdomain", "PQC", sirens, "Algorithms vs apex"; apex row "A" + "Reference" | D.4 | `s11:262-269`, `appD:495-497` |
-| End line: "End of register · <N> scope × algorithm rows. <S> of <S> scopes shown; 0 not shown (none withheld; all <N> scope × algorithm rows in D.4.2). Totals: over <G> subdomain rows, <x> findings (<HML>) from <C> subdomain × algorithm rows; <apex label>, not added, <HML> — <match> \| no apex row: no apex aggregate row; the subdomain total <match>[; <N> scope × algorithm rows by level (highest level per row): <HML>][; source count “rows” is <a>, listed <b>][; <exceed text>]." | D.4 | policy `reconciliation.register_end` (`s11:304-314`, `appD:316-323`) |
+| "D.4.1  Scopes", "D.4.2  Scope × algorithm rows"; pivot columns "#", "Subdomain", "PQC", sirens, "Algorithms vs main domain"; apex row "A" + "Reference" | D.4 | `s11:262-269`, `appD:495-497` |
+| End line: "End of register · <N> scope × algorithm rows. <S> of <S> scopes shown; 0 not shown (none withheld; all <N> scope × algorithm rows in D.4.2). Totals: over <G> subdomain rows, <x> findings (<HML>) from <C> subdomain × algorithm rows; <apex label>, not added, <HML> — <match> \| no apex row: no main domain total row; the subdomain total <match>[; <N> scope × algorithm rows by level (highest level per row): <HML>][; source count “rows” is <a>, listed <b>][; <exceed text>]." | D.4 | policy `reconciliation.register_end` (`s11:304-314`, `appD:316-323`) |
 | `<match>`: "matches the Section 11 headline" (headline = apex totals, or = subdomain totals when there is no apex row) / "differs from the Section 11 headline <HML>, which counts the <N> scope × algorithm rows by level (highest level per row)" / "differs from the Section 11 headline <HML>; not explained by the source data" | D.4 end line | `s11:291-298` |
 | Index content: "<S> scopes (one row each) and all <N> scope × algorithm rows"; or a `state_message`: tier T1 "Not required — all <n> scope rows shown in Section 11."; no register rows "Not produced — no register data in the payload." | Appendix D index | `appD:477-480, 502, 601-614` |
 
@@ -150,7 +150,7 @@ Appendix D.4 (T2/T3 only, `appD:470-503`):
 | Else register rows, no apex | "No apex aggregate row is recorded." | `s11:361-362` |
 | Any subdomain-row level total > apex total | Exceed note + QA `data_mismatch` | `s11:77-87, 363-365` |
 | Σ `findings_by_category[].issues` ≠ Σ headline (both known, issues > 0) | Category-total note | `s11:366-369` |
-| No `scope_level` key on any row, a row's `subdomain` = `identity.domain`, its sums = headline, and it is not every row | Those rows become the apex, label "apex aggregate (inferred)", QA `apex_inferred` | `s11:124-130` |
+| No `scope_level` key on any row, a row's `subdomain` = `identity.domain`, its sums = headline, and it is not every row | Those rows become the apex, label "main domain total (inferred)", QA `apex_inferred` | `s11:124-130` |
 | Headline (all known) = apex row totals | Label suffix " (headline scope)"; policy apex note text allowed | `s11:142-144, 556` |
 | No algorithm carries `risk_level` high/moderate/low | Risk column removed; no legend on "Findings by algorithm"; legend moves to "Scope breakdown" | `s11:400-402, 410, 526` |
 | `pqc_detected[]` non-empty or `pqc_scan` true | "PQC reported": chip "No PQC detected" for scopes without PQC; no-PQC paragraph says "was detected" | `s11:138, 165, 457` |
@@ -168,8 +168,8 @@ Appendix D.4 (T2/T3 only, `appD:470-503`):
 | Tier: visual rows = every register row (each apex row prints as A1…An) + subdomain groups + 1 (apex label row) ≤ 30 → T1; data rows > 1000 → T3; else T2 | T1: full table inline, D.4 index row only. T2/T3: grouped overview + pointer + D.4 (T3 behaves as T2) | `s11:150-151`, `appD:79-83`, policy `tiers.T1_inline.max_visual_rows`, `tiers.T2_overview_register.max_rows` |
 | T2: subdomains with equal totals, PQC algorithm and apex-difference | Collapsed into one row "<n> subdomains" | `s11:533-539` |
 | T2: more groups than top N | "Showing x of y subdomains." | `s11:551-553` |
-| Apex exists vs not (pivot and T2 overview) | "Same as apex" / differences; no apex → empty cell | `s11:267-268, 538-539` |
-| No apex row (D.4) | No apex sentence in the D.4 opening; end line "no apex aggregate row; the subdomain total <match>" | `appD:484-485`, `s11:291, 312-313` |
+| Apex exists vs not (pivot and T2 overview) | "Same as main domain" / differences; no apex → empty cell | `s11:267-268, 538-539` |
+| No apex row (D.4) | No apex sentence in the D.4 opening; end line "no main domain total row; the subdomain total <match>" | `appD:484-485`, `s11:291, 312-313` |
 | Apex and ≥ 1 group (pivot) | Apex row never ends a page alone | `s11:277-278` |
 | A row has no `post_qc_algorithm` | POST_QC_NOTE after the table | `s11:530, appD:498-499` |
 | Text column identical in every row | Column collapsed into "<Col>: <value> (all rows)." | `appD:184-190, 287-289` |
@@ -186,7 +186,7 @@ Appendix D.4 (T2/T3 only, `appD:470-503`):
 | Apex totals / subdomain totals | Σ `high`/`moderate`/`low` over apex rows / non-apex rows; any null → null | `s11:62-64, 135, 147` |
 | Group order | Subdomain totals desc (H, M, L), then name | `s11:136` |
 | Row order inside a group | `high` desc, `category`, `pre_qc_algorithm` | `s11:228-229` |
-| Algorithms vs apex | Set difference of `pre_qc_algorithm` vs apex set: "No X", "+X" | `s11:248-253` |
+| Algorithms vs main domain | Set difference of `pre_qc_algorithm` vs apex set: "No X", "+X" | `s11:248-253` |
 | Scopes | Subdomain groups + 1 if apex | `s11:415, appD:482` |
 | Algorithm table order | Category by its best-ranked algorithm; algorithms by risk | `s11:376-380` |
 | Category / headline differences | Σ issues − Σ headline (signed) | `s11:366-369` |
