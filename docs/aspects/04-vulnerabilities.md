@@ -11,7 +11,7 @@ scan. Its Appendix registers D.1 and D.1.2 are built in [app_d_evidence_register
 2. Section state card, for card states and no-result states. With a no-result state, only the sub-checks print after the card (`build_context`, `s04:726-728`).
 3. KPI strip (`metrics[]` without the per-tier ids).
 4. Review-flag notes: "Review flag RF-xx: …".
-5. H2 "Scanned assets": a count sentence, then a grid of host names.
+5. H2 "Scanned assets": headline "X of Y scanned domains have at least one finding" + a bar split by each domain's worst severity with a legend, then the host grid (affected hosts first with their worst-severity siren, the rest grey), then a scope note.
 6. H2 "Finding types by severity" with a severity legend on the heading line, then 4 tier lines (Critical, High, Medium, Low), then an informational/unknown note.
 7. Findings summary table (no heading of its own; continuation caption "Finding types"), then a breach-likelihood note.
 8. H2 "Finding details" with a severity legend, then the detail table, a coverage note and a bare-label note.
@@ -31,7 +31,8 @@ scan. Its Appendix registers D.1 and D.1.2 are built in [app_d_evidence_register
 | `metrics[id=finding_types_<tier>]` | Tier count when `findings[]` is empty. A null record → "Not available". Also used for QA. (`s04:190-201`) | With no findings: "Not available" + " Count not available (not provided in the assessment data)." |
 | `metrics[id=finding_types]` | "Finding types in total: N." in the info note, and QA (`s04:211-227`) | No total sentence |
 | `review_flags[]` (ids) + top-level `review_flags[] {id, text}` | Note "Review flag <id>: <text>" (`s04:718`, `text.py:271`) | Nothing. An id with no text is skipped. |
-| `scanned_assets.domains[]`, `.subdomains[]` | "Scanned assets" grid (domains first, then subdomains, in payload order, monospace, 1–4 columns) (`s04:600-623`) | Block omitted. A NullReason prints H2 + "Not available (reason)." |
+| `scanned_assets.domains[]`, `.subdomains[]` | Denominator Y of "X of Y" and the host grid (deduped, lower-cased; affected first by worst severity, then payload order; 1–4 columns) (`_scanned_assets`) | Block omitted. A NullReason prints H2 + "Not available (reason)." |
+| `findings[].affected_assets[]` (host before " / "), `.severity`, `affected_assets_count` | X = scanned hosts named by at least one finding; each host's worst severity; "At least" when a finding lists fewer hosts than it counts; hosts not in the scanned list are counted in the note (`_scan_hits`) | No finding lists any host: no headline/bar (never a false "0 of Y"), only the grid and scope note |
 | `severity_legend_source[] {severity, text}` | Tier line text for `critical`/`high`/`medium`/`low` (`s04:186`, `s04:201`) | Hardcoded tier text (`theme.SEVERITY_TEXT`, all four tiers) |
 | `findings[]` | Summary table + detail table, sorted Critical → High → Medium → Low → other (stable) (`s04:245-247`) | "Finding list: Not available (not provided in the assessment data)" (unless the state is `clear`) |
 | `findings[].finding_id` | Summary "ID". Detail "ID …". Link/anchor key. D.1 cross-reference. | Summary blank. Detail "ID not recorded". |
@@ -76,7 +77,7 @@ scan. Its Appendix registers D.1 and D.1.2 are built in [app_d_evidence_register
 
 | Text or label (exact) | Where it prints | Notes (e.g. policy override key) |
 |---|---|---|
-| "Scanned assets"; `<n> domain(s) and <m> subdomain(s) were scanned` + `; domains are listed before subdomains` (only when both lists have names) + "." | H2 + sentence (`s04:620-623`) | |
+| "Scanned assets"; "<X> of <Y>"; "scanned domains have at least one finding" (prefix "At least" when lower bound); legend "<n> Critical/High/Medium/Low", "<n> severity not recorded", "<n> no finding reported" (zero buckets hidden); note "Scanned: <n> domain(s) and <m> subdomain(s)." + "Domains with a finding come first, marked by their highest severity; the rest are grey." + "<k> host(s) named in the findings is/are not in the scanned list." | `_scanned_assets` | |
 | "Finding types by severity" | H2 (`s04:240`) | |
 | "Critical", "High", "Medium", "Low" + legend counts | Tier lines + legend (`s04:238`) | |
 | "Exploitable weakness with direct impact; act immediately." / "Serious weakness; fix as a priority." / "Weakness that adds risk; fix in planned work." / "Minor weakness; fix when convenient." | Critical / High / Medium / Low tier text (`theme.py:60-65`) | Overridden by `severity_legend_source` for that tier |

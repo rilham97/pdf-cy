@@ -3,8 +3,10 @@ hosts wrapping only between hosts) -> register pointer -> Email & DNS controls -
 -> HTTPS redirect -> related actions. Sub-checks carry their own state card. Review flags are
 internal; their effects (verification steps, held values) are rendered where they apply.
 `python -m cyberrank_report.sections.s04_vulnerabilities data.json out.pdf` renders all states."""
+from collections import Counter
+
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from reportlab.platypus import Spacer, Table, TableStyle
+from reportlab.platypus import Flowable, Spacer, Table, TableStyle
 
 from .. import components as C
 from .. import icons as I
@@ -597,8 +599,53 @@ def adjust(data, report):
                                       'reason_code': 'sentinel_meaning_unconfirmed', 'state_reason': why}}
 
 
+class SplitBar(Flowable):
+    """Stacked bar: one segment per (count, colour), widths in proportion to their sum."""
+    H, GAP = 9.0, 1.0
+
+    def __init__(self, parts):
+        super().__init__()
+        self.parts = [(n, c) for n, c in parts if n]
+
+    def wrap(self, aw, ah):
+        self.width, self.height = aw, self.H
+        return self.width, self.height
+
+    def draw(self):
+        total, x = sum(n for n, _ in self.parts) or 1, 0.0
+        for n, color in self.parts:
+            w = self.width * n / total
+            self.canv.setFillColor(color)
+            self.canv.rect(x, 0, max(0.5, w - self.GAP), self.H, stroke=0, fill=1)
+            x += w
+
+
+def _host(label):
+    """'portal.example.com / 192.0.2.10' -> 'portal.example.com' (the scanned-list form)."""
+    return str(C.val(label) or '').split(' / ')[0].strip().lower().rstrip('.')
+
+
+def _scan_hits(data, names):
+    """{scanned host: index of its worst severity} from the hosts each finding lists, plus whether some
+    finding lists fewer hosts than it counts (then the hit count is a lower bound) and hosts that findings
+    name but the scanned list does not."""
+    worst, partial, scanned = {}, False, set(names)
+    for f in (x for x in data.get('findings') or [] if isinstance(x, dict)):
+        lst = [h for h in f.get('affected_assets') or [] if _host(h)]
+        partial |= (_count(f) or 0) > len(lst)
+        sev = str(C.val(f.get('severity')) or '').lower()
+        rank = SEVERITIES.index(sev) if sev in SEVERITIES else len(SEVERITIES)
+        for h in map(_host, lst):
+            worst[h] = min(worst.get(h, rank), rank)
+    return ({h: r for h, r in worst.items() if h in scanned}, partial,
+            sorted(h for h in worst if h not in scanned))
+
+
 def _scanned_assets(data):
-    """'Scanned Domains / Scanned Subdomains' list (2026-10 samples): counts + names, wrapped in a grid."""
+    """Scanned assets (owner design 2026-10-19): 'X of Y scanned domains have at least one finding' as the
+    headline, a bar split by each domain's worst severity, then the domain grid: affected domains first with
+    their worst-severity siren, the rest muted. Counts come from the hosts the findings list; no host list
+    in any finding -> plain scope line (never a false 0 of Y)."""
     sa = data.get('scanned_assets')
     if C.is_missing(sa) and isinstance(sa, dict):      # null record: say why the list is not shown
         return [C.keep(C.heading('Scanned assets', 2), C.P(C.sentence(C.missing_text(sa)), 'body'))]
@@ -607,20 +654,58 @@ def _scanned_assets(data):
     doms, subs = list(sa.get('domains') or []), list(sa.get('subdomains') or [])
     if not doms and not subs:
         return []
-    names = doms + subs
+    names = list(dict.fromkeys(_host(n) for n in doms + subs if _host(n)))
+    plural = lambda n, w: f'{C.fmt_number(n)} {w}{"" if n == 1 else "s"}'
+    scope = f'Scanned: {plural(len(doms), "domain")} and {plural(len(subs), "subdomain")}.'
+    listed = any(f.get('affected_assets') for f in data.get('findings') or [] if isinstance(f, dict))
+    hits, partial, outside = _scan_hits(data, names) if listed else ({}, False, [])
+    out = [C.heading('Scanned assets', 2)]
+    if listed:
+        n, total = len(hits), len(names)
+        head = C.M(f'{C.fmt_number(n)}<font name="{T.LIGHT}" size="12" color="{C.hexstr(T.MUTED)}"> of '
+                   f'{C.fmt_number(total)}</font>', 'kpi_value')
+        label = C.P(('At least ' if partial else '') + ('scanned domain has' if total == 1 else
+                    'scanned domains have') + ' at least one finding', 'kpi_label', spaceBefore=2)
+        by = Counter(hits.values())
+        parts = [(by[i], T.SEVERITY[s]) for i, s in enumerate(SEVERITIES)] + \
+                [(by[len(SEVERITIES)], T.SLATE_400), (total - n, T.RULE)]
+        legend = [I.severity_label(s, dense=True, label=f'{C.fmt_number(by[i])} {s.capitalize()}')
+                  for i, s in enumerate(SEVERITIES) if by[i]]
+        legend += [C.P(f'{C.fmt_number(by[len(SEVERITIES)])} severity not recorded', 'dense_muted')] * bool(by[len(SEVERITIES)])
+        legend += [C.P(f'{C.fmt_number(total - n)} no finding reported', 'dense_muted')] * bool(total - n)
+        dn = T.STYLES['dense']        # items packed left: each column fits its text (+ siren) and a gap
+        lw = [stringWidth(getattr(x, 'text', '') or x.getPlainText(), dn.fontName, dn.fontSize) + 30 for x in legend]
+        lw[-1] = max(lw[-1], T.CW - T.COL3 - T.GUTTER - sum(lw[:-1]))
+        leg = Table([legend], colWidths=lw, hAlign='LEFT')
+        leg.setStyle(TableStyle([('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+                                 ('TOPPADDING', (0, 0), (-1, -1), 0), ('BOTTOMPADDING', (0, 0), (-1, -1), 0)]))
+        top = Table([[[head, label], '', [Spacer(0, 9), SplitBar(parts), Spacer(0, 6), leg]]],
+                    colWidths=[T.COL3, T.GUTTER, T.CW - T.COL3 - T.GUTTER], hAlign='LEFT', spaceAfter=8)
+        top.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'), ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                                 ('RIGHTPADDING', (0, 0), (-1, -1), 0), ('TOPPADDING', (0, 0), (-1, -1), 8),
+                                 ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                                 ('LINEABOVE', (0, 0), (-1, 0), 0.75, T.RULE)]))
+        out.append(top)
+    order = sorted(names, key=lambda h: hits.get(h, 99))          # affected first, worst first; stable
     st = T.STYLES['dense_tech']
-    widest = max(stringWidth(str(n), st.fontName, st.fontSize) for n in names) + 8
+    muted = st.clone('scan_muted', textColor=T.MUTED)
+    siren_w = 14 if hits else 0
+    widest = max(stringWidth(h, st.fontName, st.fontSize) for h in order) + 8 + siren_w
     k = max(1, min(4, int(T.CW // widest)))
-    cells = [C.tech(n, 'dense_tech') for n in names]
+    cells = [I.severity_label(SEVERITIES[hits[h]], dense=True, label=h, style=st)
+             if h in hits and hits[h] < len(SEVERITIES) else C.P(C.esc(h), st if h in hits else muted)
+             for h in order]
     grid = [cells[i:i + k] + [''] * (k - len(cells[i:i + k])) for i in range(0, len(cells), k)]
-    t = Table(grid, colWidths=[T.CW / k] * k, hAlign='LEFT', spaceAfter=6)
+    t = Table(grid, colWidths=[T.CW / k] * k, hAlign='LEFT', spaceAfter=4)
     t.setStyle(TableStyle([('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 2),
                            ('TOPPADDING', (0, 0), (-1, -1), 1), ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
                            ('VALIGN', (0, 0), (-1, -1), 'TOP')]))
-    plural = lambda n, w: f'{n} {w}{"" if n == 1 else "s"}'
-    order = '; domains are listed before subdomains' if doms and subs else ''      # true by construction
-    return [C.heading('Scanned assets', 2),
-            C.P(f'{plural(len(doms), "domain")} and {plural(len(subs), "subdomain")} were scanned{order}.', 'body'), t]
+    note = scope + (' Domains with a finding come first, marked by their highest severity; the rest are grey.'
+                    if hits else '')
+    if outside:
+        note += (f' {plural(len(outside), "host")} named in the findings {"is" if len(outside) == 1 else "are"} '
+                 'not in the scanned list.')
+    return out + [t, C.P(note, 'note_flush', spaceAfter=6)]
 
 
 SCAN_STATUS = {'clean': ('clear', 'Clean'), 'scanned': ('findings', 'Scanned')}

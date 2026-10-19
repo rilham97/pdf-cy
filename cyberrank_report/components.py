@@ -389,6 +389,8 @@ def _kpi_tile(it):
         out.append(P(f'{fmt_number(val)}%', 'kpi_value'))
     else:
         u = fmt_unit(unit, val) if unit else ''
+        if u and u.lower() in (str(it.get('label') or '').lower(), fmt_unit(it.get('label'), val).lower()):
+            u = ''          # '12 finding types / Finding types': the label already names the unit
         tail = f'<font name="{T.LIGHT}" size="9.1" color="{hexstr(T.MUTED)}"> {esc(u)}</font>' if u else ''
         out.append(M(esc(fmt_number(val)) + tail, 'kpi_value'))
     if it.get('severity'):       # severity tier: siren + the tier label, never plain text

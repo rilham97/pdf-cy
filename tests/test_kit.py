@@ -234,6 +234,19 @@ def _demo_variant(mutate, only, check=True):
     return ' '.join(' '.join(p.get_text() for p in pymupdf.open(out)).split()), list(qa.ISSUES)
 
 
+def test_s04_scanned_assets_x_of_y():                                  # owner design 2026-10-19
+    t = _fixture_text('demo-preview', ['s04'])
+    assert 'Scanned assets 12 of 12 scanned domains have at least one finding' in t, t[:2000]
+    assert '1 Critical 3 High 5 Medium 3 Low' in t and 'no finding reported' not in t   # zero bucket hidden
+    assert '12 Finding types' in t and '12 finding types Finding types' not in t       # no repeated unit
+    from cyberrank_report.sections import s04_vulnerabilities as s04
+    hits, partial, outside = s04._scan_hits(
+        {'findings': [{'severity': 'low', 'affected_assets': ['a.example.com / 192.0.2.1'], 'affected_assets_count': 2},
+                      {'severity': 'high', 'affected_assets': ['A.example.com', 'z.example.org']}]},
+        ['a.example.com', 'b.example.com'])
+    assert hits == {'a.example.com': 1} and partial and outside == ['z.example.org']
+
+
 def test_s03_review_fixes():                                          # code review 2026-10-19, items 1-4
     def excluded(r):
         p = r['sections']['privacy']
@@ -539,7 +552,7 @@ def test_gap_new_conditions():                                          # 2026-1
     assert 'compared with the preference set by the report owner/requestor' in text and 'your preference' not in text
     assert 'where you allow' not in text
     text, issues = _gap('vulns_c')
-    assert 'Scanned assets' in text and '1 domain and 5 subdomains' in text                       # N7
+    assert 'Scanned assets' in text and 'Scanned: 1 domain and 5 subdomains.' in text             # N7
     assert 'Vulnerability scan results' in text and '5 reported, 2 listed' in text                # N8
     assert 'Informational' in text and ('data_mismatch', 's04') in _checks(issues)
     text, _ = _gap('vendors_profile')
