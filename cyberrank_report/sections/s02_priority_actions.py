@@ -9,9 +9,10 @@ from reportlab.platypus import TableStyle
 
 from .. import components as c
 from .. import theme as T
+from . import NO_RESULT, WITH_CARD
 from .s01_executive_overview import Deferred, section_data, section_ref, spec_for
 
-LEVELS = ('high', 'medium', 'low')
+LEVELS = ('critical', 'high', 'medium', 'low')      # Critical tile only when an action has it
 WHO = (('Owner', 'owner'), ('Due', 'due_at'), ('Status', 'status'))
 _MUTED = c.hexstr(T.MUTED)
 PRIORITY_W = c.head_width('Priority')     # siren only (legend: the priority tiles above the table)
@@ -150,8 +151,8 @@ def _action_cell(a, report, pages, shared=()):
     refs = ', '.join(section_ref(k, report, pages) for k in linked)
     w, fs = ACTION_W - 2 * T.CELL_PAD_H, T.STYLES['cell'].fontSize
     br = lambda s, font=T.LIGHT, size=fs: c.breakable(s, w, font, size)    # URLs / hashes never overflow
-    lines = [f'<font name="{T.MEDIUM}" color="{c.hexstr(T.HEADING)}">{br(a.get("title") or "Untitled action", T.MEDIUM)}'
-             '</font>']
+    title = a.get('title') or c.val(a.get('title_source')) or 'Untitled action'     # source wording verbatim
+    lines = [f'<font name="{T.MEDIUM}" color="{c.hexstr(T.HEADING)}">{br(title, T.MEDIUM)}</font>']
     text = c.val(a.get('action_required_source'))
     ours = _unit_rule(a, report)
     dup = next((k for k in linked if text and any(text in s for s in _strings(section_data(report, spec_for(k))))),
@@ -187,13 +188,22 @@ def _action_cell(a, report, pages, shared=()):
 def _cert_review(report, n):
     """Added action (not in the assessment's own list): system-detected certificates awaiting approval."""
     from .s13_certifications import awaiting_review, review_text
-    todo = awaiting_review(section_data(report, spec_for('certifications')))
+    sec = section_data(report, spec_for('certifications')) or {}
+    todo = awaiting_review(sec) if sec.get('state') not in NO_RESULT else []    # no Next step in 13 to point to
     if not todo:
         return []
     return [{'rank': n + 1, 'priority': 'low', 'title': 'Review system-detected certificates',
              'action_required_source': review_text(todo), 'linked_sections': ['certifications'],
              'estimated_time': {'value': None, 'reason_code': 'not_tracked'}, 'required_role': 'Cyberrank admin',
              'derived': 'Added by this report from the certificate records; not part of the assessment action list.'}]
+
+
+def action_rows(data, report):
+    """The rows 02 prints, in order: payload actions by rank, then the added certificate action.
+    01's Next pointer counts these, so both sections agree."""
+    acts = [a for a in (data or {}).get('actions') or [] if isinstance(a, dict)]
+    acts.sort(key=lambda a: a.get('rank') if isinstance(a.get('rank'), (int, float)) else float('inf'))
+    return acts + _cert_review(report, len(acts))
 
 
 def _rows(actions, report, pages, shared):
@@ -217,15 +227,13 @@ def _table(actions, report, pages, shared):
 
 
 def build(data, ctx):
-    acts = [a for a in data.get('actions') or [] if isinstance(a, dict)]
-    acts.sort(key=lambda a: a.get('rank') if isinstance(a.get('rank'), (int, float)) else float('inf'))
-    acts += _cert_review(ctx.report, len(acts))
+    acts = action_rows(data, ctx.report)
     out = []
     if acts:
         levels = [str(a.get('priority') or '').lower() for a in acts]
         kpis = [{'label': 'Total', 'value': len(acts), 'unit': 'actions'}]
         kpis += [{'label': f'{p.capitalize()} priority', 'value': levels.count(p), 'unit': 'actions', 'severity': p}
-                 for p in LEVELS]
+                 for p in LEVELS if p != 'critical' or p in levels]
         unrated = sum(1 for x in levels if x not in LEVELS)
         if unrated:
             kpis.append({'label': 'Priority not rated', 'value': unrated, 'unit': 'actions'})
@@ -242,11 +250,13 @@ def build(data, ctx):
                          'are as reported and held for review.')
         if data.get('note'):
             notes.append(data['note'])
-        out.append(ctx.c.note(' '.join(notes)))
+        if notes:
+            out.append(ctx.c.note(' '.join(notes)))
         out += remediation_block(data.get('remediation_impact'), ctx.report)
-    else:      # no action rows: say so (the source-order footnote has nothing to qualify)
+    else:      # no action rows: say so, unless the state card above already gives the reason
         why = data.get('state_reason') or (c.reason_text(data) if data.get('reason_code') else None)
-        out.append(c.P(c.sentence(why) if why else 'No priority actions are listed in the assessment data.', 'body'))
+        if not (why and ctx.state in WITH_CARD):
+            out.append(c.P(c.sentence(why) if why else 'No priority actions are listed in the assessment data.', 'body'))
     return out
 
 
@@ -275,14 +285,18 @@ def remediation_block(ri, report=None):
     parts = [f'{c.fmt_number(n[k])} {k}' for k in ('privacy', 'vulnerability') if n[k] is not None]
     if n['total'] is not None:
         pairs.append(('Active issues', c.fmt_number(n['total']) + (f' ({" + ".join(parts)})' if parts else '')))
-        if parts and len(parts) == 2 and n['privacy'] + n['vulnerability'] != n['total']:
+        num = all(isinstance(n[k], (int, float)) and not isinstance(n[k], bool)    # text counts: no sum check
+                  for k in ('total', 'privacy', 'vulnerability'))
+        if num and n['privacy'] + n['vulnerability'] != n['total']:
             from .. import qa
             qa.add('data_mismatch', 'warn', f's02: active issues {n["total"]} != privacy {n["privacy"]} + '
                    f'vulnerability {n["vulnerability"]}', once=True)
     if n['credentials'] is not None:
         pairs.append(('Exposed credentials', c.fmt_number(n['credentials']) +
                       (' (counted separately; not part of the active issues)' if n['total'] is not None else '')))
-    out = [c.heading(c.val(ri.get('title')) or 'Projected rating after remediation', 2), c.key_value_list(pairs)]
+    head = c.val(ri.get('title')) or c.val(ri.get('title_source')) or 'Projected rating after remediation'
+    cap = c.val(ri.get('caption_source'))      # source wording, verbatim
+    out = [c.heading(head, 2), *([c.note(cap)] if cap else []), c.key_value_list(pairs)]
     if c.val(ri.get('narrative_source')):
         out.append(c.P(c.val(ri['narrative_source']), 'body', spaceBefore=6))
     note = ['Projection as reported by the source, not a commitment.']
