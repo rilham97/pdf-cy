@@ -64,10 +64,10 @@ def _sum(rows, k):
     return None if any(v is None for v in vals) else sum(vals)
 
 
-def _hml(t):
-    """'High 56 · Moderate 0 · Low 192' with non-breaking spaces inside each pair."""
-    return ' · '.join(f'{lbl}\u00a0{C.fmt_number(v) if v is not None else "not available"}'
-                      for lbl, v in zip(('High', 'Moderate', 'Low'), t))
+def _hml(t, sep=' · '):
+    """'High 56 · Moderate 0 · Low 192' with non-breaking spaces inside each pair; missing is 'not available'."""
+    return sep.join(f'{lbl}\u00a0{C.fmt_number(v) if v is not None else "not available"}'
+                    for lbl, v in zip(('High', 'Moderate', 'Low'), t))
 
 
 def _sum_known(t):
@@ -102,7 +102,8 @@ def fit(text, dense, head=False):
 def _num_widths(dense, *labels):
     """'#' and High/Moderate/Low widths; numbers and these headers never wrap."""
     hml = fit('99,999', dense)                  # headers are sirens only (legend names them)
-    return max(fit(x, dense) for x in ('#', *labels)), hml
+    # widest digit for every digit: '31' is narrower than '20' in Poppins (proportional figures)
+    return max(fit(re.sub(r'\d', '6', x), dense) for x in ('#', *labels)), hml
 
 
 def row_levels(rows):
@@ -136,6 +137,7 @@ def scope(data, report):
     pqc = {d: C.val(p.get('algorithm')) for p in data.get('pqc_detected') or [] for d in p.get('domains') or []}
     reported = bool(data.get('pqc_detected')) or _toggle(report) is True
     sources = {r.get('source') for r in rows}
+    src = next(iter(sources)) if len(sources) == 1 else None
     head = _headline(data)
     apex_head = bool(apex) and None not in head and head == tot(apex)
     return {'rows': rows, 'row_levels': row_levels(rows), 'head': head, 'apex_head': apex_head,
@@ -145,9 +147,11 @@ def scope(data, report):
             'child_tot': tot(child), 'apex_tot': tot(apex) if apex else None,
             'apex_name': str(apex[0].get('subdomain')) if apex else None, 'pqc_reported': reported,
             'apex_label': 'apex aggregate (inferred)' if inferred else 'apex aggregate',
-            'tier': tier(len(child) + len(groups) + bool(apex), len(rows)),
-            'uniform': len(sources) == 1 and None not in sources,
-            'source_note': f'all rows “{next(iter(sources))}”' if len(sources) == 1 else 'per row',
+            # visual rows: every data row (each apex row prints as A1..An) + one label row per group
+            'tier': tier(len(rows) + len(groups) + bool(apex), len(rows)),
+            'uniform': src is not None,
+            # no row carries a source: nothing to say (never 'all rows “None”')
+            'source_note': f'all rows “{src}”' if src is not None else None if sources == {None} else 'per row',
             'counts': reg.get('counts') or {},
             'post_qc_missing': sum(1 for r in rows if not r.get('post_qc_algorithm'))}
 
@@ -284,14 +288,14 @@ def end_line(sec, sc):
     head, scopes = _headline(sec), len(sc['groups']) + bool(sc['apex'])
     rows_line = (f'; {_plural(len(sc["rows"]), "scope × algorithm row")} by level (highest level per row): '
                  f'{_hml(sc["row_levels"])}')
-    if head == sc['apex_tot']:
+    if head == (sc['apex_tot'] if sc['apex'] else sc['child_tot']):
         match = 'matches the Section 11 headline'
     elif None not in head and head == sc['row_levels']:
         match = (f'differs from the Section 11 headline {_hml(head)}, which counts the '
                  f'{_plural(len(sc["rows"]), "scope × algorithm row")} by level (highest level per row)')
         rows_line = ''
     else:
-        match = f'Section 11 headline is {_hml(head)}; difference not explained by the source data'
+        match = f'differs from the Section 11 headline {_hml(head)}; not explained by the source data'
     checks = [f'source count “{k}” is {src}, listed {v}'
               for k, v in (('rows', len(sc['rows'])), ('scopes', scopes))
               for src in [sc['counts'].get(k)] if src is not None and src != v]
@@ -305,7 +309,8 @@ def end_line(sec, sc):
                        + (f'{C.fmt_number(n_find)} findings ' if n_find is not None else '')
                        + f'({_hml(sc["child_tot"])}) from {C.fmt_number(len(sc["child"]))} subdomain × algorithm '
                        f'rows; '
-                       f'{sc["apex_label"]}, not added, {_hml(sc["apex_tot"] or (None,) * 3)} — {match}'
+                       + (f'{sc["apex_label"]}, not added, {_hml(sc["apex_tot"])} — {match}' if sc['apex'] else
+                          f'no apex aggregate row; the subdomain total {match}')
                        + rows_line + ''.join(f'; {c}' for c in checks))
 
 
@@ -332,9 +337,10 @@ def notes(data, sc):
     child = f' The subdomain rows sum to {_hml(sc["child_tot"])}; they are not added to the headline.' if n else ''
     if known and sc['rows'] and head == sc['row_levels']:
         # the relation the data shows (Mock RF-M03): rows by level, not necessarily the apex aggregate
+        where = 'below' if sc['tier'] == 'T1' else f'in Appendix {RID["s11"]}'     # T1: no D.4 register
         text = (f'High, Moderate and Low are the source headline. They equal the number of scope × algorithm rows '
                 f'in the scope breakdown at each level ({_plural(len(sc["rows"]), "row")}, each counted once at '
-                f'its highest level; every row is listed in Appendix {RID["s11"]}).')
+                f'its highest level; every row is listed {where}).')
         if sc['apex'] and head == sc['apex_tot']:
             text += (f' The {sc["apex_label"]} row for {sc["apex_name"]} gives the same High, Moderate and Low '
                      'findings.')
@@ -416,10 +422,12 @@ def pqc_block(data, sc, report):
         algs.append(str(p.get('algorithm')))
         alias = f' ({p["algorithm_alias"]})' if p.get('algorithm_alias') else ''
         status = re.sub(r'^\s*Status:\s*', '', C.val(p.get('status_source')) or '')
+        named = C.val(p.get('domains_count')) or len(doms)
+        # no scope register: there is no scope total to compare with
+        on = f'{C.fmt_number(named)} of {_plural(scopes, "scope")}' if sc['rows'] else _plural(named, 'domain')
         out += [C.heading(f'{p["algorithm"]}{alias}', 3, style=H3T),
                 intro(' · '.join(str(x) for x in (p.get('purpose'), status) if x)),
-                intro(f'Detected on {C.fmt_number(C.val(p.get("domains_count")) or len(doms))} of {_plural(scopes, "scope")}. Support '
-                      f'for PQC does not prove that every connection uses it.')]
+                intro(f'Detected on {on}. Support for PQC does not prove that every connection uses it.')]
         cells = [C.tech(d, 'dense_tech') for d in doms]      # domain list: plain technical text
         st = T.STYLES['dense_tech']
         widest = max([stringWidth(str(d), st.fontName, st.fontSize) for d in doms] or [0]) + 6
@@ -431,8 +439,7 @@ def pqc_block(data, sc, report):
                                    ('TOPPADDING', (0, 0), (-1, -1), 1), ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
                                    ('VALIGN', (0, 0), (-1, -1), 'TOP')]))
             out.append(t)
-        named = C.val(p.get('domains_count')) or len(doms)
-        if named > scopes:
+        if sc['rows'] and named > scopes:
             out.append(C.note(f'The source names {named} {p.get("algorithm")} domains '
                               f'but the scope register holds {scopes} scopes; not explained by the source data.'))
         listed = len([r for r in reg.get('rows') or [] if r.get('algorithm') == p.get('algorithm')])
@@ -487,23 +494,25 @@ def risk_adjusted(sc):
         return C.M(f'{pre}<br/><font color="{C.hexstr(T.MUTED)}">'
                    f'Post-QC: {mono(post) if r.get("post_qc_algorithm") else C.esc(post)}</font>', 'cell')
 
-    def counts(r):
-        return C.M('<br/>'.join(f'{lbl}\u00a0{C.fmt_number(r.get(k) or 0)}'
-                                for lbl, k in zip(('High', 'Moderate', 'Low'), LEVELS)), 'cell')
+    def counts(r):      # a missing count prints 'not available', never 0
+        return C.M(_hml([r.get(k) for k in LEVELS], '<br/>'), 'cell')
     rows = [[i, C.severity_icon(r.get('risk_level'), scale='quantum') if r.get('risk_level') in LEVELS else '',
              C.tech(str(r.get('subdomain')), 'cell_tech'), alg(r), counts(r),
              C.P(r['risk_note_source'], 'cell')] for i, r in enumerate(rs, 1)]
-    w = [_num_widths(False, str(len(rows)))[0], C.head_width('Risk'), 104, 104, fit('Moderate 99', False), 0]
+    w = [_num_widths(False, str(len(rows)))[0], C.head_width('Risk'), 104, 104,
+         max([fit('Moderate 99', False)] + [fit(x, False) for r in rs              # one line per level
+                                            for x in _hml([r.get(k) for k in LEVELS], '\n').split('\n')]), 0]
     w[5] = T.CW - sum(w)
     mixed = sum(1 for r in rs if r.get('risk_level') in LEVELS and not r.get(r['risk_level']))
     out = [C.heading('Risk after PQC coverage', 2, style=H2T),
-           intro(f'{_plural(len(rs), "scope row")} carry a risk explanation in the source. The High, Moderate and '
-                 'Low counts stay as reported; the Risk column is the source\'s assessment after PQC coverage.'),
+           intro(f'{_plural(len(rs), "scope row")} carr{"ies" if len(rs) == 1 else "y"} a risk explanation in the '
+                 'source. The High, Moderate and Low counts stay as reported; the Risk column is the source\'s '
+                 'assessment after PQC coverage.'),
            gap(C.compact_table(['#', 'Risk', 'Scope', 'Algorithm', 'Counts', 'Source explanation'], rows, widths=w,
                                numeric_cols=(0,)), 8)]
     if mixed:
-        out.append(C.note(f'{_plural(mixed, "row")} print a Risk level that differs from the column holding the '
-                          'count; both are shown as printed.'))
+        out.append(C.note(f'{_plural(mixed, "row")} print{"s" if mixed == 1 else ""} a Risk level that differs '
+                          'from the column holding the count; both are shown as printed.'))
     return out
 
 
@@ -517,16 +526,17 @@ def breakdown(data, sc):
     out = [head if _rated(data) else C.heading_legend(head, legend(data))]
     if sc['tier'] == 'T1':
         t = scope_table(sc, dense=False, title='Scope breakdown', ident='s11-scope')
-        return (out + const_line(t) + [t]
-                + ([C.note(POST_QC_NOTE)] if sc['post_qc_missing'] else []))
+        notes = ([f'Source: {sc["source_note"]}.'] if sc['uniform'] else []) + \
+            ([POST_QC_NOTE] if sc['post_qc_missing'] else [])      # uniform source: no column, one note
+        return out + const_line(t) + [t] + ([C.note(' '.join(notes))] if notes else [])
     # identical subdomains collapse into one line: same counts, PQC status and missing algorithms
     apex_algs, grouped = _algs(sc['apex']), {}
     for s, rs in sc['groups']:
         grouped.setdefault((sc['tot'](rs), sc['pqc'].get(s), _differs(rs, apex_algs)), []).append(s)
     top = pol(f'{LIST}.top_n', pol('tiers.top_n_default', 10))
     items = list(grouped.items())[:top]      # sc['groups'] is already ordered by High, Moderate, Low, name
-    rows = [[_who(names), *t, _pqc_chip(sc, names[0], dense=False), diff or 'Same as apex']
-            for (t, _, diff), names in items]
+    rows = [[_who(names), *t, _pqc_chip(sc, names[0], dense=False), diff or ('Same as apex' if apex_algs else '')]
+            for (t, _, diff), names in items]      # no apex row: empty cell, as in the D.4.1 pivot
     _, wn = _num_widths(False, '0')
     w = [0, wn, wn, wn, _pqc_w(sc, False),
          fit('Algorithms vs apex', False, head=True)]
@@ -548,7 +558,8 @@ def breakdown(data, sc):
         lines.append(fill(apex_tpl, h=sc['apex_tot'][0], m=sc['apex_tot'][1], l=sc['apex_tot'][2]) + '.')
     if sc['uniform']:
         lines.append(f'Source: {sc["source_note"]}.')
-    out.append(C.note(' '.join(lines)))
+    if lines:
+        out.append(C.note(' '.join(lines)))
     return out + [C.register_pointer(RID['s11'], {'value': len(sc['groups']) + bool(sc['apex']), 'unit': 'scopes'},
                                      title=f'{RID["s11"]} {pol(f"{LIST}.register_title", "Quantum scope breakdown")}')]
 
@@ -572,12 +583,13 @@ def limitations(data):
 
 # --- section contract ------------------------------------------------------------
 def card(data, ctx):
-    kw = long_list_card(data, ctx, 'No quantum-vulnerable algorithms were identified within the scope and period '
-                                   'of this assessment.')
-    if ctx.state == 'clear' and not data.get('what_checked'):
+    empty = data.get('empty_state_source') or {}      # the source's own empty-state text and coverage win
+    kw = long_list_card(data, ctx, empty.get('text') or 'No quantum-vulnerable algorithms were identified within '
+                                                        'the scope and period of this assessment.')
+    if ctx.state == 'clear' and not (data.get('what_checked') or empty.get('coverage')):
         sc = scope(data, ctx.report)
         n = len(data.get('scope_summary') or []) or len(sc['groups']) + bool(sc['apex'])
-        kw['what_checked'] = [f'TLS/SSL configurations and SSH endpoints on {n} scopes' if n else
+        kw['what_checked'] = [f'TLS/SSL configurations and SSH endpoints on {_plural(n, "scope")}' if n else
                               'TLS/SSL configurations and SSH endpoints in scope',
                               'Classical algorithms exposed to future quantum attack (key exchange, public-key, '
                               'symmetric)',
