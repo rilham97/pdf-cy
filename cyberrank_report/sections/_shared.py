@@ -6,6 +6,7 @@ Namespace note: these are demerit-ledger areas E, F, G, J. Privacy criterion H '
 """
 from .. import components as C
 from .. import icons as I
+from .. import qa
 
 NO_RESULT = ('not_assessed', 'not_applicable', 'unavailable')
 OWNER = 'the preference set by the report owner/requestor'
@@ -38,27 +39,53 @@ def no_pref(data):
     return data.get('enabled') is False or not data.get('allowed_set')
 
 
-def adjust_switched_off(data, has_data, why=None):
+def allowed(data):
+    """The preference list as printed: none while the comparison is switched off (enabled false)."""
+    return [] if data.get('enabled') is False else list(data.get('allowed_set') or [])
+
+
+def with_snapshot_pref(data, report, key):
+    """allowed_set absent (or null) -> snapshot.preferences_at_assessment.<key>, the preference recorded
+    with the assessment. An empty allowed_set is a real 'no preference' and is kept."""
+    if data.get('allowed_set') is not None:
+        return data
+    pref = C.val((((report or {}).get('snapshot') or {}).get('preferences_at_assessment') or {}).get(key))
+    return {**data, 'allowed_set': list(pref)} if isinstance(pref, list) else data
+
+
+def _forced(data, code, reason, name=None, **flags):
+    """Copy moved to not_applicable; QA info state_adjusted like sections.hold()."""
+    if data.get('state') != 'not_applicable':
+        who = data.get('title') or name or code
+        qa.add('state_adjusted', 'info', f'{who}: {data.get("state")} -> not_applicable ({code})',
+               once=True)
+    return {**data, 'state': 'not_applicable', 'state_reason': reason, **flags}
+
+
+def adjust_switched_off(data, has_data, why=None, name=None):
     """A switched-off module (enabled false) renders as not_applicable; a no-result state without
     data renders its card only (`_card_only`). Otherwise data unchanged. Idempotent."""
     if data.get('_card_only') or data.get('_no_preference'):
         return data
     if data.get('enabled') is False:
-        return {**data, 'state': 'not_applicable', 'state_reason': data.get('state_reason') or why,
-                '_card_only': True}
+        return _forced(data, 'module_switched_off', data.get('state_reason') or why, name, _card_only=True)
     if data.get('state') in NO_RESULT and not has_data:
         return {**data, '_card_only': True}
     return data
 
 
-def adjust_compared(data, observed, has_data):
+def adjust_compared(data, observed, has_data, name=None):
     """Sovereignty / residency: with no preference set but data observed, show the data marked
-    'Not compared: no preference set' (state not_applicable, `_no_preference`). Idempotent."""
+    'Not compared: no preference set' (state not_applicable, `_no_preference`); with no preference and
+    nothing observed, the card only. Idempotent."""
     if data.get('_card_only') or data.get('_no_preference'):
         return data
-    if no_pref(data) and observed and data.get('state') not in NO_RESULT:
-        return {**data, 'state': 'not_applicable', 'state_reason': NOT_COMPARED, '_no_preference': True}
-    return adjust_switched_off(data, has_data, 'Not compared: no preference set.')
+    if no_pref(data) and data.get('state') not in NO_RESULT:
+        if observed:
+            return _forced(data, 'no_preference_set', NOT_COMPARED, name, _no_preference=True)
+        return _forced(data, 'no_preference_set', data.get('state_reason') or 'Not compared: no preference set.',
+                       name, _card_only=True)
+    return adjust_switched_off(data, has_data, 'Not compared: no preference set.', name)
 
 
 def card(data, ctx):
@@ -74,4 +101,6 @@ def card(data, ctx):
 
 
 def matched(data, nopref_key='_no_preference'):
-    return 'no_preference' if data.get(nopref_key) else data.get('match_state') or 'unknown'
+    """Comparison key, always a MATCH key: a match_state outside it reads as 'unknown'."""
+    m = data.get('match_state')
+    return 'no_preference' if data.get(nopref_key) else m if m in MATCH else 'unknown'

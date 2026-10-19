@@ -81,6 +81,11 @@ def name(a2):
     return BY_A2[a2]['name']
 
 
+def host_count(h):
+    """Hosts of one observed_hosting row: `host_count` wins over its alias `hosts`; None = not given."""
+    return h.get('host_count', h.get('hosts'))
+
+
 def entries(rows, preferred, compare=True):
     """Hosting rows + preferred countries -> view model.
     rows: payload observed_hosting[] ({country_code?, country, hosts | host_count, match_state?, reason_code?}).
@@ -96,7 +101,7 @@ def entries(rows, preferred, compare=True):
     compare = compare and bool(pref)
     hosted, offmap = [], []
     for h in rows:
-        hosts = h.get('host_count', h.get('hosts'))
+        hosts = host_count(h)
         raw = h.get('country_code') or h.get('country')
         if h.get('reason_code') == 'country_code_placeholder':
             kind, a2 = 'placeholder', None
@@ -107,8 +112,10 @@ def entries(rows, preferred, compare=True):
             if kind == 'unknown':
                 kind = 'unresolved'
                 qa.append(f'hosting country {raw!r} not resolved; counted off the map, not guessed')
-        if not a2:
-            offmap.append({'row': h, 'a2': None, 'hosts': hosts, 'kind': 'offmap', 'why': kind, 'raw': raw})
+        if not a2:      # code: the placeholder as sent; reason_code alone means the source's "XX"
+            code = (str(raw).strip().upper() if raw is not None else 'XX') if kind == 'placeholder' else None
+            offmap.append({'row': h, 'a2': None, 'hosts': hosts, 'kind': 'offmap', 'why': kind, 'raw': raw,
+                           'code': code})
             continue
         derived = 'match' if a2 in pref else 'mismatch'
         given = h.get('match_state')
@@ -514,13 +521,18 @@ def legend_items(vm):
 
 
 def offmap_line(vm):
+    """Off-map counter per reason (and placeholder code). A null host count is missing, not zero:
+    a group with one prints 'hosts … (count not available)'."""
     n = {}
     for e in vm['offmap']:
-        n[e['why']] = n.get(e['why'], 0) + (e['hosts'] or 0)
-    parts = [f'{v} host{"s" * (v != 1)} ' + {'unknown': 'with unknown location',
-                                            'placeholder': 'with the placeholder code “XX”',
-                                            'unresolved': 'with an unresolved country name'}[k]
-             for k, v in n.items()]
+        k = (e['why'], e.get('code'))
+        n[k] = None if k in n and n[k] is None or e['hosts'] is None else n.get(k, 0) + e['hosts']
+    parts = []
+    for (why, code), v in n.items():
+        what = {'unknown': 'with unknown location',
+                'placeholder': f'with the placeholder code “{code}”' if code else 'with a blank country code',
+                'unresolved': 'with an unresolved country name'}[why]
+        parts.append(f'hosts {what} (count not available)' if v is None else f'{v} host{"s" * (v != 1)} {what}')
     return ('Not placed on the map: ' + ', '.join(parts) + '.') if parts else None
 
 
@@ -596,14 +608,16 @@ class ResidencyMap(Flowable):
         lx, ly = min(corners, key=lambda p: land(*p))
         draw_locator(c, ch['vp'], ch['lon0'], lx, ly, lw)
         obstacles.append(('box', lx - 2, ly - 2, lx + lw + 2, ly + lh + 2))
-        hosts = {}
+        hosts = {}      # None = a row without a host count: the label prints the name alone
         for e in vm['hosted']:
-            hosts[e['a2']] = hosts.get(e['a2'], 0) + (e['hosts'] or 0)
+            a = e['a2']
+            hosts[a] = None if a in hosts and hosts[a] is None or e['hosts'] is None else hosts.get(a, 0) + e['hosts']
         items = []
         for a2 in ch['codes']:
             if a2 in v.by:
                 k = kind_of(vm, a2)
-                t = f'{name(a2)} · {hosts[a2]}' if a2 in hosts else f'{name(a2)} · preferred'
+                t = (name(a2) if hosts[a2] is None else f'{name(a2)} · {hosts[a2]}') if a2 in hosts \
+                    else f'{name(a2)} · preferred'
                 items.append((*v.pos(a2), t, T.HEADING if k in ('hosting', 'pref') and a2 in hosts else
                               COL[k] if k != 'match' else HexColor('#1F6E43')))
         place_labels(c, v, items, obstacles)

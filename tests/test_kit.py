@@ -1143,6 +1143,42 @@ def test_security_resourcing_review_fixes():                           # code re
     assert 'Reason not recorded' not in text, text
 
 
+def test_s07_s10_review_fixes():                                       # code review 2026-10-19
+    import gap_fixtures as GF
+    from cyberrank_report.sections import s07_data_sovereignty as S7, s09_legal_terms as S9, _shared as SH
+    text, issues = _gap('pref_edges_a')
+    assert ' None' not in text and 'Accepted jurisdictions Australia' in text            # snapshot preference
+    assert 'Cannot be compared No governing-law' in text                                  # unknown match word
+    assert '4 hosts Hosts observed 1 country Countries identified' in text                # host_count alias, dedupe
+    assert 'placeholder code “ZZ”) (not on the map)' in text and 'Reason not recorded' not in text
+    assert 'Login / payment portal Not available (not provided' in text and 'Detected' not in text
+    text, issues = _gap('pref_edges_b')
+    s07, s08 = text[:text.index('08 · ')], text[text.index('08 · '):]
+    assert 'Accepted jurisdictions No preference set' in s07 and 'Australia' not in s07   # enabled false
+    assert 'Preferred countries No preference set' in s08 and 'New Zealand' not in s08
+    assert 'Germany France · 3' in s08 and '· 0' not in s08 and '0 hosts' not in s08      # missing is not zero
+    assert 'hosts with unknown location (count not available)' in s08
+    assert 'Not available1' in s08 and 'Left blank in the assessment data' in s08         # sibling reason
+    assert {i['detail'].split(':')[0] for i in issues if i['check'] == 'state_adjusted'} >= \
+        {'Data sovereignty', 'Data residency'}
+    text, issues = _gap('pref_edges_c')
+    assert 'Not compared: no preference set.' in text and 'Governing law' not in text     # card only
+    assert 'clause found' not in text and 'Customer portal terms Detected' in text       # portal unknown
+    assert 'Login / payment portal Not available (not provided in the assessment data)' in text
+    text, _ = _gap('pref_edges_d')
+    assert text.count(GF.SOV_MATCH_TEXT) == 1                                             # reading = summary
+    assert '2 signals AI signals observed' in text
+    assert 'Findings' not in text[text.index('Areas an AI assessment rates'):]            # context: neutral
+    # flowable level: no empty Note, no crash on a NullReason narrative, {value} word gets its icon
+    sec = GF.pref_edges_d()['sections']['data_sovereignty']
+    assert not [f for f in S7._body(sec) if getattr(getattr(f, 'style', None), 'name', '').startswith('note')]
+    S7._body({**sec, 'narrative_source': {'value': None, 'reason_code': 'not_printed_in_source'}})
+    assert SH.matched({'match_state': 'partial'}) == 'unknown'
+    assert not isinstance(S9._tc_value({'value': 'Yes'}), (dict, str))
+    assert S9._portal({'portal_detected': {'value': None, 'reason_code': 'x'}}, []) is None
+    assert S9._portal({}, S9._raw({'rows': [{'label': 'Portal URL', 'value_source': 'Detected'}]})) is None
+
+
 def test_privacy_holds_no_subarea_content_and_alias_lifts_old_shape():
     import gap_fixtures as G
     from cyberrank_report.build import validate
@@ -1454,6 +1490,10 @@ def test_residency_off_map_and_no_preference():
     nop = _vm('nopref')
     assert not nop['compare'] and {e['kind'] for e in nop['hosted']} == {'hosting'} and not nop['pref']
     assert G.legend_items(nop) == ['hosting']
+    vm = G.entries([{'country_code': 'ZZ', 'hosts': 2}, {'country': None, 'reason_code': 'location_unknown',
+                                                       'hosts': None, 'hosts_reason_code': 'blank_in_source'}], [])
+    assert G.offmap_line(vm) == ('Not placed on the map: 2 hosts with the placeholder code “ZZ”, hosts with '
+                                 'unknown location (count not available).'), G.offmap_line(vm)
 
 
 def test_residency_section_pages():

@@ -48,8 +48,8 @@ def _observations(data, ctx):
         out.append(c.P('Recorded during data collection. These observations are not an assessment result: '
                        'they are not rated, not scored and not counted in the IISRI rating.', 'body',
                        textColor=ctx.t.MUTED))
-    signals = [s for s in obs.get('signals_observed') or [] if isinstance(s, dict)]
-    rows = _area_rows(obs, ctx)
+    signals = _signals(obs)
+    rows = _area_rows(obs, ctx, context_only)
     if obs.get('text_source'):      # always quoted in full: the tables carry only parts of it
         out += [c.heading(obs.get('subtitle_source') or 'Narrative as recorded', 3), c.P(obs['text_source'])]
     if signals:
@@ -71,19 +71,29 @@ def _observations(data, ctx):
     return out
 
 
-def _area_rows(obs, ctx):
+def _signals(obs):
+    """Signal objects as the table prints them (non-object items are skipped, and not counted)."""
+    sig = obs.get('signals_observed')
+    return [s for s in sig if isinstance(s, dict)] if isinstance(sig, list) else []
+
+
+def _area_rows(obs, ctx, context_only):
+    """Status chips: the narrative conclusion is never rated ('Observation'); in context mode a result
+    state (e.g. findings) is not shown either, so the rows stay neutral under the 'not rated' disclaimer."""
     c, rows = ctx.c, []
+    observation = c.chip('Observation', ctx.t.SLATE_400, dense=True)
+
+    def status(state):
+        return observation if context_only and state not in NO_RESULT else c.state_chip(state, dense=True)
     if obs.get('stated_conclusion_source'):
         rows.append(['AI use in the service', obs['stated_conclusion_source'],
-                     c.state_chip(ctx.state, dense=True)])
-    if rows and obs.get('is_assessment_result') is True and ctx.state not in NO_RESULT:   # narrative, not rated
-        rows[0][2] = c.chip('Observation', ctx.t.SLATE_400, dense=True)
+                     observation if ctx.state not in NO_RESULT else c.state_chip(ctx.state, dense=True)])
     for key, label in AREAS:
         v = obs.get(key)
         if not isinstance(v, dict):
             continue
         text = v.get('source_label') or (c.missing_text(v) if c.is_missing(v) else _label({}, v.get('value')))
-        rows.append([label, text, c.state_chip(v.get('state') or ctx.state, dense=True)])
+        rows.append([label, text, status(v.get('state') or ctx.state)])
     return rows
 
 
@@ -94,7 +104,7 @@ def build_context(data, ctx):
 def build(data, ctx):
     c = ctx.c
     items = [m for m in data.get('metrics') or [] if isinstance(m, dict)]
-    signals = (data.get('narrative_observation') or {}).get('signals_observed')
-    if signals is not None:
-        items.append({'label': 'AI signals observed', 'value': len(signals), 'unit': 'signals'})
+    obs = data.get('narrative_observation') or {}
+    if isinstance(obs.get('signals_observed'), list):      # counts the rows the signals table prints
+        items.append({'label': 'AI signals observed', 'value': len(_signals(obs)), 'unit': 'signals'})
     return ([c.kpi_strip(items, per_row=3)] if items else []) + _observations(data, ctx)

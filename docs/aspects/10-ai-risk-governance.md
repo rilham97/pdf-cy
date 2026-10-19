@@ -39,14 +39,14 @@ Items 5–10 print only when `narrative_observation` is a non-empty object.
 | `…signals_observed[].method` | "Method" cell, mapped label | Same fallback |
 | `…signals_observed[].example_source` | "Example as recorded" cell, verbatim | "Not available (no example recorded)" |
 | `narrative_observation.stated_conclusion_source` | First areas row "AI use in the service" (verbatim); downplay check | Row omitted |
-| `narrative_observation.{annex_iii_high_risk_sector, public_ai_policy, privacy_policy_ai_disclosure}` (objects) | Areas rows: text = `source_label`, else "Not available (<reason>)" if value null, else value humanised (`not_found` → "Not found"); chip = its `state` | Non-object → row skipped; no `state` → section state chip |
+| `narrative_observation.{annex_iii_high_risk_sector, public_ai_policy, privacy_policy_ai_disclosure}` (objects) | Areas rows: text = `source_label`, else "Not available (<reason>)" if value null, else value humanised (`not_found` → "Not found"); chip = its `state` (context mode: a result state shows the neutral "Observation" chip) | Non-object → row skipped; no `state` → section state |
 
 ## Hardcoded in the generator
 
 | Text or label (exact) | Where it prints | Notes |
 |---|---|---|
 | "Run the AI risk and governance module for this organisation. It rates the areas listed below; the observations shown here are then replaced by assessed results." | Card, "How it becomes assessed" (state `not_assessed`, no payload `next_step`) | `s10:24-25, 33-34` |
-| "AI signals observed" (unit signals) | KPI tile | `s10:99` |
+| "AI signals observed" (unit signals) | KPI tile | `s10:109` |
 | "Observations recorded for context" / "What was observed" | H2 | `s10:46` |
 | "Recorded during data collection. These observations are not an assessment result: they are not rated, not scored and not counted in the IISRI rating." | Muted paragraph, context mode | `s10:48-50` |
 | "Narrative as recorded" | H3 fallback | `s10:54` |
@@ -56,9 +56,9 @@ Items 5–10 print only when `narrative_observation` is a non-empty object.
 | "Not recorded" | Empty signal / method code | `s10:30` |
 | "The recorded conclusion (“<conclusion>”) sits beside N AI signal(s) observed above. The assessment data does not explain how the signals were weighed, so the two are shown as recorded and not reconciled here." | Note | `s10:64-66` |
 | "Areas an AI assessment rates" / "Areas rated"; heads "Area", "Recorded reading" / "Result", "Status" | Areas block | `s10:68-70` |
-| "AI use in the service" | First areas row label | `s10:77` |
+| "AI use in the service" | First areas row label | `s10:89` |
 | "EU AI Act Annex III high-risk sector", "Public AI policy", "AI use explained in the privacy policy" | Areas row labels | `s10:21-23` |
-| "Observation" (grey square chip) | Status of "AI use in the service" in result mode | `s10:79-80` |
+| "Observation" (grey square chip) | Status of "AI use in the service" in every result state; status of an area row in context mode when its state is a result state | `s10:84-90` |
 
 No `pol()` policy override keys.
 
@@ -67,24 +67,24 @@ No `pol()` policy override keys.
 | Condition | What prints | Code |
 |---|---|---|
 | `narrative_observation` missing or `{}` | Items 5–10 omitted | `s10:39-41` |
-| `is_assessment_result` is not `true` OR state is `not_assessed` / `not_applicable` / `unavailable` | Context mode: H2 "Observations recorded for context", disclaimer, "Areas an AI assessment rates", column "Recorded reading" | `s10:42, 46-50, 68-69` |
-| `is_assessment_result` is `true` AND result state | Result mode: H2 "What was observed", "Areas rated", column "Result"; "AI use in the service" chip = "Observation" | `s10:42, 79-80` |
+| `is_assessment_result` is not `true` OR state is `not_assessed` / `not_applicable` / `unavailable` | Context mode: H2 "Observations recorded for context", disclaimer, "Areas an AI assessment rates", column "Recorded reading"; no result chip ("Findings", "No findings", …) in the areas table: those rows show "Observation" | `s10:42, 46-50, 68-69, 86-87` |
+| `is_assessment_result` is `true` AND result state | Result mode: H2 "What was observed", "Areas rated", column "Result"; "AI use in the service" chip = "Observation" | `s10:42, 88-90` |
 | `is_assessment_result` is `true` AND no-result state | Context mode + QA `data_mismatch` | `s10:43-45` |
 | `text_source` set | Narrative H3 + paragraph | `s10:53-54` |
-| `signals_observed` has object items | Signals table | `s10:55-60` |
+| `signals_observed` has object items | Signals table (non-object items skipped) | `s10:51, 55-60, 74-77` |
 | signals present AND `stated_conclusion_source` matches `unlikely`, `no evidence`, `does not use`, `do not use`, `not use AI`, `no material` (whole words, any case) | Reconciliation note | `s10:15, 62-66` |
-| `stated_conclusion_source` set | "AI use in the service" row with section state chip | `s10:76-78` |
-| Area value is an object | Area row; text: `source_label` → missing text → humanised value | `s10:81-86` |
-| Area has no `state` | Chip uses section state | `s10:86` |
-| `signals_observed` key present (even empty list) | "AI signals observed" tile = its length | `s10:97-99` |
+| `stated_conclusion_source` set | "AI use in the service" row; chip "Observation" in a result state, the section state chip in a no-result state | `s10:88-90` |
+| Area value is an object | Area row; text: `source_label` → missing text → humanised value | `s10:91-96` |
+| Area has no `state` | Chip uses section state (context mode: "Observation" when that is a result state) | `s10:96` |
+| `signals_observed` is a list (even empty) | "AI signals observed" tile = number of object items (the rows the signals table prints); other items are not counted | `s10:74-77, 107-109` |
 | state `not_assessed` and no payload `next_step` | Card gets NEXT_STEP | `s10:33-34` |
-| no-result state | Card + items 5–10 (first block kept with the card); no KPI | `__init__.py:205-209`, `s10:90-91` |
+| no-result state | Card + items 5–10 (first block kept with the card); no KPI | `__init__.py:205-209`, `s10:100-101` |
 
 ## Computed by the generator
 
 | Value | Formula / source fields | Code |
 |---|---|---|
-| AI signals observed | `len(narrative_observation.signals_observed)` | `s10:97-99` |
+| AI signals observed | number of object items in `narrative_observation.signals_observed` | `s10:74-77, 107-109` |
 | Context vs result mode | `is_assessment_result` + section state | `s10:42` |
 | Downplay detection | regex on `stated_conclusion_source` | `s10:15, 63` |
 | Humanised codes | `code.replace('_', ' ').capitalize()` | `s10:28-30` |

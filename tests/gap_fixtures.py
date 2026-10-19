@@ -442,6 +442,77 @@ def privacy_c():
     return r
 
 
+# --- 07-10 review fixes (2026-10-19) --------------------------------------------------------
+SNAP_PREF = {'preferences_at_assessment': {'sovereignty_allowed_jurisdictions': ['Australia'],
+                                           'residency_allowed_countries': ['AU']}}
+SOV_MATCH_TEXT = ('The governing law found is within the accepted jurisdictions (Australia), compared with the '
+                  'preference set by the report owner/requestor.')
+
+
+def _secs(r, **secs):
+    r['sections'].update(secs)
+    return r
+
+
+def pref_edges_a():
+    """No allowed_set -> snapshot preference; 07 unknown match_state word + null narrative; 08 host_count
+    alias only, one country sent as code and name, placeholder 'ZZ' without a reason_code; 09 only a null
+    portal flag."""
+    return _secs(base(**SNAP_PREF), data_sovereignty={
+        'state': 'findings', 'enabled': True, 'summary': 'Synthetic: preference from the snapshot.',
+        'observed_jurisdiction': {'value': 'Singapore'}, 'match_state': 'partial',
+        'narrative_source': {'value': None, 'reason_code': 'not_printed_in_source'}},
+        data_residency={'state': 'findings', 'enabled': True, 'summary': 'Synthetic: host_count alias.',
+                        'match_state': 'match', 'observed_hosting': [
+                            {'country_code': 'AU', 'host_count': 2}, {'country': 'Australia', 'host_count': 1},
+                            {'country_code': 'ZZ', 'host_count': 1}]},
+        legal_terms={'state': 'findings', 'summary': 'Synthetic: portal flag only, not recorded.',
+                     'portal_detected': {'value': None, 'reason_code': 'not_printed_in_source'}})
+
+
+def pref_edges_b():
+    """enabled false with countries still in allowed_set (not listed); 08 null host counts with their own
+    sibling reason, on the map (A2) and off it."""
+    return _secs(base(), data_sovereignty={
+        'state': 'findings', 'enabled': False, 'allowed_set': ['Australia'], 'summary': 'Synthetic: switched off.',
+        'observed_jurisdiction': {'value': 'Singapore'}, 'match_state': 'mismatch'},
+        data_residency={'state': 'findings', 'enabled': False, 'allowed_set': ['NZ'],
+                        'summary': 'Synthetic: switched off, counts missing.', 'observed_hosting': [
+                            {'country_code': 'DE', 'hosts': None, 'hosts_reason_code': 'blank_in_source'},
+                            {'country_code': 'FR', 'hosts': 3},
+                            {'country': None, 'hosts': None, 'hosts_reason_code': 'blank_in_source',
+                             'reason_code': 'location_unknown'}]})
+
+
+def pref_edges_c():
+    """07 no preference and nothing observed (NullReason) -> card only; 09 portal flag null with its reason,
+    a different 'portal' label, a {value} clause word."""
+    return _secs(base(), data_sovereignty={
+        'state': 'findings', 'enabled': True, 'allowed_set': [], 'summary': 'Synthetic: nothing to compare.',
+        'observed_jurisdiction': {'value': None, 'reason_code': 'not_identified'}},
+        legal_terms={'state': 'findings', 'summary': 'Synthetic: portal flag not recorded.',
+                     'portal_detected': {'value': None, 'reason_code': 'not_printed_in_source'}, 'rows': [
+                         {'label': 'Customer portal terms', 'value_source': 'Detected'},
+                         {'label': 'Protects customer data', 'value_source': {'value': 'Yes'}},
+                         {'label': 'Notifies on breach', 'value_source': '# No'}]})
+
+
+def pref_edges_d():
+    """07 summary equal to the generated reading + a source verdict without narrative; 10 narrative as
+    context while the section has a result state, one non-object signal."""
+    return _secs(base(), data_sovereignty={
+        'state': 'findings', 'enabled': True, 'allowed_set': ['Australia'], 'summary': SOV_MATCH_TEXT,
+        'observed_jurisdiction': {'value': 'Australia'}, 'match_state': 'match', 'verdict_source': 'matches'},
+        ai_risk_governance={'state': 'findings', 'summary': 'Synthetic: narrative only, flagged as context.',
+                            'narrative_observation': {
+                                'is_assessment_result': False,
+                                'stated_conclusion_source': 'AI is used for customer support.',
+                                'signals_observed': [
+                                    {'signal': 'ai_infrastructure', 'method': 'csp_header_analysis'},
+                                    {'signal': 'ai_hiring', 'method': 'careers_pages'}, 'stray text'],
+                                'public_ai_policy': {'value': 'not_found', 'state': 'findings'}}})
+
+
 def vulns_c():
     """N7 scanned domains / subdomains list; N8 active scan results (Clean / Scanned, reported vs listed
     counts, informational findings); a High severity finding."""
@@ -669,6 +740,11 @@ VARIANTS = [
     ('overview_sector', ['N1 sector', 'N2 band display'], 's01', overview_sector),
     ('actions_remediation', ['N3 issue actions', 'N4 remediation impact'], 's02', actions_remediation),
     ('privacy_c', ['N5 XX', 'N6 roles found', 'P owner/requestor'], PRIVACY_SET, privacy_c),
+    ('pref_edges_a', ['snapshot preference', 'match_state word', 'host_count alias', 'ZZ', 'portal flag null'],
+     ('s07', 's08', 's09'), pref_edges_a),
+    ('pref_edges_b', ['enabled false lists nothing', 'null host counts'], ('s07', 's08'), pref_edges_b),
+    ('pref_edges_c', ['no preference, nothing observed', 'portal flag null'], ('s07', 's09'), pref_edges_c),
+    ('pref_edges_d', ['summary = reading', 'context chips', 'signal count'], ('s07', 's10'), pref_edges_d),
     ('vulns_c', ['N7 scanned assets', 'N8 active scan', 'High'], 's04', vulns_c),
     ('vendors_profile', ['N9 vendor profile'], 's14', vendors_profile),
     ('vendors_self12', ['s14 self-reference', 'alias', 'assessed_at'], 's14', vendors_self12),

@@ -3,7 +3,7 @@ compared with the jurisdictions accepted by the report owner/requestor.
 
 Copy follows match_state, not the source narrative; the source's own verdict is quoted beside it.
 With no preference set (enabled false or an empty allowed set) the observed data still prints,
-marked 'Not compared: no preference set'.
+marked 'Not compared: no preference set'. allowed_set absent -> the snapshot preference.
 """
 from .. import components as C
 from . import _shared as S
@@ -19,15 +19,17 @@ TEXT = {
 
 
 def adjust(data, report):
-    observed = data.get('observed_jurisdiction') is not None
-    return S.adjust_compared(data, observed, data.get('allowed_set') or data.get('observed_jurisdiction'))
+    data = S.with_snapshot_pref(data, report, 'sovereignty_allowed_jurisdictions')
+    observed = not C.is_missing(data.get('observed_jurisdiction'))
+    return S.adjust_compared(data, observed, data.get('allowed_set') or data.get('observed_jurisdiction'),
+                             'Data sovereignty')
 
 
 card = S.card
 
 
 def _text(data):
-    return TEXT.get(S.matched(data), '').format(allowed=S.join(data.get('allowed_set')), owner=S.OWNER) or None
+    return TEXT[S.matched(data)].format(allowed=S.join(S.allowed(data)), owner=S.OWNER)
 
 
 def verdict(data, ctx):
@@ -42,20 +44,21 @@ def _body(data):
     else:
         found_cell = str(S.val(found))
     match = S.matched(data)
-    pairs = [('Governing law / courts found', found_cell), ('Accepted jurisdictions', S.join(data.get('allowed_set'))),
+    pairs = [('Governing law / courts found', found_cell), ('Accepted jurisdictions', S.join(S.allowed(data))),
              ('Against the preference', S.match_chip(match))]
     said = C.val(data.get('verdict_source'))
     if said:      # the source's own verdict, quoted; our reading is the row above it
         pairs.append(('Source verdict', f'“{said}”'))
     out = [C.key_value_list(pairs)]
-    if data.get('summary'):      # the opener carries the payload summary: our reading prints here
+    if data.get('summary') and _text(data) != data['summary']:      # the opener carries the summary
         out.append(C.P(_text(data), spaceBefore=6))
     out += S.quote(data)
-    if said or data.get('narrative_source'):
-        src = f'Source text: “{data["narrative_source"].strip()}”' if data.get('narrative_source') else ''
-        why = (' Review note: the source prints a verdict, but no governing-law clause was identified, so this '
-               'report reads the comparison as “Cannot be compared” until the clause is confirmed.'
-               if said and match == 'unknown' else '')
+    told = str(C.val(data.get('narrative_source')) or '').strip()      # a NullReason prints nothing
+    src = f'Source text: “{told}”' if told else ''
+    why = (' Review note: the source prints a verdict, but no governing-law clause was identified, so this '
+           'report reads the comparison as “Cannot be compared” until the clause is confirmed.'
+           if said and match == 'unknown' else '')
+    if (src + why).strip():
         out.append(C.note((src + why).strip()))
     return out
 

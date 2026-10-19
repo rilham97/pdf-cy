@@ -29,8 +29,9 @@ def _hosting(data):
 
 
 def adjust(data, report):
+    data = S.with_snapshot_pref(data, report, 'residency_allowed_countries')
     out = S.adjust_compared(data, bool(data.get('observed_hosting')),
-                            data.get('allowed_set') or data.get('observed_hosting'))
+                            data.get('allowed_set') or data.get('observed_hosting'), 'Data residency')
     intro = out.get('intro_source')
     if isinstance(intro, str) and 'where you allow data to live' in intro:   # preference = report owner/requestor's
         out = {**out, 'intro_source': intro.replace('where you allow data to live',
@@ -42,7 +43,7 @@ card = S.card
 
 
 def _text(data):
-    return TEXT.get(S.matched(data), '').format(allowed=S.join(data.get('allowed_set')), owner=S.OWNER) or None
+    return TEXT[S.matched(data)].format(allowed=S.join(S.allowed(data)), owner=S.OWNER)
 
 
 def verdict(data, ctx):
@@ -50,17 +51,39 @@ def verdict(data, ctx):
 
 
 def metrics(data):
-    """Payload metrics, else hosts observed + countries identified from the hosting rows."""
+    """Payload metrics, else hosts observed + countries identified from the hosting rows (only when every
+    row gives an int host count; countries = distinct resolved ISO codes, placeholders and unresolved
+    names not counted)."""
     ms = [m for m in data.get('metrics') or [] if isinstance(m, dict)]
     rows = _hosting(data)
-    if ms or not rows or not all(isinstance(h.get('hosts'), int) for h in rows):
+    if ms or not rows or not all(isinstance(G.host_count(h), int) for h in rows):
         return ms
     st = data.get('state')
-    return [{'id': 'hosts_observed', 'label': 'Hosts observed', 'value': sum(h['hosts'] for h in rows),
+    countries = {e['a2'] for e in G.entries(rows, [], compare=False)['hosted']}
+    return [{'id': 'hosts_observed', 'label': 'Hosts observed', 'value': sum(G.host_count(h) for h in rows),
              'unit': 'hosts', 'state': st},
-            {'id': 'countries_identified', 'label': 'Countries identified',
-             'value': len({h.get('country_code') or h['country'] for h in rows
-                                       if h.get('country_code') or h.get('country')}), 'unit': 'countries', 'state': st}]
+            {'id': 'countries_identified', 'label': 'Countries identified', 'value': len(countries),
+             'unit': 'countries', 'state': st}]
+
+
+def _hosts_cell(h):
+    """Host count, or the null with its own reason (sibling `<field>_reason_code` / `_reason`)."""
+    n = G.host_count(h)
+    if n is not None:
+        return n
+    f = 'host_count' if 'host_count' in h else 'hosts'
+    return {'value': None, 'reason': h.get(f'{f}_reason'),
+            'reason_code': h.get(f'{f}_reason_code') or (None if h.get(f'{f}_reason') else 'not_tracked')}
+
+
+def _offmap_label(e):
+    h, code = e['row'], e.get('code')
+    if e['why'] == 'unresolved':
+        return f"{e['raw']}: country name not recognised"
+    if e['why'] == 'placeholder' and not (h.get('reason') or h.get('state_reason')):
+        return (f'Location not identified (the source printed the placeholder code “{code}”)' if code
+                else 'Location not identified (blank country code)')
+    return C.sentence(C.reason_text(h))[:-1]
 
 
 def _rows(vm, choice, nopref, notes, with_ev):
@@ -68,11 +91,9 @@ def _rows(vm, choice, nopref, notes, with_ev):
     hosts, then the hosts not placed on the map. Key cell = the map shape."""
     ev = lambda h: [h.get('evidence_kind') or {'value': None, 'reason_code': 'not_printed_in_source'}] \
         if with_ev else []                                                                  # noqa: E731
-    hosts = lambda h: h.get('host_count', h.get('hosts')) if h.get('host_count', h.get('hosts')) is not None \
-        else {'value': None, 'reason_code': 'not_tracked'}                                  # noqa: E731
     rows = []
     for e in vm['hosted']:
-        rows.append([G.Marker(e['kind']), f"{G.name(e['a2'])} ({e['a2']})", hosts(e['row']),
+        rows.append([G.Marker(e['kind']), f"{G.name(e['a2'])} ({e['a2']})", _hosts_cell(e['row']),
                      S.match_chip('no_preference' if nopref else e['kind'])] + ev(e['row']))
     for a2 in vm['pref_only']:
         rows.append([G.Marker('pref'), f'{G.name(a2)} ({a2})', 'None observed',
@@ -87,15 +108,13 @@ def _rows(vm, choice, nopref, notes, with_ev):
         elif row_match == 'mismatch':
             notes.append('A host of unknown location is counted as outside the preferred countries, as '
                          'recorded in the assessment data.')
-        label = (f"{e['raw']}: country name not recognised" if e['why'] == 'unresolved'
-                 else C.sentence(C.reason_text(h))[:-1])
-        rows.append([G.Marker('offmap'), C.P(label + ' (not on the map)', 'cell_muted'), hosts(h),
+        rows.append([G.Marker('offmap'), C.P(_offmap_label(e) + ' (not on the map)', 'cell_muted'), _hosts_cell(h),
                      S.match_chip(row_match)] + ev(h))
     return rows
 
 
 def _body(data):
-    allowed = list(data.get('allowed_set') or [])
+    allowed = S.allowed(data)
     hosting = _hosting(data)
     nopref = data.get('_no_preference')
     match = S.matched(data)
@@ -103,7 +122,7 @@ def _body(data):
     if not hosting:
         pairs.insert(0, ('Hosts observed', {'value': None, 'reason_code': 'not_printed_in_source'}))
     out = [C.key_value_list(pairs)]
-    if data.get('summary'):      # the opener carries the payload summary: our reading prints here
+    if data.get('summary') and _text(data) != data['summary']:      # the opener carries the summary
         out.append(C.P(_text(data), spaceBefore=6))
     # the fixed caveat replaces a payload note that says the same (IP location is not proof of storage)
     notes = [data['note']] if data.get('note') and 'ip location' not in data['note'].lower() else []
