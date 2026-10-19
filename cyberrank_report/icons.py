@@ -46,8 +46,8 @@ GAP_EM = 0.4           # visible gap between icon and label (x font size, or ico
 
 # --- colour (theme tokens) -------------------------------------------------------
 SEVERITY = T.SEVERITY     # Critical / High / Medium / Low; quantum 'Moderate' shares Medium
-# state -> icon colour (theme.STATE accent = theme.status_color; 'findings' navy)
-STATE_COLOR = {s: T.STATE[s]['accent'] for s in T.STATES}
+# state -> icon colour (theme.STATE accent = theme.status_color; 'findings' orange, 'identified' navy)
+STATE_COLOR = {s: v['accent'] for s, v in T.STATE.items()}
 
 # --- registry: key -> Phosphor regular icon (svg/<name>.svg) or a CUSTOM path ------
 ICONS = {
@@ -76,6 +76,7 @@ ICONS = {
     'partial': 'half-ring',
     'pending_review': 'hourglass-medium',
     'none_identified': 'ring',
+    'identified': 'dot-ring',
     # yes / no clauses
     'yes': 'check',
     'no': 'x',
@@ -90,7 +91,10 @@ ICONS = {
 # half solid (Harvey ball, filled clockwise from 12). One path, hole wound opposite.
 CUSTOM = {'half-ring': 'M128,24A104,104,0,0,1,128,232A104,104,0,0,1,128,24ZM128,40A88,88,0,0,0,128,216Z',
           # empty ring (none identified): same ring, both halves open
-          'ring': 'M128,24A104,104,0,0,1,128,232A104,104,0,0,1,128,24ZM128,40A88,88,0,0,0,128,216A88,88,0,0,0,128,40Z'}
+          'ring': 'M128,24A104,104,0,0,1,128,232A104,104,0,0,1,128,24ZM128,40A88,88,0,0,0,128,216A88,88,0,0,0,128,40Z',
+          # identified: the same ring with a solid centre (something is there; neutral)
+          'dot-ring': 'M128,24A104,104,0,0,1,128,232A104,104,0,0,1,128,24ZM128,40A88,88,0,0,0,128,216A88,88,0,0,0,128,40Z'
+                      'M128,92A36,36,0,0,1,128,164A36,36,0,0,1,128,92Z'}
 
 # --- severity: siren ---------------------------------------------------------------
 # scale -> source term -> (label, siren key). Same key = same icon everywhere.

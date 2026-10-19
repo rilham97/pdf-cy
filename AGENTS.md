@@ -3,7 +3,8 @@
 Turns one assessment **payload** (JSON, sent by the Cyberrank backend) into the customer-facing
 "Cyber Risk Report" PDF. The report reader is a non-technical customer; the product owner reviews every
 visual change. How to install/run and the folder layout: [README.md](README.md). Every payload field:
-[data/report-schema.md](data/report-schema.md).
+[data/report-schema.md](data/report-schema.md). Per section — what comes from the payload, what is hardcoded, which
+if/else rules decide what prints: [docs/aspects/](docs/aspects/README.md) (update the section's file when you change it).
 
 ## Pipeline
 
@@ -53,6 +54,10 @@ Each was asked for or approved by the product owner; changing one needs their ap
 - Colour speaks but stays quiet: `theme.STATUS` / `status_color()` — green good, red genuine failure,
   orange attention, grey neutral, blue only for structure. Colour sits on small markers only; label text,
   rows and card backgrounds stay neutral.
+- State names: "Findings" means weaknesses only (as in the old reports) and is orange; severity sirens and
+  scores say how serious. Inventory / good-news sections (02, 12–15, `theme.INVENTORY`) show the payload state
+  `findings` as "Identified" (blue, display-only via `theme.shown_state`; never a payload value). 01 shows no
+  chip unless partial / unavailable / ….
 - Motif (network dot field) sits at the page bottom **behind** text like a watermark, plus the
   CYBERRANK outline watermark. QA ignores the motif band.
 - Appendix C's "Supply-chain aggregation" page is a production page inserted **unchanged** (no overlay,

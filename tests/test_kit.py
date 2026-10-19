@@ -813,7 +813,7 @@ def test_new_sections_render_in_every_state():
             assert total and counts['error'] == 0, (sid, st, json.loads(out.with_suffix('.qa.json').read_text()))
             spec = BY_ID[sid]
             assert f'{spec.number} · ASSESSMENT DETAILS'.upper() in text.upper() and spec.title in text, (sid, st)
-            assert T.STATE[st]['label'] in text, (sid, st)
+            assert T.STATE[T.shown_state(st, spec.key)]['label'] in text, (sid, st)
             if st in ('not_assessed', 'not_applicable', 'unavailable', 'clear', 'partial', 'pending_review'):
                 assert C.CARD_TITLES[st] in text, (sid, st)                         # state card
             if st == 'findings':                                                    # body + verdict
@@ -1250,7 +1250,7 @@ def test_severity_column_second_and_centred():
 
 
 # --- semantic status colours (user decision 2026-10-15: restrained, colour only on the marker) -----------
-STATUS_LABELS = {   # printed status label -> tone ('findings' = navy structure); 'Valid' is ambiguous (DNS vs breach)
+STATUS_LABELS = {   # printed status label -> tone ('Findings' orange, 'Identified' navy); 'Valid' is ambiguous (DNS vs breach)
     **dict.fromkeys(('No findings', 'Resolved', 'Matches the preference', 'Enabled', 'Redirects to HTTPS',
                      'Approved', 'Approved by team', 'Approved automatically on upload'), 'good'),
     **dict.fromkeys(('Does not match the preference', 'Not enabled', 'Missing or invalid', 'Invalid', 'Weak',
@@ -1261,7 +1261,7 @@ STATUS_LABELS = {   # printed status label -> tone ('findings' = navy structure)
     **dict.fromkeys(('Not assessed', 'Not applicable', 'None identified', 'Not compared: no preference set',
                      'Not recorded', 'Not reported', 'State not recorded', 'No PQC detected', 'PQC not reported'),
                     'neutral'),
-    'Findings': 'findings',
+    'Findings': 'attention', 'Identified': 'identified',
 }
 
 
@@ -1296,11 +1296,12 @@ def _status_markers(pdf):
 
 def test_status_colours_are_semantic_and_restrained():
     """Every status marker in the four reports uses its STATUS token (never navy / sapphire, except the
-    'Findings' state); its label stays BODY; no text run anywhere is drawn in a status colour."""
+    'Identified' state); its label stays BODY; no text run anywhere is drawn in a status colour."""
     import pymupdf
     hexs = lambda c: '#%02X%02X%02X' % tuple(round(v * 255) for v in c.rgb())
-    want = {**{k: hexs(c) for k, c in T.STATUS.items()}, 'findings': hexs(T.NAVY)}
-    assert all(T.STATE[s]['accent'] == (T.NAVY if s == 'findings' else T.status_color(s)) for s in T.STATES)
+    want = {**{k: hexs(c) for k, c in T.STATUS.items()}, 'identified': hexs(T.NAVY)}
+    assert T.STATE['findings']['accent'] == T.STATUS['attention'] and T.STATE['identified']['accent'] == T.NAVY
+    assert all(T.STATE[s]['accent'] == T.status_color(s) for s in T.STATES if s != 'findings')
     assert len({T.STATE[s]['bg'] for s in T.STATES}) == 1, 'no status-tinted card fills'
     structure = {hexs(T.NAVY), hexs(T.SAPPHIRE)}
     status_ink = {hexs(c) for c in T.STATUS.values()} - {hexs(T.MUTED)}
@@ -1310,7 +1311,7 @@ def test_status_colours_are_semantic_and_restrained():
         assert len(marks) >= 15, (name, len(marks))
         wrong = [m for m in marks if m[2] != want[STATUS_LABELS[m[1]]]]
         assert not wrong, (name, wrong[:10])
-        assert not [m for m in marks if m[2] in structure and STATUS_LABELS[m[1]] != 'findings'], name
+        assert not [m for m in marks if m[2] in structure and STATUS_LABELS[m[1]] != 'identified'], name
         assert not [m for m in marks if m[3] != hexs(T.BODY)], (name, [m for m in marks if m[3] != hexs(T.BODY)][:5])
         for page in pymupdf.open(pdf):
             if 'Supply-chain aggregation' in page.get_text() and '2 / 2' in page.get_text():

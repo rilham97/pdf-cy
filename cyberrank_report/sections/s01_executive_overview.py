@@ -550,7 +550,7 @@ def scores_block(rows, pages):
 def checklist_block(rows, pages):
     def item(r):
         return [[_name(r[0], r[1], pages), c.M(result_markup(r[3]), 'dense')],
-                c.state_chip(r[4], dense=True)]
+                c.state_chip(T.shown_state(r[4], r[0].key), dense=True)]
     w = [T.COL2 - 92, 92]
     half = (len(rows) + 1) // 2           # 13 aspects: 7 left, 6 right
     cols = []
@@ -655,7 +655,7 @@ def next_pointer(report, pages):
         split = ', '.join(f'{levels.count(p)} {p}' for p in dict.fromkeys(levels))
         what = f'{c.fmt_value(len(acts), "actions")} ({split})'
     else:
-        what = T.STATE.get(pa.get('state'), {}).get('label', 'no actions listed')
+        what = T.STATE.get(T.shown_state(pa.get('state'), 'priority_actions'), {}).get('label', 'no actions listed')
     return pointer_line(f'<b>Next</b>  {section_ref("priority_actions", report, pages)}  ·  {c.esc(what)}')
 
 

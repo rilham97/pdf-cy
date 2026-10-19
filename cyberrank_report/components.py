@@ -266,8 +266,11 @@ def verdict_row(state, verdict):
         c = state_chip(state)
         c.spaceBefore, c.spaceAfter = T.SP_XS, T.SP_MD
         return c
-    left = state_chip(state) if state else P('Summary', 'chip')
-    t = Table([[left, P(verdict or '', 'verdict')]], colWidths=[104, T.CW - 104], spaceAfter=T.SP_MD, hAlign='LEFT')
+    if state:
+        t = Table([[state_chip(state), P(verdict or '', 'verdict')]], colWidths=[104, T.CW - 104],
+                  spaceAfter=T.SP_MD, hAlign='LEFT')
+    else:          # no chip (01 overview, appendices): the verdict alone, full width; a 'Summary' label adds nothing
+        t = Table([[P(verdict or '', 'verdict')]], colWidths=[T.CW], spaceAfter=T.SP_MD, hAlign='LEFT')
     t.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 0),
@@ -281,6 +284,7 @@ def verdict_row(state, verdict):
 # --- state cards --------------------------------------------------------------
 CARD_TITLES = {
     'findings': 'Findings reported',
+    'identified': 'Identified',
     'clear': T.CLEAR_TITLE,
     'not_assessed': 'Not assessed in this report',
     'not_applicable': 'Not applicable for this assessment',

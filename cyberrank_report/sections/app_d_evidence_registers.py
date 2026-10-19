@@ -362,7 +362,7 @@ def d1_assets(report, as_of):
         f'One row per affected asset, sorted by highest severity, then number of findings, then name. '
         f'Showing {len(rows)} of {len(rows)}\u00a0assets.',
         f'Unit: affected assets; Findings counts finding types per asset. State: '
-        f'{T.STATE.get(info["state"], {}).get("label", "not recorded")}. Snapshot {as_of}.'], [key],
+        f'{T.STATE.get(T.shown_state(info["state"], BY_ID[info["sec"]].key), {}).get("label", "not recorded")}. Snapshot {as_of}.'], [key],
         legend=C.severity_legend([(k, [str(r.get('max_severity') or '').lower() for r in rows].count(k))
                                   for k in SEV_ORDER]))
     sev_w = max([C.head_width('Highest severity', dense=True)] +
@@ -514,7 +514,7 @@ def d3_vendors(report, sec, as_of):
         f'{rid}.1 lists all {n} connected organisations reported for {org}, sorted by grade, worst first; '
         f'organisations without a rating last. Showing {n} of {n}\u00a0organisations.',
         f'Unit: organisations (each listed name counts once; names are not merged). Grade and risk band as sent; '
-        f'the band is not derived from the grade. State: {T.STATE.get(info["state"], {}).get("label")}. '
+        f'the band is not derived from the grade. State: {T.STATE.get(T.shown_state(info["state"], BY_ID[info["sec"]].key), {}).get("label")}. '
         f'Snapshot {as_of}.'], ['fourth_party_register'])
     cols, w, entries = s14.register_entries(C, vendors, report)
     t = register_table(cols, entries, title=f'{rid}.1 Connected organisations', sec_id='s14', numeric_cols=(0,),
@@ -623,7 +623,7 @@ def _index(regs):
             where = (pages_link(prev, r['rid'], 'page reference pending') if r.get('flow')
                      else page_link(prev, r['anchor'] if r.get('anchor') in prev else BY_ID[r['sec']].anchor,
                                     f'Section {SEC_NUM[r["sec"]]}'))
-            rows.append([r['rid'], r['title'], C.state_chip(r['state'], dense=True) if r.get('state') else
+            rows.append([r['rid'], r['title'], C.state_chip(T.shown_state(r['state'], BY_ID[r['sec']].key), dense=True) if r.get('state') else
                          C.state_chip(None, dense=True),
                          r.get('content') or C.missing_text({'reason_code': 'not_printed_in_source'}),
                          C.M(where, 'dense')])

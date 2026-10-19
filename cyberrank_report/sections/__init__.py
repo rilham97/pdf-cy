@@ -191,14 +191,17 @@ def render_section(spec, report, identity, blueprint=False):
     mod = None if (blueprint or missing) else load(spec)
     verdict = data.get('summary') or (mod.verdict(data, ctx) if mod and hasattr(mod, 'verdict') else None)
     flow = [PageBreakIfNotEmpty()] if spec.new_page else []
-    flow += C.section_opener(spec.number, data.get('title') or spec.title, state,
+    shown = T.shown_state(state, spec.key)
+    if spec.key == 'executive_overview' and state == 'findings':
+        shown = None      # a summary has no 'results present' state: chip only for partial / unavailable ...
+    flow += C.section_opener(spec.number, data.get('title') or spec.title, shown,
                              verdict=verdict, intro=data.get('intro_source'),
                              key=spec.anchor, group=GROUPS[spec.group], icon=spec.key)
     if state in WITH_CARD or state in NO_RESULT:
         kw = default_card(data, state)
         if mod and hasattr(mod, 'card'):
             kw.update(mod.card(data, ctx))
-        flow.append(C.state_card(state, **kw))
+        flow.append(C.state_card(shown or state, **kw))
     if state in NO_RESULT:
         extra = mod.build_context(data, ctx) if mod and hasattr(mod, 'build_context') else []
         if extra:      # the first context block travels with the card (no short block alone overleaf)

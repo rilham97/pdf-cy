@@ -37,6 +37,7 @@ Aturan wajib di data (kalau dilanggar, program berhenti dan bilang salahnya di m
 - Dokumen sertifikat upload (opsional): `certificates[].document` = path file PNG/JPG/PDF, relatif ke file JSON.
 
 Daftar lengkap semua field: [data/report-schema.md](data/report-schema.md).
+Per aspek (data dari sistem, teks hardcode, aturan if/else): [docs/aspects/](docs/aspects/README.md).
 
 ### 3. Cetak reportnya
 

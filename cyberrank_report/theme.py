@@ -109,16 +109,27 @@ def status_color(key):
 
 # --- States -------------------------------------------------------------------
 STATES = ('findings', 'clear', 'not_assessed', 'not_applicable', 'unavailable', 'partial', 'pending_review',
-          'none_identified')
-STATE_LABELS = {'findings': 'Findings', 'clear': 'No findings', 'not_assessed': 'Not assessed',
+          'none_identified')      # payload enum; 'identified' is display-only (shown_state)
+STATE_LABELS = {'findings': 'Findings', 'identified': 'Identified', 'clear': 'No findings', 'not_assessed': 'Not assessed',
                 'not_applicable': 'Not applicable', 'unavailable': 'Unavailable', 'partial': 'Partial coverage',
                 'pending_review': 'Pending review',
                 # a list known to be empty where 'No findings' would overclaim (s14: no connected organisations)
                 'none_identified': 'None identified'}
-# label: chip text; accent: icon + card rule ('findings' stays navy: severity sirens carry severity);
+# label: chip text; accent: icon + card rule. 'Findings' (weaknesses, as in the old reports) is orange:
+# needs attention, severity sirens carry how much. 'Identified' (inventory / good news) is blue: neutral content.
 # bg: card fill, SURFACE for every state (no status-tinted backgrounds)
-STATE = {s: {'label': lbl, 'accent': NAVY if s == 'findings' else status_color(s), 'bg': SURFACE}
+STATE = {s: {'label': lbl, 'accent': {'findings': STATUS['attention'], 'identified': NAVY}.get(s) or status_color(s),
+             'bg': SURFACE}
          for s, lbl in STATE_LABELS.items()}
+# Sections whose results are an inventory or good news, not weaknesses (owner decision 2026-10-19): the payload
+# state 'findings' reads 'Identified' there. 'clear' keeps 'No findings' (in 12 it means roles found, nothing missing).
+INVENTORY = frozenset({'priority_actions', 'security_resourcing', 'certifications', 'fourth_party_vendors',
+                       'cloud_infrastructure'})
+
+
+def shown_state(state, section_key=None):
+    """The state a chip / card shows for a section: inventory sections never read 'Findings'."""
+    return 'identified' if state == 'findings' and section_key in INVENTORY else state
 CLEAR_TITLE = 'No findings within the scope and time of this check'
 
 # --- Spacing ------------------------------------------------------------------

@@ -159,7 +159,7 @@ def state_cards():
     out = sheet_opener('05', 'State cards', 'One card per state. clear never claims safety; '
                        'not_assessed is neutral grey, unavailable amber, partial a slim banner.')
     out += [C.heading('State chips', 3),
-            chip_grid([C.state_chip(s) for s in T.STATES], per_row=4),
+            chip_grid([C.state_chip(s) for s in T.STATE], per_row=4),
             C.heading('clear', 3),
             C.state_card('clear', 'No confirmed data leak events were associated with this organisation '
                          'during the assessed period', ['Data leak databases and public disclosures',

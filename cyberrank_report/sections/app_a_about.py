@@ -2,8 +2,9 @@
 + the result-state legend (how to read the chips used throughout the report)."""
 
 STATE_MEANING = {
-    'findings': 'Assessed; issues or items were reported. In inventory sections (certifications, '
-                'fourth-party vendors, cloud) this means items were observed, not that they are a risk.',
+    'findings': 'Assessed; weaknesses were reported. The severity marks and scores show how serious they are.',
+    'identified': 'Assessed; items were found in an inventory or good-news section (priority actions, security '
+                  'roles, certifications, fourth-party vendors, cloud). Not a risk by itself.',
     'clear': 'Assessed; nothing was found within the sources and period checked. It does not mean the '
              'organisation is safe.',
     'not_assessed': 'The module was not run for this report. No result is implied.',
@@ -11,6 +12,7 @@ STATE_MEANING = {
     'unavailable': 'The value could not be obtained or used. The reason is printed with it.',
     'partial': 'Only part of the scope was covered; the results cover the part shown.',
     'pending_review': 'A value exists but its meaning is unclear or contradicted; held for review.',
+    'none_identified': 'Assessed; nothing was found in an inventory section. Not a statement about risk.',
 }
 
 
