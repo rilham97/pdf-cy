@@ -11,6 +11,7 @@ from . import _shared as S
 
 YES_WORDS = {'detected': True, 'found': True, 'yes': True, 'true': True,
              'not detected': False, 'not found': False, 'no': False, 'false': False}
+PORTAL_LABEL = 'login / payment portal'
 
 
 def _has_data(data):
@@ -18,7 +19,7 @@ def _has_data(data):
 
 
 def adjust(data, report):
-    return S.adjust_switched_off(data, _has_data(data))
+    return S.adjust_switched_off(data, _has_data(data), name='Legal terms & conditions')
 
 
 card = S.card
@@ -37,8 +38,11 @@ def _flag(v):
 
 
 def _tc_value(v, status=None):
-    """A clause present is good, absent bad; status overrides (a portal is a fact, not a verdict)."""
-    w = _word(v)
+    """A clause present is good, absent bad; status overrides (a portal is a fact, not a verdict).
+    A NullReason stays as is (the key/value list prints 'Not available (reason)')."""
+    if C.is_missing(v):
+        return v
+    w = _word(S.val(v))
     if isinstance(w, bool) or (isinstance(w, str) and w.lower() in YES_WORDS):
         return I.yes_no_label(_flag(w), w if isinstance(w, str) else None, status=status)
     if isinstance(w, str) and w.lower().startswith(('http://', 'https://')):
@@ -47,18 +51,29 @@ def _tc_value(v, status=None):
     return w
 
 
+def _is_portal(r):
+    """The portal flag row: id `portal_detected` or the exact label "Login / Payment Portal" (any case)."""
+    return r.get('id') == 'portal_detected' or str(C.val(r.get('label')) or '').strip().lower() == PORTAL_LABEL
+
+
 def _raw(data):
+    """(label, value, is the portal flag row) per rows[] item."""
     return [(C.val(r.get('label')) or 'Row label not recorded',
-             r.get('value_source') if r.get('value_source') is not None else r.get('value'))
-            for r in data.get('rows') or []]
+             r.get('value_source') if r.get('value_source') is not None else r.get('value'), _is_portal(r))
+            for r in data.get('rows') or [] if isinstance(r, dict)]
+
+
+def _portal(data, raw):
+    """portal_detected (bool, yes/no word or {value}); missing or a NullReason -> the portal row; None = unknown."""
+    p = data.get('portal_detected')
+    return next((_flag(v) for _, v, is_p in raw if is_p), None) if C.is_missing(p) else _flag(p)
 
 
 def _clauses(data, raw):
     """(clauses found, rule G outcome line) when a portal is present and both clauses are known."""
     def find(*keys):
-        return next((_flag(v) for lbl, v in raw if all(k in str(lbl).lower() for k in keys)), None)
-    portal = data.get('portal_detected')
-    portal = find('portal') if portal is None else bool(portal)
+        return next((_flag(v) for lbl, v, _ in raw if all(k in str(lbl).lower() for k in keys)), None)
+    portal = _portal(data, raw)
     protect, notify = find('protect'), find('notif') if find('notif') is not None else find('breach')
     if portal is not True or protect is None or notify is None:
         return None, None
@@ -89,11 +104,12 @@ def metrics(data):
 
 def _body(data, ctx):
     raw = _raw(data)
-    rows = [(lbl, _tc_value(v, 'not_compared' if 'portal' in str(lbl).lower() else None)) for lbl, v in raw]
-    if not rows and data.get('portal_detected') is not None:
-        rows = [('Login / payment portal', I.yes_no_label(bool(data['portal_detected']),
-                                                           'Detected' if data['portal_detected'] else 'Not detected',
-                                                           status='not_compared'))]
+    rows = [(lbl, _tc_value(v, 'not_compared' if is_p else None)) for lbl, v, is_p in raw]
+    pv = data.get('portal_detected')
+    if pv is not None and (not rows or C.is_missing(pv) and not any(p for *_, p in raw)):
+        flag = _flag(pv)      # no rows, or a null flag with no portal row: its reason prints ('Not available (…)')
+        rows.insert(0, ('Login / payment portal', pv if C.is_missing(pv) else _word(S.val(pv)) if flag is None else
+                        I.yes_no_label(flag, 'Detected' if flag else 'Not detected', status='not_compared')))
     out = [C.key_value_list(rows)] if rows else []
     shown = data.get('summary') or verdict(data, ctx)        # what the opener already says
     outcome = _clauses(data, raw)[1]
