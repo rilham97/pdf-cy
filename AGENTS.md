@@ -60,6 +60,10 @@ Each was asked for or approved by the product owner; changing one needs their ap
   `CYBERRANK_SUPPLY_CHAIN_PDF` / `CYBERRANK_SUPPLY_CHAIN_INDEX`.
 - Rating scales run worst (D) on the left to best (AAA) on the right. Methodology version prints as
   "Version n".
+- Rating overview (section 01): "Aspect scores" (name, meter, percent; one "100% = best" cue) then
+  "All aspects" (name + one result line + state chip, two columns). No aspect numbers: section numbers
+  start at 03 and a 1–13 count would clash with the TOC; names link to the section. No intro or
+  explanatory captions — owner wants labels cut to what the reader needs.
 - Residency map (`geo_map.py`): mode C table only when ≤1 relevant country (IP country lookups can fail),
   A2 auto-zoom regional, A3 world map with ISO-code badges + insets. Unknown/placeholder countries go to an
   off-map counter, never guessed. Circle = in preference, square = outside, ring = preferred.
