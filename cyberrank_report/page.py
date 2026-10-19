@@ -233,8 +233,8 @@ def draw_header(c, ident):
     a_txt, g_txt = f'Assessment  {ident["assessment_date"]}', f'Generated  {ident["generated_date"]}'
     date_left = min(T.R - stringWidth(a_txt, T.MEDIUM, 7.6), T.R - stringWidth(g_txt, T.REGULAR, 7.6))
     title_w = date_left - 10 - TITLE_X
-    org_w = title_w - stringWidth(HEADER_PREFIX, T.MEDIUM, 10)
-    _txt(c, HEADER_PREFIX + ellipsize(ident['org'], org_w), TITLE_X, 11, 10, T.MEDIUM, T.NAVY)
+    org_w = title_w - stringWidth(HEADER_PREFIX, T.BRAND_MEDIUM, 10)
+    _txt(c, HEADER_PREFIX + ellipsize(ident['org'], org_w, T.BRAND_MEDIUM), TITLE_X, 11, 10, T.BRAND_MEDIUM, T.NAVY)
     dom, dsize = ident['domain'], 7.8
     while dom and stringWidth(dom, T.REGULAR, dsize) > title_w:   # never truncate the domain
         dsize -= 0.1
@@ -279,14 +279,14 @@ def draw_cover(c, ident):
     c.drawImage(ImageReader(str(LOGO)), T.L, T.PAGE_H - 33 - 46, width=184, height=46, mask='auto')
     _rect(c, 0, 115, T.PAGE_W, 389, T.NAVY)
     _rect(c, T.L, 160, 53, 4, T.AMBER)
-    _txt(c, 'Cyber Risk', T.L, 205, 54, T.MEDIUM, T.WHITE)
-    _txt(c, 'Report', T.L, 271, 54, T.MEDIUM, T.WHITE)
+    _txt(c, 'Cyber Risk', T.L, 205, 54, T.BRAND_MEDIUM, T.WHITE)
+    _txt(c, 'Report', T.L, 271, 54, T.BRAND_MEDIUM, T.WHITE)
     for x, label, value in [(T.L, 'Assessment date', ident['assessment_date']),
                             (T.L + 297, 'Generated date', ident['generated_date'])]:
-        _txt(c, label, x, 415, 8.6, T.REGULAR, T.COVER_LABEL)
-        _txt(c, value, x, 436, 11, T.MEDIUM, T.WHITE)
+        _txt(c, label, x, 415, 8.6, T.BRAND_REGULAR, T.COVER_LABEL)
+        _txt(c, value, x, 436, 11, T.BRAND_MEDIUM, T.WHITE)
     # REPORT FOR -- name never truncated: step the size down, then let it wrap.
-    _txt(c, 'REPORT FOR', T.L, 580, 8.2, T.MEDIUM, T.MUTED)
+    _txt(c, 'REPORT FOR', T.L, 580, 8.2, T.BRAND_MEDIUM, T.MUTED)
     x = T.L
     if ident.get('logo'):
         c.drawImage(ImageReader(ident['logo']), T.L, T.PAGE_H - 609 - 30, width=30, height=30,
@@ -294,25 +294,25 @@ def draw_cover(c, ident):
         x = T.L + 43
     width, box_h = T.L + 297 - 14 - x, 740 - 606
     for size in (28, 24, 20, 17):
-        name = C.P(ident['org'], 'h1', fontSize=size, leading=size * 1.15, spaceAfter=7)
+        name = C.P(ident['org'], 'h1', fontName=T.BRAND_MEDIUM, fontSize=size, leading=size * 1.15, spaceAfter=7)
         if len(name.breakLines(width).lines) <= 2:
             break
     parts = [name] + ([C.TechText(ident['domain'], C.STYLES['tech'].clone('cover_domain', fontName=T.LIGHT, fontSize=10,
                                                                           leading=13, textColor=T.MUTED))]
                       if ident['domain'] else [])
     _box(c, parts, x, 633.96 - size, width, box_h, 'cover organisation')
-    hub_x = x + min(width, stringWidth(ident['org'], T.MEDIUM, size)) / 2   # motif 'You' under the name
+    hub_x = x + min(width, stringWidth(ident['org'], T.BRAND_MEDIUM, size)) / 2   # motif 'You' under the name
     # ISSUED BY -- unknown issuer prints a reason, never a blank.
     ix = T.L + 297
-    _txt(c, 'ISSUED BY', ix, 580, 8.2, T.MEDIUM, T.MUTED)
+    _txt(c, 'ISSUED BY', ix, 580, 8.2, T.BRAND_MEDIUM, T.MUTED)
     if ident.get('issuer'):
-        parts = [C.P(ident['issuer'], 'h1', fontSize=24, leading=27.6, spaceAfter=6),
-                 C.P('Assessment organization\nvia Cyberrank', 'note_flush', fontSize=8.5, leading=14)]
+        parts = [C.P(ident['issuer'], 'h1', fontName=T.BRAND_MEDIUM, fontSize=24, leading=27.6, spaceAfter=6),
+                 C.P('Assessment organization\nvia Cyberrank', 'note_flush', fontName=T.BRAND_LIGHT, fontSize=8.5, leading=14)]
         _box(c, parts, ix, 612 + 24 * 0.82 - 24, T.R - ix, 130, 'cover issuer')
     else:
-        parts = [C.P('Not available', 'h1', fontSize=16, leading=19, textColor=T.MUTED, spaceAfter=5),
+        parts = [C.P('Not available', 'h1', fontName=T.BRAND_MEDIUM, fontSize=16, leading=19, textColor=T.MUTED, spaceAfter=5),
                  C.P(C.sentence(ident.get('issuer_reason') or 'reason not recorded'), 'note_flush',
-                     fontSize=8.5, leading=12.5)]
+                     fontName=T.BRAND_LIGHT, fontSize=8.5, leading=12.5)]
         _box(c, parts, ix, 633.96 - 16, T.R - ix, 130, 'cover issuer')
     motif.draw_cover_motif(c, hub_x)
     draw_footer(c)

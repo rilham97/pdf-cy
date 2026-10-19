@@ -67,7 +67,9 @@ Each was asked for or approved by the product owner; changing one needs their ap
   uploaded documents (`certificates[].document`, path relative to the JSON, must stay inside its folder)
   print one per page in Appendix D.5; a detected certificate awaiting approval adds a "Next step" in
   section 13 and a low-priority action in section 02.
-- Fonts: Poppins; JetBrains Mono at 0.9× for technical tokens; Noto fallbacks for glyphs Poppins lacks.
+- Fonts: Poppins for all body text; Inter (`T.BRAND_*`) only for the document title — the cover and the running
+  header title "Cyber Risk Report for …"; JetBrains Mono at 0.9× for technical tokens; Noto fallbacks for glyphs
+  Poppins lacks.
 
 ## Gotchas
 

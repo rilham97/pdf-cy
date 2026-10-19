@@ -30,6 +30,11 @@ def register():
                                   italic='Poppins-Light', boldItalic='Poppins-Medium')
     pdfmetrics.registerFontFamily('Poppins-Regular', normal='Poppins-Regular', bold='Poppins-Medium',
                                   italic='Poppins-Regular', boldItalic='Poppins-Medium')
+    # Inter: brand face for the document title (cover + running header title), owner decision 2026-10-19
+    for w in ('Light', 'Regular', 'Medium'):
+        pdfmetrics.registerFont(TTFont(f'Inter-{w}', str(FONT_DIR / f'Inter-{w}.ttf')))
+    pdfmetrics.registerFontFamily('Inter-Light', normal='Inter-Light', bold='Inter-Medium',
+                                  italic='Inter-Light', boldItalic='Inter-Medium')
     for name, file in ((MONO, 'JetBrainsMono-Regular.ttf'), (MATH, 'NotoSansMath-Regular.ttf'),
                        (SYMBOLS, 'NotoSansSymbols2-Regular.ttf')):
         pdfmetrics.registerFont(TTFont(name, str(FONT_DIR / file)))

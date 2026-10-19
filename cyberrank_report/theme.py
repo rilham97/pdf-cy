@@ -133,6 +133,8 @@ NARROW_COL = 110.0                       # null cells narrower than this print '
 
 # --- Type ---------------------------------------------------------------------
 LIGHT, REGULAR, MEDIUM, SEMIBOLD = 'Poppins-Light', 'Poppins-Regular', 'Poppins-Medium', 'Poppins-SemiBold'
+# brand face: the cover and the running header title ('Cyber Risk Report for ...'); body text stays Poppins
+BRAND_LIGHT, BRAND_REGULAR, BRAND_MEDIUM = 'Inter-Light', 'Inter-Regular', 'Inter-Medium'
 # Technical tokens only (finding codes, hosts, IPs, URLs, hashes, algorithm names, account labels): JetBrains
 # Mono at 0.9x the size of the text beside it (its 600-unit advance is wider than Poppins Light).
 MONO, MONO_K = fonts.MONO, 0.9

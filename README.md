@@ -112,7 +112,7 @@ the payload fields of each section instead of its body.
       qa.py               overflow checks + PyMuPDF post-render checks -> JSON
       tables.py           CompactTable: a part that continues on a new page opens with
                           '<title> · continued' + 'Rows a–b of N' above the repeated header
-      assets/             Poppins, JetBrains Mono, Noto Sans Math / Symbols 2 / SC Light (all OFL), Cyberrank logo, Bootstrap icons (MIT, footer), Phosphor 2.1.1 (MIT)
+      assets/             Poppins, Inter (cover + header title), JetBrains Mono, Noto Sans Math / Symbols 2 / SC Light (all OFL), Cyberrank logo, Bootstrap icons (MIT, footer), Phosphor 2.1.1 (MIT)
 
 ## Writing a section
 
