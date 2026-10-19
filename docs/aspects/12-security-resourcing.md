@@ -35,7 +35,7 @@ The section has no H2 headings and no Appendix D register.
 | `state_reason` | Card reason (first choice) | `reason_code` text |
 | `reason_code` | Card reason text. In `pending_review` it is the card reason: "Held for review: …" (`_shared:67-69`) | Next fallback |
 | `reason` | No-result card reason (third choice) (`_shared:71-72`) | `narrative_source` |
-| `enabled` | `false` switches the section to `not_applicable` with a card and no body (`_shared:46-48`) | Not switched off |
+| `enabled` | `false` switches the section to `not_applicable` with a card and no body (`_shared.adjust_switched_off` (`_shared:65`)) | Not switched off |
 | `what_checked` / `empty_state_source.coverage` | "What was checked" on the card (clear / partial / pending_review / none_identified) (`__init__.py:125`) | Omitted |
 | `empty_state_source.text` | Clear card reason when no `state_reason` or `reason_code` is sent (`__init__.py:123-124`) | No reason line (clear) |
 | `next_step` | "What happens next" on the card (`__init__.py:126`) | Omitted |
@@ -60,7 +60,7 @@ The module has no policy-file overrides.
 
 | Condition | What prints | Code |
 |---|---|---|
-| `enabled` is `false` | State becomes `not_applicable`, flag `_card_only`. Opener + card only. Card reason: `state_reason`, else the generator's switched-off sentence (see Hardcoded). `summary` still prints as the verdict | `s12:16-19`, `_shared:46-48` |
+| `enabled` is `false` | State becomes `not_applicable`, flag `_card_only`. Opener + card only. Card reason: `state_reason`, else the generator's switched-off sentence (see Hardcoded). `summary` still prints as the verdict | `s12:16-19`, `_shared.adjust_switched_off` (`_shared:65`) |
 | State is a no-result state and neither evidence field has a value | `_card_only`: card only, no body, no generated verdict | `_shared:49-50`, `s12:30, 61` |
 | State is a no-result state and an evidence field has a value | Card, then the key/value list and message. No KPI strip | `s12:60-61`, `__init__.py:205-209` |
 | `summary` present | Opener shows `summary` | `__init__.py:192` |

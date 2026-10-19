@@ -41,6 +41,8 @@ REASONS = {
     'connections_not_reported': 'connections and assessment dates not reported',
     'none_identified': 'none identified with the methods used',
     'not_detected': 'not detected by the system',
+    'lead_event_resolved': 'the event named as last valid is marked resolved; held for review',
+    'lead_event_unconfirmed': 'the event named as last valid has unconfirmed validity; held for review',
 }
 UNITS = {
     'percent': '%', 'finding_types': 'finding types', 'ip_addresses': 'IP addresses',

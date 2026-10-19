@@ -87,7 +87,8 @@ with a page break, its `PageBreakIfNotEmpty` adds no blank page.
 |---|---|---|
 | Register ids | `REG_SECS` (s04, s05, s06, s11, s13, s14) are numbered D.1… in `REGISTRY` order. An absent register keeps its slot. | `app_d:36-41` |
 | Index order | Sorted numerically: D.1, D.1.2, D.2, … D.6 | `app_d:650` |
-| D.1.2 IP reputation, D.3 data leak events | Always index rows only (`_absent`) | `app_d:643-646` |
+| D.1.2 IP reputation | Index row only (`_absent`) | `app_d:675-676` |
+| D.3 data leak events | Index row only: "Not required — all N event(s) shown in Section 06" (events counted after the canonical merge) | `d3_leaks`, `app_d:631` |
 | A register has a `flow` | Printed after the index. Location = page range. | `app_d:623,655-656` |
 | A register has no `flow` | Index row only. Content = `state_message`. Location = the section (or the `s04-ip-reputation` anchor). | `app_d:614-616,624-625` |
 | `d_evidence_registers` **missing** or `{}` | No chip, no card; index + registers as usual (H1 = registry title) | `render_section` (`appD` stub `{'state': None}`) |
