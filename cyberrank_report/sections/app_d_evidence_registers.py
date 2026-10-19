@@ -7,6 +7,7 @@ end line that reconciles with the section overview. Thresholds, titles and messa
 templates come from long_list_policy.json at runtime (CYBERRANK_LONG_LIST_POLICY or
 ../long-list-rules/long_list_policy.json); built-in defaults apply when it is absent.
 """
+import ipaddress
 import json
 import os
 import re
@@ -340,31 +341,49 @@ SEV_ORDER = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
 HOSTLIKE = re.compile(r'^([a-z0-9-]+\.)+[a-z]{2,}( / [0-9a-f.:]+)?$|^[0-9.]+$', re.I)
 
 
-def d1_assets(report, as_of):
+def _hostlike(label):
+    """A complete host name, 'host / IP', or a bare IPv4 / IPv6 address."""
+    try:
+        ipaddress.ip_address(label)
+        return True
+    except ValueError:
+        return bool(HOSTLIKE.match(label))
+
+
+def d1_register(report):
+    """(anchor key, register, rows, title) of the D.1 affected-asset register; the Section 04 pointer reads
+    the same rows and title."""
     sec = (report.get('sections') or {}).get('vulnerabilities') or {}
     key = str(sec.get('assets_register_ref') or '').rsplit('.', 1)[-1] or 'vulnerability_asset_register'
     reg = lookup(report, sec.get('assets_register_ref')) or {}
-    rows = reg.get('rows') or []
-    title = pol('lists.vuln_affected_assets.register_title', 'Affected assets by finding')
+    rows = [r for r in reg.get('rows') or [] if isinstance(r, dict)]
+    return key, reg, rows, pol('lists.vuln_affected_assets.register_title', 'Affected assets by finding')
+
+
+def d1_assets(report, as_of):
+    from .s04_vulnerabilities import _count
+    sec = (report.get('sections') or {}).get('vulnerabilities') or {}
+    key, reg, rows, title = d1_register(report)
     rid = RID['s04']
     info = {'rid': rid, 'state': reg.get('state') or sec.get('state'), 'sec': 's04', 'title': title}
-    if not rows:
-        return {**info, 'content': state_message(sec, SEC_NUM['s04'], 'affected assets')}
+    if not rows or tier(len(rows), len(rows)) == 'T1':      # <= 30 rows: Section 04 lists every asset
+        return {**info, 'content': state_message(sec, SEC_NUM['s04'], 'affected assets', len(rows) or None)}
     rows = sorted(rows, key=lambda r: (SEV_ORDER.get(str(r.get('max_severity')).lower(), 9),
                                        -(r.get('finding_count') or 0), str(r.get('asset_label_source'))))
     flagged = 0
     entries = []
     for i, r in enumerate(rows, 1):
         label = str(r.get('asset_label_source') or '')
-        if label and not HOSTLIKE.match(label):
+        if label and not _hostlike(label):
             label, flagged = label + ' †', flagged + 1
         entries.append(('row', [str(i), C.severity_icon(r.get('max_severity'), dense=True),
                                 label or {'value': None, 'reason_code': 'asset_not_extracted'},
-                                ', '.join(r.get('finding_ids') or []) or {'value': None},
+                                ', '.join(r.get('finding_ids') or [])
+                                or {'value': None, 'reason_code': 'not_printed_in_source'},
                                 r.get('finding_count')]))
     members = sum(r.get('finding_count') or 0 for r in rows)
-    src = (sec.get('findings') or [])
-    sec_total = sum(f.get('affected_assets_count') or 0 for f in src)
+    src = [f for f in sec.get('findings') or [] if isinstance(f, dict)]
+    sec_total = sum(_count(f) or 0 for f in src)      # same count as the Section 04 tables
     checks = [(f'source register memberships {C.fmt_number(reg["counts"]["memberships"])}',
                reg['counts']['memberships']) if (reg.get('counts') or {}).get('memberships') is not None else None,
               (f'Section {SEC_NUM["s04"]} affected-asset counts {C.fmt_number(sec_total)}', sec_total) if src else None]
@@ -393,6 +412,44 @@ def d1_assets(report, as_of):
                                   f'Totals: {C.fmt_number(members)} finding memberships'
                                   + (f'; {rec}.' if rec else '.'), rows=len(rows))
     info.update(flow=flow, content=f'{len(rows)} of {len(rows)} affected assets')
+    return info
+
+
+def d12_ip(report, as_of):
+    """<D.1>.2: every IP reputation row when the list is over the inline limit; Section 04 then shows the top
+    rows in the same order (s04.ip_order) and points here."""
+    from . import s04_vulnerabilities as s04
+    ipr = ((report.get('sections') or {}).get('vulnerabilities') or {}).get('ip_reputation')
+    rid, title = f'{RID["s04"]}.2', pol('lists.ip_reputation.register_title', 'IP reputation')
+    info = {'rid': rid, 'title': title, 'sec': 's04', 'anchor': 's04-ip-reputation',
+            'state': ipr.get('state') if isinstance(ipr, dict) else 'unavailable'}
+    if not isinstance(ipr, dict):
+        return {**info, 'content': 'Not produced — IP reputation is not in the payload.'}
+    rows = s04.ip_order(ipr.get('rows') or [])
+    if not rows or tier(len(rows), len(rows)) == 'T1' or (ipr.get('state') or 'findings') not in s04.FULL:
+        return {**info, 'content': state_message(ipr, SEC_NUM['s04'], 'IP addresses', len(rows) or None)}
+    n = len(rows)
+    flow = opening(rid, title, 's04', [
+        f'One row per IP address, sorted by abuse score, highest first; scores held for review and blanks last. '
+        f'Showing {n} of {n} IP addresses.',
+        f'Unit: IP addresses. State: {T.STATE.get(info["state"], {}).get("label", "not recorded")}. '
+        f'Snapshot {as_of}.'], [])
+
+    def cell(v, numeric):
+        if isinstance(v, dict) and v.get('reason_code') == 'sentinel_meaning_unconfirmed':   # policy: label + caveat
+            return C.P(f'{v.get("source_label") or "-1"} (meaning unconfirmed)', 'dense_num' if numeric else 'dense')
+        return v if v is not None else {'value': None, 'reason_code': 'not_printed_in_source'}
+
+    entries = [('row', [str(i), C.val(r.get('ip_address')) or {'value': None, 'reason_code': 'not_printed_in_source'},
+                        *(cell(r.get(c), c in ('abuse_score', 'reports'))
+                          for c in ('isp', 'country', 'abuse_score', 'reports'))])
+               for i, r in enumerate(rows, 1)]
+    t = register_table(['#', 'IP address', 'ISP', 'Country', 'Abuse score', 'Reports'], entries,
+                       title=f'{rid} {title}', sec_id='s04', numeric_cols=(0, 4, 5), ident='regD12', tech_cols=(1,))
+    flow += const_line(t) + [t]
+    flow += closing(rid, [], f'{n} of {n} IP addresses shown; 0 not shown. Section {SEC_NUM["s04"]} shows the first '
+                             f'{min(n, pol("lists.ip_reputation.top_n", 10))}.', rows=n)
+    info.update(flow=flow, content=f'{n} of {n} IP addresses')
     return info
 
 
@@ -668,12 +725,8 @@ def build(data, ctx):
                    if isinstance((rep.get(s.source) or {}).get(s.key), dict)})
     as_of = c.fmt_date((rep.get('snapshot') or {}).get('assessed_at'))
     secs = rep.get('sections') or {}
-    vul = secs.get('vulnerabilities') or {}
-    ipr = vul.get('ip_reputation') or {}
     dl, fp = secs.get('data_leak_history') or {}, secs.get('fourth_party_vendors') or {}
-    regs = [d1_assets(rep, as_of),
-            _absent(f'{RID["s04"]}.2', 'IP reputation', ipr, 's04', 'ip_reputation', len(ipr.get('rows') or []),
-                    'IP addresses', anchor='s04-ip-reputation'),
+    regs = [d1_assets(rep, as_of), d12_ip(rep, as_of),
             d3_leaks(dl),
             d6_vendors(rep, fp, as_of),
             d4_credentials(rep, ctx.identity, as_of), d5_quantum(rep, as_of),

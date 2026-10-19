@@ -221,6 +221,110 @@ def test_gap_vulnerabilities():
     assert 'already p=reject' in text and 'do not agree' in text                                # V13
 
 
+def _demo_variant(mutate, only, check=True):
+    """Flattened text + QA issues of data/demo-preview.json after mutate(report), built through validate()
+    (check=False: a payload the contract would stop, e.g. a no-result state without a reason)."""
+    import pymupdf
+    from cyberrank_report.build import validate
+    r = json.loads((FIXTURE.parent / 'demo-preview.json').read_text(encoding='utf-8'))
+    mutate(r)
+    qa.ISSUES.clear()
+    out = Path(tempfile.mkdtemp()) / 'v.pdf'
+    build(validate(r) if check else r, out, only=only)
+    return ' '.join(' '.join(p.get_text() for p in pymupdf.open(out)).split()), list(qa.ISSUES)
+
+
+def test_s03_review_fixes():                                          # code review 2026-10-19, items 1-4
+    def excluded(r):
+        p = r['sections']['privacy']
+        p['review_flags'] = ['RF-T1']
+        r['review_flags'] = [{'id': 'RF-T1', 'text': 'Section flag text.'}, {'id': 'RF-T2', 'text': 'Policy flag text.'}]
+        p['policy'].update(state='not_applicable', policy_state={'value': 'excluded_no_policy'}, issues=[],
+                           review_flags=['RF-T2'])
+    text, _ = _demo_variant(excluded, ['s03'], check=False)      # no reason of its own: the card explains
+    assert text.count('No score: the organisation states') == 1, text                         # 1: once
+    assert 'Review flag RF-T1: Section flag text.' in text and 'Review flag RF-T2: Policy flag text.' in text  # 2
+    assert 'issues reported; issue detail' not in text                                       # 3: excluded count
+
+    def areas(r):
+        pol = r['sections']['privacy']['policy']
+        pol['issues'] = []
+        pol['areas'] = [{'code': c, 'score': 0, 'max_score': 0 if c == 'A' else 10} for c in 'ABCDEFGHIJKLMNOP'] \
+            + [{'code': 'Q', 'score': 3}]
+    text, issues = _demo_variant(areas, ['s03'])
+    assert '0 / 0' in text and ('data_mismatch', 's03') in _checks(issues)                      # 4: 0 printed as sent
+    assert ('unknown_term', 's03') in _checks(issues)                                         # 4: code Q not dropped silently
+    assert '6 issues reported; issue detail is not provided' in text                          # 3: metric fallback
+
+
+def test_s04_review_fixes():                                          # code review 2026-10-19, items 6-19
+    from cyberrank_report.sections import BY_ID, adjusted
+    from cyberrank_report.sections.s04_vulnerabilities import adjust
+    assert set(T.SEVERITY_TEXT) == {'critical', 'high', 'medium', 'low'}                       # 19
+
+    def change(r):
+        v = r['sections']['vulnerabilities']
+        f = v['findings']
+        f[0].pop('finding_type')                                                              # 6: ID in both tables
+        f[1]['affected_assets_count'] = 1                                                     # 7: 3 listed, 1 counted
+        v['scanned_assets']['domains'] = []                                                   # 17
+        v['active_scan']['results'] = v['active_scan']['results'][:1]                          # 14: singular
+        v['active_scan']['results'][0].update(findings_reported=0, findings=[{'title': 'x', 'severity': 'info'}])
+        v['https_redirect'].update(state='partial', what_checked=None)                         # 18
+        v['https_redirect'].pop('what_checked')
+        v['email_dns_controls']['controls'] = [{'control': 'DMARC', 'result': 'enabled', 'state': 'clear',
+                                                'dmarc_policy': {'value': None, 'reason_code': 'not_printed_in_source'}}]
+    text, issues = _demo_variant(change, ['s04'])
+    assert text.count('vuln-01') >= 3 and 'Unnamed finding' not in text                       # 6
+    assert 'Affected domains (3 listed; count reported: 1)' in text                           # 7
+    assert 'lists 3 affected domains but affected_assets_count=1' in ' '.join(i['detail'] for i in issues)
+    assert 'apex' not in text and 'listed before subdomains' not in text                      # 17
+    assert '1 host scanned: 0 clean, 0 with findings reported, 1 with no recognised status' not in text
+    assert '1 host scanned: 1 clean' in text                                                  # 14
+    assert 'lists more findings than it counts' in text                                       # 12
+    assert text.count('HTTP correctly redirects to HTTPS') == 1                               # 18
+    assert 'Verify the published DMARC policy (p=).' in text and 'before acting on priority action' not in text  # 11
+    assert 'Time (reported)' not in text and 'Related priority actions Critical 0 High 1' in text   # 15/16 legend
+    assert 'Full register' not in text                                                        # 8/9: D.1 is T1
+
+    def scan_empty(r):
+        r['sections']['vulnerabilities']['active_scan'].update(state='partial', results=[])
+    text, _ = _demo_variant(scan_empty, ['s04'])
+    assert 'Reason not recorded' not in text and 'Host results: Not available' in text        # 13
+    # 10: {value: -1} and a pending_review check with its own reason are both held; the column is named
+    ip = {'state': 'findings', 'rows': [{'ip_address': '2001:db8::1', 'abuse_score': {'value': -1}, 'reports': -1}]}
+    out = adjust({'ip_reputation': ip}, {})['ip_reputation']
+    assert all(out['rows'][0][k]['value'] is None for k in ('abuse_score', 'reports'))
+    assert 'for the abuse score and reports' in out['state_reason']
+    out = adjust({'ip_reputation': {**ip, 'state': 'pending_review', 'state_reason': 'Own.'}}, {})['ip_reputation']
+    assert out['state_reason'] == 'Own.' and out['rows'][0]['reports']['value'] is None
+    assert adjusted(BY_ID['s04'], {'ip_reputation': out}, {})['ip_reputation'] == out          # idempotent
+
+
+def test_d1_registers_follow_the_long_list_rule():                    # code review 2026-10-19, items 8, 20-24
+    def big(r):
+        reg = r['appendices']['d_evidence_registers']['vulnerability_asset_register']
+        reg['rows'] = [{'asset_label_source': f'h{i}.example.com', 'finding_ids': ['vuln-01'], 'finding_count': 1,
+                        'max_severity': 'high'} for i in range(31)] + [
+            {'asset_label_source': '2001:db8::7', 'finding_ids': [], 'finding_count': 1, 'max_severity': 'low'}]
+        reg['counts'] = {'rows': 32, 'memberships': 32}
+        ip = r['sections']['vulnerabilities']['ip_reputation']
+        ip['rows'] = [{'ip_address': f'198.51.100.{i}', 'isp': 'Example', 'country': 'NL', 'abuse_score': i,
+                       'reports': 1} for i in range(35)]
+        r['sections']['vulnerabilities']['findings'][0].pop('affected_assets_count')
+    text, _ = _demo_variant(big, ['s04', 'appD'])
+    assert 'Full register Affected assets by finding · 32 rows' in text                       # 8: same title + count
+    assert C._TABLE_HEADS['regD1'][:2] == ['#', 'Highest severity']
+    assert 'Showing the 10 highest abuse scores of 35 IP addresses' in text and '198.51.100.34' in text
+    d1 = text[text.index('One row per affected asset'):]
+    assert '2001:db8::7 †' not in d1 and 'Not available' in d1                                 # 24 / 23
+    assert 'Section 04 affected-asset counts 30 (difference +2)' in d1                        # 22: _count fallback
+    assert 'One row per IP address' in text and '35 of 35 IP addresses' in text   # 21
+    text, _ = _demo_variant(lambda r: r['sections']['vulnerabilities'].pop('ip_reputation'), ['appD'])
+    assert 'Not required — all 12 affected assets shown in Section 04' in text                  # 20: T1 index only
+    assert 'Not produced — IP reputation is not in the payload.' in text and 'all 0 IP' not in text   # 21
+
+
 def test_gap_certifications():
     text, issues = _gap('certs')
     assert 'Approved' in text and 'Approved by team' not in text and 'automatically' not in text   # C1-C3
@@ -468,7 +572,7 @@ def test_null_forms_s02_s04_s06():                                     # extract
     assert remediation_block({'state': 'findings', 'current': {}, 'projected': {}, 'active_issues': {}}) == []
     text, _ = _gap('vulns_d')
     assert 'Scanned assets Not available (left blank in the assessment data).' in text
-    assert 'Recommendations (as reported)' in text and 'Require SMTP authentication.' in text
+    assert 'Recommendations' in text and '(as reported)' not in text and 'Require SMTP authentication.' in text
     assert 'Informational' in text and 'Only informational findings were identified.' in text
 
 
@@ -962,7 +1066,7 @@ def test_quantum_headline_relation_and_full_scope_rows():                       
            'Low 32' in t
     assert 'the apex aggregate, as scored in the product' not in t and 'headline scope' not in t
     assert '13 findings in category · 2 domains' in t
-    assert 'D.4.2 Scope × algorithm rows' in t and 'Rows 1' in t and 'of 46' in t and 'X2' not in t
+    assert 'D.4.2 Scope × algorithm rows' in t and 'End of register · 46 scope × algorithm rows' in t and 'X2' not in t
 
 
 def test_gmail_scan_time_and_source_labels():                                          # item 11
@@ -1286,7 +1390,7 @@ def test_appendix_d_ids_follow_section_order():                       # user dec
     ids = re.findall(r'^(D\.\d(?:\.\d)?)$', index, re.M)
     assert ids == ['D.1', 'D.1.2', 'D.2', 'D.3', 'D.4', 'D.5', 'D.6'], ids
     marks = [t.split()[0] for _, t, _ in doc.get_toc() if re.match(r'D\.\d', t)]
-    assert marks == sorted(marks) and marks[:2] == ['D.1', 'D.2'], marks
+    assert marks == sorted(marks) and marks[0] == 'D.2', marks   # D.1 (28 rows <= 30): index row only
     assert 'D.2.4 lists every register row' in ' '.join(text.split())
     assert not re.search(r'D\.4\.4|D\.5\.[12]', text)                  # old ids gone
 
@@ -1589,7 +1693,7 @@ def test_severity_column_second_and_centred():
         j = next(i for i, x in enumerate(h) if x in SEV_HEADS)
         assert j == 1 and h[0] in ('#', 'ID'), h
     covered = {x for h in sev for x in h}
-    assert {'Severity', 'Priority', 'Risk', 'Highest severity'} <= covered, covered
+    assert {'Severity', 'Priority', 'Risk'} <= covered, covered    # D.1 'Highest severity': test_d1_registers_follow_the_long_list_rule
     # on the page: siren (its invisible word spans the icon) centred under its centred header
     for name in ('gmail-2026-10-15', 'instagram-2026-10-02'):
         doc = pymupdf.open(_full_pdf(name))
