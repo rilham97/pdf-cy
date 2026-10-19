@@ -497,27 +497,24 @@ def _fixture_text(name, only=None):
 
 
 def _overview(text):
-    a = text.index('Rating overview All')
+    a = text.index('Rating overview Aspect')
     return text[a:text.index('Sector comparison', a)]
 
 
 def test_s01_rating_overview_concept_a():                         # user-approved Concept A, 2026-10-19
     t = _fixture_text('gmail-2026-10-15', ['s01'])
     ov = _overview(t)
-    for s in ('All 13 aspects in report order. Five have their own score (100% = best); the rest are judged by '
-              'their result.', 'Aspect scores 0% 100% = best 03 Privacy 56%', '13 Certifications 0%',
-              'Only these five aspects have their own score. The other eight have no separate score',
-              'All aspects Reading order: down the left column, then the right.',
-              '03 Privacy 13 active privacy issues Findings',
-              '04 Vulnerabilities 15 finding types · 1 High, 6 Medium, 8 Low Findings',      # zero tiers omitted
-              '05 Credential exposure 5,395 exposed account records',                    # register rows listed
-              '07 Data sovereignty Cannot be compared', '08 Data residency 1 of 1 hosting country outside the preference',
-              '09 Legal terms & conditions 0 of 2 customer-protection clauses found',
-              '10 AI risk and governance No result Unavailable', '11 Quantum security 30 high-risk findings',
-              '13 Certifications 0 certifications None identified',
-              '14 Fourth-party vendors 0 connected organisations None identified', '15 Cloud infrastructure 1 cloud provider'):
+    for s in ('Rating overview Aspect scores 100% = best Privacy 56%', 'Certifications 0%',
+              'All aspects Privacy 13 active privacy issues Findings',
+              'Vulnerabilities 15 finding types · 1 High, 6 Medium, 8 Low Findings',      # zero tiers omitted
+              'Credential exposure 5,395 exposed account records',                    # register rows listed
+              'Data sovereignty Cannot be compared', 'Data residency 1 of 1 hosting country outside the preference',
+              'Legal terms & conditions 0 of 2 customer-protection clauses found',
+              'AI risk and governance No result Unavailable', 'Quantum security 30 high-risk findings',
+              'Certifications 0 certifications None identified',
+              'Fourth-party vendors 0 connected organisations None identified', 'Cloud infrastructure 1 cloud provider'):
         assert s in ov, (s, ov)
-    for w in ('demerit', 'ledger', 'point', 'weighting', 'credit', 'A–J', 'Source', '“'):   # never the ledger / quotes
+    for w in ('Reading order', 'report order', 'own score', 'judged by', '0% 100%', '03 Privacy', '15 Cloud', 'demerit', 'ledger', 'point', 'weighting', 'credit', 'A–J', 'Source', '“'):   # never the ledger / quotes
         assert w.lower() not in ov.lower(), (w, ov)
     ov = _overview(_fixture_text('demo-preview', ['s01']))
     for s in ('12 finding types · 1 Critical, 2 High, 5 Medium, 4 Low', '3 events · 1 resolved', 'Matches the preference',
@@ -1351,9 +1348,9 @@ def test_backend_aspect_score_in_rating_overview():                       # owne
         build(rep, out, only=['s01'])
         text = ' '.join(' '.join(p.get_text() for p in pymupdf.open(out)).split())
     block = text[text.index('Aspect scores'):text.index('All aspects')]
-    assert '07 Data sovereignty' in block and '0%' in block, block
-    assert '08 Data residency' in block and 'Not compared' in block, block
-    assert '09 Legal terms & conditions' in block and '140%' not in block, block
+    assert 'Data sovereignty 0%' in block, block
+    assert 'Data residency Not compared' in block, block
+    assert 'Legal terms & conditions 100%' in block and '140%' not in block, block
     assert 'Cloud infrastructure' not in block, block
     assert 'demerit' not in text.lower() and 'cap ' not in text.lower(), text
 

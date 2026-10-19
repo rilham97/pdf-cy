@@ -274,15 +274,9 @@ def ledger_table(ledger):
 SCORED = {'privacy': 'privacy_score', 'vulnerabilities': 'vulnerability_score',
           'credential_exposure': 'credential_score', 'data_leak_history': 'data_leak_score',
           'certifications': 'compliance_score'}
-WORDS = ('no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
-         'twelve', 'thirteen', 'fourteen', 'fifteen')
-HX, MU, NV = c.hexstr(T.HEADING), c.hexstr(T.MUTED), c.hexstr(T.NAVY)
+HX, MU = c.hexstr(T.HEADING), c.hexstr(T.MUTED)
 NA = 'na'       # the aspect normally has a score, but none is given in this payload
 H2_TIGHT = S['h2'].clone('h2_overview', keepWithNext=0)
-
-
-def _word(n):
-    return WORDS[n] if 0 <= n < len(WORDS) else c.fmt_number(n)
 
 
 def _int(v):
@@ -494,10 +488,6 @@ def _linked(spec, markup, pages):
     return f'<a href="#{spec.anchor}">{markup}</a>' if pages.get(spec.anchor) else markup
 
 
-def _num(spec, pages):
-    return c.M(_linked(spec, f'<font color="{NV}">{c.esc(spec.number)}</font>', pages), 'cell')
-
-
 def _name(spec, title, pages):
     return c.M(_linked(spec, c.esc(title), pages), 'cell_head')
 
@@ -543,53 +533,44 @@ def _frame(pad_v=0):
 
 def scores_block(rows, pages):
     scored = [r for r in rows if r[2] is not None]
-    mw, other = 230, len(rows) - len(scored)
-    data = [[_num(r[0], pages), _name(r[0], r[1], pages), Meter(r[2], mw),
+    mw = 230
+    data = [[_name(r[0], r[1], pages), Meter(r[2], mw),
              c.M(f'<font name="{T.MEDIUM}" color="{HX}">{c.fmt_value(r[2], "percent")}</font>', 'cell_num')
              if not isinstance(r[2], str) else ''] for r in scored]
-    t = Table(data, colWidths=[24, 170, mw + 12, 44], hAlign='LEFT')
+    t = Table(data, colWidths=[194, mw + 12, 44], hAlign='LEFT')
     t.setStyle(TableStyle(_frame(3.5) + [('VALIGN', (0, 0), (-1, -1), 'MIDDLE')]))
-    head = Table([[c.P('Aspect scores', 'h3', spaceBefore=0), c.P('0%', 'note_flush'),
-                   c.P('100% = best', 'note_flush', alignment=2)]], colWidths=[194, mw / 2, mw / 2], hAlign='LEFT')
+    head = Table([[c.P('Aspect scores', 'h3', spaceBefore=0), c.P('100% = best', 'note_flush', alignment=2)]],
+                 colWidths=[194, mw], hAlign='LEFT')
     head.setStyle(TableStyle(_frame() + [('VALIGN', (0, 0), (-1, -1), 'BOTTOM')]))
-    note = (f'Only {"this aspect has its" if len(scored) == 1 else f"these {_word(len(scored))} aspects have their"} '
-            f'own score. The other {_word(other)} have no separate score and are judged by their result below.')
-    if any(r[2] == NA for r in scored):
-        note += ' “Score not available”: this aspect normally has a score, but none is given in this assessment.'
     # one unsplittable cell: the 'Rating overview' heading and intro (Keep in rating_overview) move with it
-    box = Table([[[Spacer(0, 4), head, Spacer(0, 2), t, c.P(note, 'note')]]], colWidths=[T.CW], hAlign='LEFT')
+    box = Table([[[Spacer(0, 4), head, Spacer(0, 2), t, Spacer(0, T.SP_SM)]]], colWidths=[T.CW], hAlign='LEFT')
     box.setStyle(TableStyle(_frame()))
     return box
 
 
 def checklist_block(rows, pages):
     def item(r):
-        return [_num(r[0], pages), [_name(r[0], r[1], pages), c.M(result_markup(r[3]), 'dense')],
+        return [[_name(r[0], r[1], pages), c.M(result_markup(r[3]), 'dense')],
                 c.state_chip(r[4], dense=True)]
-    w = [22, T.COL2 - 22 - 92, 92]
+    w = [T.COL2 - 92, 92]
     half = (len(rows) + 1) // 2           # 13 aspects: 7 left, 6 right
     cols = []
     for part in (rows[:half], rows[half:]):
-        t = Table([item(r) for r in part] or [['', '', '']], colWidths=w, hAlign='LEFT')
+        t = Table([item(r) for r in part] or [['', '']], colWidths=w, hAlign='LEFT')
         t.setStyle(TableStyle(_frame(5) + [('LINEBELOW', (0, 0), (-1, -1), T.HAIRLINE, T.RULE),
-                                           ('LEFTPADDING', (2, 0), (2, -1), 4), ('TOPPADDING', (2, 0), (2, -1), 6)]))
+                                           ('LEFTPADDING', (1, 0), (1, -1), 4), ('TOPPADDING', (1, 0), (1, -1), 6)]))
         cols.append(t)
     two = Table([cols], colWidths=[T.COL2 + T.GUTTER, T.COL2], hAlign='LEFT')
     two.setStyle(TableStyle(_frame()))
     two.spaceAfter = T.SP_SM
-    return c.keep(c.P('All aspects', 'h3'),
-                  c.M(f'<font color="{MU}">Reading order: down the left column, then the right.</font>', 'note_flush'),
-                  Spacer(0, 4), two)
+    return c.keep(c.P('All aspects', 'h3'), Spacer(0, 4), two)
 
 
 def rating_overview(data, ctx, rating):
     ro = data.get('rating_overview') or {}
     rows = aspect_rows(ctx.report, ro.get('aspect_breakdown') or [])
-    k = sum(r[2] is not None for r in rows)
-    intro = (f'All {len(rows)} aspects in report order. {_word(k).capitalize()} '
-             f'{"has its" if k == 1 else "have their"} own score (100% = best); the rest are judged by their result.')
     # the payload's own overview note and the demerit ledger stay internal: never printed (user decisions)
-    return [c.keep(c.heading('Rating overview', 2, style=H2_TIGHT), c.P(intro, 'body'),
+    return [c.keep(c.heading('Rating overview', 2, style=H2_TIGHT),
                    Deferred(lambda pages: scores_block(rows, pages))),
             Deferred(lambda pages: checklist_block(rows, pages))]
 
