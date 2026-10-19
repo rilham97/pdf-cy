@@ -1,0 +1,3314 @@
+{
+  "meta": {
+    "report_schema_version": "cyberrank-report/0.1-draft",
+    "fixture_kind": "sample_payload_mapped_from_old_pdf",
+    "fixture_note": "Values transcribed from the production PDF \"Mock Cyberrank - Cyber Risk Report\" (old openhtmltopdf pipeline). Not a backend payload. Generic appendices reuse the Claude fixture after a text check.",
+    "language": "en",
+    "state_enum": [
+      "findings",
+      "clear",
+      "not_assessed",
+      "not_applicable",
+      "unavailable",
+      "partial",
+      "pending_review"
+    ],
+    "source_document": {
+      "ref": "P-MOCK",
+      "file": "Downloads/Mock Cyberrank - Cyber Risk Report.pdf",
+      "sha256": "05be67a4021a3bc68d9cc436bf4aad3bf8e6ce3dcdc8e518ee1612192785a537",
+      "pages": 35,
+      "pdf_title": "Mock Cyberrank - Vendor Cyber Risk Report Report",
+      "producer": "openhtmltopdf.com",
+      "creator": "Chromium",
+      "pdf_created_at": "2026-10-15T01:11:43Z",
+      "pdf_modified_at": "2026-09-12T01:10:20Z",
+      "template_id": {
+        "value": null,
+        "state": "unavailable",
+        "reason_code": "not_printed_in_source"
+      }
+    },
+    "extracted_at": "2026-10-15",
+    "sanitisation": {
+      "applied": true,
+      "rule": "No email address or local part, person name, password/token value or masked label is stored.",
+      "removed_fields": [],
+      "source_rows_with_unmasked_local_part": 0,
+      "note": "The source prints no credential rows and no email address."
+    }
+  },
+  "identity": {
+    "organisation_name": "Mock Cyberrank",
+    "organisation_id": {
+      "value": null,
+      "state": "unavailable",
+      "reason_code": "not_printed_in_source"
+    },
+    "domain": "cyberrank.site",
+    "website_source_label": "cyberrank.site",
+    "sector": "Manufacturing",
+    "sector_source_id": "Manufaktur",
+    "sector_label_source": "SECTOR",
+    "description_source": "Create vendor assessments, score security posture from AAA to D, detect leaks, and turn questionnaires into a board-ready risk picture.",
+    "logo": {
+      "value": null,
+      "state": "unavailable",
+      "reason_code": "asset_not_extracted",
+      "note": "Cover shows a blank logo tile."
+    },
+    "report_title": "Cyber Risk Report",
+    "issuer": {
+      "organisation_name": null,
+      "state": "unavailable",
+      "reason_code": "not_printed_in_source",
+      "note": "Template field ISSUED BY has no source value."
+    }
+  },
+  "snapshot": {
+    "assessment_id": {
+      "value": null,
+      "state": "unavailable",
+      "reason_code": "not_printed_in_source"
+    },
+    "snapshot_id": {
+      "value": null,
+      "state": "unavailable",
+      "reason_code": "not_printed_in_source"
+    },
+    "assessed_at": {
+      "value": "2026-10-13",
+      "precision": "day",
+      "source_label": "REPORT DATE 13.10.2026"
+    },
+    "generated_at": {
+      "value": "2026-10-15",
+      "precision": "day",
+      "source_label": "DATE GENERATED 15.10.2026"
+    },
+    "timezone": {
+      "value": null,
+      "state": "unavailable",
+      "reason_code": "not_printed_in_source",
+      "note": "PDF CreationDate 2026-10-15T01:11:43Z (UTC offset +00:00); report timezone not printed."
+    },
+    "methodology_version": {
+      "value": null,
+      "state": "unavailable",
+      "reason_code": "not_printed_in_source",
+      "note": "Methodology brief (p44-45) cites a July 2026 paper; that is not a version id."
+    },
+    "active_version": {
+      "value": null,
+      "state": "unavailable",
+      "reason_code": "not_printed_in_source"
+    },
+    "viewed_version": {
+      "value": null,
+      "state": "unavailable",
+      "reason_code": "not_printed_in_source"
+    },
+    "score_context": {
+      "value": null,
+      "state": "unavailable",
+      "reason_code": "not_printed_in_source"
+    },
+    "toggles_at_assessment": {
+      "pqc_scan": {
+        "value": null,
+        "state": "unavailable",
+        "reason_code": "toggle_snapshot_not_printed",
+        "note": "Quantum results are present (section 11), so the module ran."
+      },
+      "extended_scan": {
+        "value": null,
+        "state": "unavailable",
+        "reason_code": "toggle_snapshot_not_printed"
+      }
+    },
+    "preferences_at_assessment": {
+      "sovereignty_allowed_jurisdictions": [
+        "European Union (EU)"
+      ],
+      "residency_allowed_countries": [
+        "Argentina"
+      ],
+      "source_pages": [
+        12,
+        13
+      ]
+    }
+  },
+  "rating": {
+    "rating_name": "IISRI® External Rating",
+    "grade": "BB",
+    "grade_source": "badge image p1 (visual read) and \"CURRENT RATING BB\" p9",
+    "grade_mark": "Sufficient",
+    "risk_band": "low",
+    "risk_band_label_source": "Low",
+    "risk_band_label_source_id": "Rendah",
+    "band_description_source": "Main information security and/or privacy controls are adequate, appropriate, and effective enough to provide reasonable assurance that security and/or privacy risks are being managed and objectives are met. Some specific control weaknesses have been noted. Moderate additional work on information security and/or privacy is recommended.",
+    "net": {
+      "value": 201,
+      "unit": "points",
+      "source_label": "Score 201 / 360 · Current State"
+    },
+    "pool": {
+      "value": 360,
+      "unit": "points",
+      "source_label": "Score 201 / 360"
+    },
+    "grade_table_id": {
+      "value": null,
+      "state": "unavailable",
+      "reason_code": "not_printed_in_source"
+    },
+    "stored_vs_calculated": {
+      "value": null,
+      "state": "unavailable",
+      "reason_code": "not_printed_in_source"
+    },
+    "review_flags": [
+      "RF-M01"
+    ]
+  },
+  "sections": {
+    "executive_overview": {
+      "number": "01",
+      "title": "Executive overview",
+      "group": "overview_and_priorities",
+      "state": "partial",
+      "state_label_source": null,
+      "reason_code": "score_context_incomplete",
+      "state_reason": "Grade, risk band, net score (201 / 360), aspect scores and sector benchmark are printed; score context and assessment id are not.",
+      "source_pages": [
+        1,
+        2,
+        3,
+        4,
+        9
+      ],
+      "summary": "Mock Cyberrank (cyberrank.site) holds an IISRI external rating of BB (Low risk band), with a net score of 201 of 360 on the 13 Oct 2026 assessment.",
+      "scope_and_coverage": {
+        "primary_domain": "cyberrank.site",
+        "observed_targets": [
+          {
+            "id": "scanned_subdomains",
+            "label": "Scanned subdomains",
+            "value": 4,
+            "unit": "subdomains",
+            "state": "findings",
+            "source_label": "Scanned Subdomains (4 listed)",
+            "count_kind": "observed",
+            "section": "vulnerabilities"
+          },
+          {
+            "id": "hosts_observed_residency",
+            "label": "Hosts observed for residency",
+            "value": 5,
+            "unit": "hosts",
+            "state": "findings",
+            "source_label": "XX (1 host), United States of America (4 hosts)",
+            "count_kind": "observed",
+            "section": "data_residency"
+          }
+        ],
+        "eligible_targets": {
+          "value": null,
+          "state": "unavailable",
+          "reason_code": "not_printed_in_source"
+        },
+        "coverage_percent": {
+          "value": null,
+          "state": "unavailable",
+          "reason_code": "denominator_unavailable"
+        },
+        "coverage_statement_source": "No additional subdomains or externally exposed assets were identified during this assessment.",
+        "method_statement_source": "This report is generated by IISRI® CyberRank.ai using automated, non-intrusive analysis of publicly accessible information."
+      },
+      "rating_overview": {
+        "rating_ref": "rating",
+        "aspect_breakdown": [
+          {
+            "aspect": "privacy",
+            "section": "privacy",
+            "value": 59,
+            "unit": "percent",
+            "state": "findings",
+            "display_label_source": "59%",
+            "summary_label_source": "Privacy policy exists but has 7 active risks requiring attention"
+          },
+          {
+            "aspect": "vulnerability",
+            "section": "vulnerabilities",
+            "value": 20,
+            "unit": "percent",
+            "state": "findings",
+            "display_label_source": "20%",
+            "summary_label_source": "Security improvements needed urgently"
+          },
+          {
+            "aspect": "certification",
+            "section": "certifications",
+            "value": 0,
+            "unit": "certifications",
+            "state": "clear",
+            "display_label_source": "0 certifications",
+            "summary_label_source": "Compliance improvements recommended",
+            "secondary": {
+              "id": "compliance_score",
+              "label": "Compliance Score",
+              "value": 0,
+              "unit": "percent",
+              "state": "clear",
+              "source_label": "Compliance Score: 0% (100% = fully certified)"
+            }
+          },
+          {
+            "aspect": "data_leak",
+            "section": "data_leak_history",
+            "value": 0,
+            "unit": "events",
+            "state": "clear",
+            "display_label_source": "0 leakes",
+            "summary_label_source": "No data breaches detected in public records. Excellent security posture.",
+            "secondary": {
+              "id": "data_leak_score",
+              "label": "Security Score",
+              "value": 100,
+              "unit": "percent",
+              "state": "clear",
+              "source_label": "Security Score: 100% (100% = leak-free)"
+            }
+          },
+          {
+            "aspect": "credential",
+            "section": "credential_exposure",
+            "value": 0,
+            "unit": "records_unit_unverified",
+            "state": "clear",
+            "display_label_source": "0 Found",
+            "summary_label_source": "No credential leaks detected"
+          }
+        ],
+        "note": "Aspect values use different units and denominators; never average them or compare with the grade directly."
+      },
+      "sector_comparison": {
+        "sector": "Manufacturing",
+        "sector_source_id": "Manufaktur",
+        "intro_source": "See how your security posture compares to sector peers",
+        "metrics": [
+          {
+            "id": "your_score",
+            "label": "Your Score",
+            "value": 73,
+            "unit": "points",
+            "state": "findings",
+            "source_label": "Your Score 73/100",
+            "denominator": 100
+          },
+          {
+            "id": "sector_average",
+            "label": "Sector Average",
+            "value": 67,
+            "unit": "points",
+            "state": "findings",
+            "source_label": "Sector Average 67/100",
+            "denominator": 100
+          },
+          {
+            "id": "sector_top_10_percent",
+            "label": "Sector Top 10%",
+            "value": 90,
+            "unit": "points",
+            "state": "findings",
+            "source_label": "Sector Top 10% 90/100",
+            "denominator": 100
+          }
+        ],
+        "performance_gap": {
+          "value": null,
+          "state": "unavailable",
+          "reason_code": "not_printed_in_source"
+        },
+        "cohort": {
+          "cohort_id": null,
+          "cohort_size": null,
+          "period": null,
+          "percentile_method": null,
+          "state": "unavailable",
+          "reason_code": "not_printed_in_source"
+        },
+        "note": "Your score (out of 100) is not the 360-point IISRI score; no forecast or percentile may be derived from it."
+      }
+    },
+    "priority_actions": {
+      "number": "02",
+      "title": "Priority actions",
+      "group": "overview_and_priorities",
+      "state": "findings",
+      "state_label_source": "Priority Action Items",
+      "source_pages": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "intro_source": "Recommended actions to improve your IISRI rating, ordered by severity and priority",
+      "actions": [
+        {
+          "action_id": "act-01",
+          "rank": 1,
+          "priority": "high",
+          "priority_label_source": "HIGH PRIORITY",
+          "title": "Privacy",
+          "title_source": "PRIVACY",
+          "estimated_time_reported": "2 weeks",
+          "required_role": "Legal + DPO team",
+          "owner": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "due_at": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "status": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_tracked"
+          },
+          "action_required_source": "Cookie collection is vague – The policy says it uses cookies but only points to a separate Cookie Policy without summarizing what data those cookies track or how long they last, making it unclear what’s being collected about your browsing behavior.",
+          "linked_sections": [
+            "privacy"
+          ],
+          "linked_finding_ids": [],
+          "category": "privacy"
+        },
+        {
+          "action_id": "act-02",
+          "rank": 2,
+          "priority": "high",
+          "priority_label_source": "HIGH PRIORITY",
+          "title": "Security",
+          "title_source": "SECURITY",
+          "estimated_time_reported": "2 weeks",
+          "required_role": "Legal + DPO team",
+          "owner": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "due_at": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "status": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_tracked"
+          },
+          "action_required_source": "Workspace admin visibility – Administrators in your workspace can see your activity and content, which means your employer or team lead could access your uploaded assessments or interactions without your direct consent.",
+          "linked_sections": [
+            "privacy"
+          ],
+          "linked_finding_ids": [],
+          "category": "security"
+        },
+        {
+          "action_id": "act-03",
+          "rank": 3,
+          "priority": "high",
+          "priority_label_source": "HIGH PRIORITY",
+          "title": "Privacy",
+          "title_source": "PRIVACY",
+          "estimated_time_reported": "2 weeks",
+          "required_role": "Legal + DPO team",
+          "owner": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "due_at": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "status": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_tracked"
+          },
+          "action_required_source": "Data sharing with third parties loosely defined – The policy lists “vetted sub-processors” but only offers a list “on request,” so you can’t easily check who’s handling your data right now without asking.",
+          "linked_sections": [
+            "privacy"
+          ],
+          "linked_finding_ids": [],
+          "category": "privacy"
+        },
+        {
+          "action_id": "act-04",
+          "rank": 4,
+          "priority": "high",
+          "priority_label_source": "HIGH PRIORITY",
+          "title": "Privacy",
+          "title_source": "PRIVACY",
+          "estimated_time_reported": "2 weeks",
+          "required_role": "Legal + DPO team",
+          "owner": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "due_at": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "status": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_tracked"
+          },
+          "action_required_source": "International transfers rely on broad safeguards – It mentions Standard Contractual Clauses or your consent for cross-border data, but doesn’t specify which countries data goes to, leaving you uncertain about protection differences.",
+          "linked_sections": [
+            "privacy"
+          ],
+          "linked_finding_ids": [],
+          "category": "privacy"
+        },
+        {
+          "action_id": "act-05",
+          "rank": 5,
+          "priority": "high",
+          "priority_label_source": "HIGH PRIORITY",
+          "title": "Privacy",
+          "title_source": "PRIVACY",
+          "estimated_time_reported": "2 weeks",
+          "required_role": "Legal + DPO team",
+          "owner": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "due_at": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "status": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_tracked"
+          },
+          "action_required_source": "Retention period is fuzzy – The policy says data is kept as long as needed for service or legal reasons, with no clear timeline for deletion after account cancellation, which could mean your data lingers indefinitely.",
+          "linked_sections": [
+            "privacy"
+          ],
+          "linked_finding_ids": [],
+          "category": "privacy"
+        },
+        {
+          "action_id": "act-06",
+          "rank": 6,
+          "priority": "high",
+          "priority_label_source": "HIGH PRIORITY",
+          "title": "Privacy",
+          "title_source": "PRIVACY",
+          "estimated_time_reported": "2 weeks",
+          "required_role": "Legal + DPO team",
+          "owner": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "due_at": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "status": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_tracked"
+          },
+          "action_required_source": "Privacy rights depend on contacting your employer first – If you use CyberRank through work, you’re told to reach out to them before exercising your rights, which could delay or complicate your ability to access or delete your data.",
+          "linked_sections": [
+            "privacy"
+          ],
+          "linked_finding_ids": [],
+          "category": "privacy"
+        },
+        {
+          "action_id": "act-07",
+          "rank": 7,
+          "priority": "high",
+          "priority_label_source": "HIGH PRIORITY",
+          "title": "Security",
+          "title_source": "SECURITY",
+          "estimated_time_reported": "2 weeks",
+          "required_role": "Legal + DPO team",
+          "owner": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "due_at": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "status": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_tracked"
+          },
+          "action_required_source": "Security promises but no absolute guarantee – While it lists strong controls like encryption and testing, it admits no system is perfectly secure, so you still bear the risk of a breach without specific compensation or liability details.",
+          "linked_sections": [
+            "privacy"
+          ],
+          "linked_finding_ids": [],
+          "category": "security"
+        },
+        {
+          "action_id": "act-08",
+          "rank": 8,
+          "priority": "medium",
+          "priority_label_source": "MEDIUM PRIORITY",
+          "title": "Enhance DMARC Policy to \"Quarantine\"",
+          "title_source": "Enhance DMARC Policy to \"Quarantine\"",
+          "estimated_time_reported": "1 week",
+          "required_role": "Email admin",
+          "owner": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "due_at": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_assigned"
+          },
+          "status": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_tracked"
+          },
+          "action_required_source": "Upgrade DMARC policy from monitoring (p=none) to quarantine (p=quarantine) to actively protect against email spoofing. Prevents attackers from impersonating your domain in phishing attacks.",
+          "linked_sections": [
+            "vulnerabilities"
+          ],
+          "linked_finding_ids": [
+            "ctrl-dmarc"
+          ]
+        }
+      ],
+      "remediation_impact": {
+        "state": "findings",
+        "title_source": "Projected Rating After Remediation",
+        "source_pages": [
+          9
+        ],
+        "current": {
+          "grade": "BB",
+          "score": 201,
+          "pool": 360
+        },
+        "projected": {
+          "grade": "AAA",
+          "score": 330,
+          "pool": 360
+        },
+        "points_recoverable": 129,
+        "active_issues": {
+          "total": 43,
+          "privacy": 7,
+          "vulnerability": 36
+        },
+        "conditional_on_rescan": true,
+        "narrative_source": "43 active issues were identified (7 privacy issues, 36 vulnerability findings). Completing the recommended actions is expected to recover up to 129 points, moving the score from 201 to 330 out of 360. This assumes every vulnerability finding is fixed and confirmed by a fresh scan and the reported privacy issues are remediated in the privacy policy. Vulnerability fixes only affect the rating after the next scan, so the projected score is conditional on that rescan.",
+        "caption_source": "Estimated improvement upon completion of the recommended actions"
+      },
+      "note": "Rank is source order, not a stable id. Estimated time is not a due date; required role is not an owner."
+    },
+    "privacy": {
+      "number": "03",
+      "title": "Privacy",
+      "group": "assessment_details",
+      "state": "findings",
+      "state_label_source": "59% PRIVACY SCORE",
+      "source_pages": [
+        10,
+        11,
+        12,
+        13
+      ],
+      "old_section_label": "SECTION 1 OF 8 · PRIVACY",
+      "intro_source": "Evaluates privacy posture through publicly available data, privacy policies, technical implementations, and compliance with global standards including GDPR and PPDL.",
+      "summary": "One privacy policy was assessed at 59% with 7 active issues.",
+      "policy": {
+        "state": "findings",
+        "state_label_source": "59% Privacy Score",
+        "policy_state": {
+          "value": "valid_assessed",
+          "state": "findings",
+          "source_page": 2,
+          "source_label": "Privacy policy exists but has 7 active risks requiring attention"
+        },
+        "policy_source": {
+          "value": null,
+          "state": "unavailable",
+          "reason_code": "not_printed_in_source"
+        },
+        "metrics": [
+          {
+            "id": "privacy_score",
+            "label": "Privacy Score",
+            "value": 59,
+            "unit": "percent",
+            "state": "findings",
+            "source_label": "59%"
+          },
+          {
+            "id": "active_issues",
+            "label": "Active Issues",
+            "value": 7,
+            "unit": "issues",
+            "state": "findings",
+            "source_label": "7",
+            "count_kind": "reported"
+          },
+          {
+            "id": "policies_found",
+            "label": "Policies Found",
+            "value": 1,
+            "unit": "policies",
+            "state": "findings",
+            "source_label": "1",
+            "count_kind": "reported"
+          }
+        ],
+        "areas": {
+          "value": null,
+          "state": "unavailable",
+          "reason_code": "not_printed_in_source",
+          "note": "Per-area A-P scores not printed."
+        },
+        "issues": [
+          {
+            "label": "Issue 1",
+            "category": "privacy",
+            "text": "Cookie collection is vague – The policy says it uses cookies but only points to a separate Cookie Policy without summarizing what data those cookies track or how long they last, making it unclear what’s being collected about your browsing behavior."
+          },
+          {
+            "label": "Issue 2",
+            "category": "security",
+            "text": "Workspace admin visibility – Administrators in your workspace can see your activity and content, which means your employer or team lead could access your uploaded assessments or interactions without your direct consent."
+          },
+          {
+            "label": "Issue 3",
+            "category": "privacy",
+            "text": "Data sharing with third parties loosely defined – The policy lists “vetted sub-processors” but only offers a list “on request,” so you can’t easily check who’s handling your data right now without asking."
+          },
+          {
+            "label": "Issue 4",
+            "category": "privacy",
+            "text": "International transfers rely on broad safeguards – It mentions Standard Contractual Clauses or your consent for cross-border data, but doesn’t specify which countries data goes to, leaving you uncertain about protection differences."
+          },
+          {
+            "label": "Issue 5",
+            "category": "privacy",
+            "text": "Retention period is fuzzy – The policy says data is kept as long as needed for service or legal reasons, with no clear timeline for deletion after account cancellation, which could mean your data lingers indefinitely."
+          },
+          {
+            "label": "Issue 6",
+            "category": "privacy",
+            "text": "Privacy rights depend on contacting your employer first – If you use CyberRank through work, you’re told to reach out to them before exercising your rights, which could delay or complicate your ability to access or delete your data."
+          },
+          {
+            "label": "Issue 7",
+            "category": "security",
+            "text": "Security promises but no absolute guarantee – While it lists strong controls like encryption and testing, it admits no system is perfectly secure, so you still bear the risk of a breach without specific compensation or liability details."
+          }
+        ]
+      }
+    },
+    "vulnerabilities": {
+      "number": "04",
+      "title": "Vulnerabilities",
+      "group": "assessment_details",
+      "state": "findings",
+      "state_label_source": "20% VULNERABILITY SCORE",
+      "source_pages": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "old_section_label": "SECTION 2 OF 8 · VULNERABILITY",
+      "intro_source": "Covers external security posture including network vulnerabilities, open ports, SSL/TLS configuration, and DNS security controls protecting digital assets.",
+      "summary": "12 finding types were reported: 1 high, 4 medium and 7 low, across the apex domain and 4 scanned subdomains.",
+      "metrics": [
+        {
+          "id": "vulnerability_score",
+          "label": "Vulnerability score",
+          "value": 20,
+          "unit": "percent",
+          "state": "findings",
+          "source_label": "20%"
+        },
+        {
+          "id": "finding_types",
+          "label": "Finding types",
+          "value": 12,
+          "unit": "finding_types",
+          "state": "findings",
+          "count_kind": "distinct_finding_type"
+        },
+        {
+          "id": "finding_types_critical",
+          "label": "Critical finding types",
+          "value": 0,
+          "unit": "finding_types",
+          "state": "clear"
+        },
+        {
+          "id": "finding_types_high",
+          "label": "High finding types",
+          "value": 1,
+          "unit": "finding_types",
+          "state": "findings"
+        },
+        {
+          "id": "finding_types_medium",
+          "label": "Medium finding types",
+          "value": 4,
+          "unit": "finding_types",
+          "state": "findings"
+        },
+        {
+          "id": "finding_types_low",
+          "label": "Low finding types",
+          "value": 7,
+          "unit": "finding_types",
+          "state": "findings"
+        },
+        {
+          "id": "asset_memberships",
+          "label": "Finding-asset memberships",
+          "value": 36,
+          "unit": "memberships",
+          "state": "findings",
+          "count_kind": "membership_not_unique_assets"
+        },
+        {
+          "id": "distinct_asset_labels",
+          "label": "Distinct affected asset labels",
+          "value": 5,
+          "unit": "asset_labels",
+          "state": "findings",
+          "count_kind": "distinct_labels_as_printed"
+        }
+      ],
+      "scanned_assets": {
+        "title_source": "List of identified assets and observed security posture:",
+        "domains": [
+          "cyberrank.site"
+        ],
+        "subdomains": [
+          "mail.cyberrank.site",
+          "test.cyberrank.site",
+          "ai.cyberrank.site",
+          "report.cyberrank.site"
+        ]
+      },
+      "severity_legend_source": [
+        {
+          "severity": "critical_high",
+          "label": "CRITICAL/HIGH",
+          "text": "Serious vulnerabilities requiring immediate attention"
+        },
+        {
+          "severity": "medium",
+          "label": "MEDIUM",
+          "text": "Moderate risk issues that should be addressed"
+        },
+        {
+          "severity": "low",
+          "label": "LOW",
+          "text": "Minor security concerns with limited impact"
+        }
+      ],
+      "breach_likelihood_legend_source": "Indicates the estimated probability that this vulnerability could lead to a security breach. >=30% represents high risk, 15-29% represents moderate risk, <15% represents lower risk.",
+      "findings": [
+        {
+          "finding_id": "vuln-01",
+          "finding_type": "cipher_order",
+          "severity": "high",
+          "severity_label_source": "HIGH",
+          "rationale_source": "A HIGH severity cipher order misconfiguration weakens TLS/SSL negotiation, potentially allowing downgrade attacks. However, exploitation requires an active man-in-the-middle position and a client supporting weak ciphers. Without evidence of active exploitation or a specific vulnerable service chain, the direct breach likelihood is low but non-zero.",
+          "affected_assets_count": 1,
+          "affected_assets": [
+            "test.cyberrank.site"
+          ],
+          "breach_likelihood": {
+            "value": 5,
+            "unit": "percent",
+            "likelihood_type": "ai_derived_per_finding",
+            "source_label": "Breach Likelihood: 5%"
+          }
+        },
+        {
+          "finding_id": "vuln-02",
+          "finding_type": "cipherlist_3DES_IDEA",
+          "severity": "medium",
+          "severity_label_source": "MEDIUM",
+          "rationale_source": "The use of deprecated ciphers like 3DES and IDEA is a known weakness that degrades overall cryptographic security. While not an immediate, direct path to a breach, it lowers the security posture and could be leveraged as part of a broader attack chain, especially if combined with other vulnerabilities. The risk is present but not imminent without active exploitation or additional context.",
+          "affected_assets_count": 2,
+          "affected_assets": [
+            "cyberrank.site / 172.67.209.197",
+            "mail.cyberrank.site"
+          ],
+          "breach_likelihood": {
+            "value": 5,
+            "unit": "percent",
+            "likelihood_type": "ai_derived_per_finding",
+            "source_label": "Breach Likelihood: 5%"
+          }
+        },
+        {
+          "finding_id": "vuln-03",
+          "finding_type": "BEAST_CBC_TLS1",
+          "severity": "medium",
+          "severity_label_source": "MEDIUM",
+          "rationale_source": "BEAST is a known cryptographic attack against CBC mode in TLS 1.0 and earlier. While a MEDIUM severity finding, modern clients and servers have implemented mitigations, and TLS 1.0 is largely deprecated. Direct exploitation requires a man-in-the-middle position and specific conditions, making a full breach unlikely in a generic context without confirmed vulnerable configurations or active adversarial presence.",
+          "affected_assets_count": 4,
+          "affected_assets": [
+            "cyberrank.site / 172.67.209.197",
+            "mail.cyberrank.site",
+            "ai.cyberrank.site",
+            "report.cyberrank.site"
+          ],
+          "breach_likelihood": {
+            "value": 5,
+            "unit": "percent",
+            "likelihood_type": "ai_derived_per_finding",
+            "source_label": "Breach Likelihood: 5%"
+          }
+        },
+        {
+          "finding_id": "vuln-04",
+          "finding_type": "BREACH",
+          "severity": "medium",
+          "severity_label_source": "MEDIUM",
+          "rationale_source": "BREACH is a side-channel attack requiring specific conditions (HTTP compression, attacker-in-the-middle, repeated requests) to extract secrets from encrypted traffic. While a real vulnerability, successful exploitation is non-trivial and depends on attacker positioning and target application behavior, making a direct breach unlikely in a generic scenario.",
+          "affected_assets_count": 3,
+          "affected_assets": [
+            "mail.cyberrank.site",
+            "ai.cyberrank.site",
+            "report.cyberrank.site"
+          ],
+          "breach_likelihood": {
+            "value": 5,
+            "unit": "percent",
+            "likelihood_type": "ai_derived_per_finding",
+            "source_label": "Breach Likelihood: 5%"
+          }
+        },
+        {
+          "finding_id": "vuln-05",
+          "finding_type": "security_headers",
+          "severity": "medium",
+          "severity_label_source": "MEDIUM",
+          "rationale_source": "Missing or misconfigured security headers (e.g., CSP, HSTS) do not directly cause a breach but increase the risk of client-side attacks like clickjacking or XSS. Exploitation requires user interaction and a separate vulnerability to be present. The likelihood of a direct breach from this alone is low, but it meaningfully elevates overall attack surface.",
+          "affected_assets_count": 1,
+          "affected_assets": [
+            "test.cyberrank.site"
+          ],
+          "breach_likelihood": {
+            "value": 5,
+            "unit": "percent",
+            "likelihood_type": "ai_derived_per_finding",
+            "source_label": "Breach Likelihood: 5%"
+          }
+        },
+        {
+          "finding_id": "vuln-06",
+          "finding_type": "TLS1",
+          "severity": "low",
+          "severity_label_source": "LOW",
+          "rationale_source": "TLS 1.0 is a deprecated protocol with known cryptographic weaknesses (e.g., BEAST). While it increases the risk of information disclosure if an attacker is in a position to perform a man-in-the-middle attack, exploitation requires a specific, active adversary on the network path. It is not a direct, remotely exploitable vulnerability leading to system compromise. The likelihood of this single finding directly causing a breach is very low.",
+          "affected_assets_count": 4,
+          "affected_assets": [
+            "cyberrank.site / 172.67.209.197",
+            "mail.cyberrank.site",
+            "ai.cyberrank.site",
+            "report.cyberrank.site"
+          ],
+          "breach_likelihood": {
+            "value": 1,
+            "unit": "percent",
+            "likelihood_type": "ai_derived_per_finding",
+            "source_label": "Breach Likelihood: 1%"
+          }
+        },
+        {
+          "finding_id": "vuln-07",
+          "finding_type": "TLS1_1",
+          "severity": "low",
+          "severity_label_source": "LOW",
+          "rationale_source": "TLS 1.1 is a deprecated protocol with known cryptographic weaknesses, but exploitation requires a man-in-the-middle position and is not directly actionable for initial access. Modern clients and servers typically negotiate stronger protocols, making successful exploitation of this specific finding for a full breach highly unlikely in a generic context.",
+          "affected_assets_count": 4,
+          "affected_assets": [
+            "cyberrank.site / 172.67.209.197",
+            "mail.cyberrank.site",
+            "ai.cyberrank.site",
+            "report.cyberrank.site"
+          ],
+          "breach_likelihood": {
+            "value": 1,
+            "unit": "percent",
+            "likelihood_type": "ai_derived_per_finding",
+            "source_label": "Breach Likelihood: 1%"
+          }
+        },
+        {
+          "finding_id": "vuln-08",
+          "finding_type": "cipherlist_AVERAGE",
+          "severity": "low",
+          "severity_label_source": "LOW",
+          "rationale_source": "A LOW severity cipher list misconfiguration, while a technical weakness, does not directly enable a breach. It typically requires an attacker to already be in a privileged position to exploit (e.g., man-in-the-middle). Without active exploitation or additional critical flaws, the direct likelihood of a breach is minimal.",
+          "affected_assets_count": 4,
+          "affected_assets": [
+            "cyberrank.site / 172.67.209.197",
+            "mail.cyberrank.site",
+            "ai.cyberrank.site",
+            "report.cyberrank.site"
+          ],
+          "breach_likelihood": {
+            "value": 1,
+            "unit": "percent",
+            "likelihood_type": "ai_derived_per_finding",
+            "source_label": "Breach Likelihood: 1%"
+          }
+        },
+        {
+          "finding_id": "vuln-09",
+          "finding_type": "SWEET32",
+          "severity": "low",
+          "severity_label_source": "LOW",
+          "rationale_source": "SWEET32 is a cryptographic vulnerability in legacy 64-bit block ciphers like 3DES and Blowfish. While a theoretical attack exists, it requires capturing massive amounts of encrypted data (hundreds of gigabytes) from a single session, which is an unrealistic scenario for most modern, generic applications. Modern systems and protocols have largely deprecated or mitigated these weak ciphers. The LOW severity reflects the impractical attack requirements and widespread mitigations, making direct breach from this flaw highly unlikely.",
+          "affected_assets_count": 2,
+          "affected_assets": [
+            "cyberrank.site / 172.67.209.197",
+            "mail.cyberrank.site"
+          ],
+          "breach_likelihood": {
+            "value": 1,
+            "unit": "percent",
+            "likelihood_type": "ai_derived_per_finding",
+            "source_label": "Breach Likelihood: 1%"
+          }
+        },
+        {
+          "finding_id": "vuln-10",
+          "finding_type": "BEAST",
+          "severity": "low",
+          "severity_label_source": "LOW",
+          "rationale_source": "BEAST is a legacy client-side attack against TLS 1.0 and early implementations of TLS 1.1. Modern browsers and servers have implemented effective mitigations for over a decade. The vulnerability requires a man-in-the-middle position and significant effort to exploit, and TLS 1.0/1.1 are widely deprecated and disabled. Therefore, the realistic likelihood of this directly leading to a breach is negligible.",
+          "affected_assets_count": 4,
+          "affected_assets": [
+            "cyberrank.site / 172.67.209.197",
+            "mail.cyberrank.site",
+            "ai.cyberrank.site",
+            "report.cyberrank.site"
+          ],
+          "breach_likelihood": {
+            "value": 1,
+            "unit": "percent",
+            "likelihood_type": "ai_derived_per_finding",
+            "source_label": "Breach Likelihood: 1%"
+          }
+        },
+        {
+          "finding_id": "vuln-11",
+          "finding_type": "LUCKY13",
+          "severity": "low",
+          "severity_label_source": "LOW",
+          "rationale_source": "LUCKY13 is a low-severity cryptographic timing side-channel attack against TLS/SSL implementations. It requires a specific, controlled environment to exploit, is difficult to execute reliably over a network, and modern systems have mitigations. The direct breach likelihood from this finding alone is negligible.",
+          "affected_assets_count": 4,
+          "affected_assets": [
+            "cyberrank.site / 172.67.209.197",
+            "mail.cyberrank.site",
+            "ai.cyberrank.site",
+            "report.cyberrank.site"
+          ],
+          "breach_likelihood": {
+            "value": 1,
+            "unit": "percent",
+            "likelihood_type": "ai_derived_per_finding",
+            "source_label": "Breach Likelihood: 1%"
+          }
+        },
+        {
+          "finding_id": "vuln-12",
+          "finding_type": "HSTS",
+          "severity": "low",
+          "severity_label_source": "LOW",
+          "rationale_source": "HSTS is a security enhancement, not a vulnerability. Its absence or misconfiguration (LOW severity) does not directly enable a breach. It only protects against specific, targeted SSL/TLS downgrade attacks, which are not common initial intrusion vectors. The likelihood of a breach stemming solely from this finding is negligible.",
+          "affected_assets_count": 3,
+          "affected_assets": [
+            "mail.cyberrank.site",
+            "test.cyberrank.site",
+            "report.cyberrank.site"
+          ],
+          "breach_likelihood": {
+            "value": 1,
+            "unit": "percent",
+            "likelihood_type": "ai_derived_per_finding",
+            "source_label": "Breach Likelihood: 1%"
+          }
+        }
+      ],
+      "assets_register_ref": "appendices.d_evidence_registers.vulnerability_asset_register",
+      "coverage_note_source": "Note: No additional subdomains or externally exposed assets were identified during this assessment.",
+      "email_dns_controls": {
+        "state": "findings",
+        "state_label_source": "Email & DNS Security Controls",
+        "controls": [
+          {
+            "finding_id": "ctrl-dkim",
+            "control": "DKIM",
+            "result": "not_enabled",
+            "state": "findings",
+            "status_label_source": "Not Enabled",
+            "line_source": "DKIM: Not Enabled – supports email integrity and sender authenticity.",
+            "key_strength_bits": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "not_printed_in_source"
+            }
+          },
+          {
+            "finding_id": "ctrl-dmarc",
+            "control": "DMARC",
+            "result": "enabled",
+            "state": "partial",
+            "status_label_source": "Enabled ( mode)",
+            "line_source": "DMARC: Enabled ( mode) – visibility into spoofing attempts is present.",
+            "dmarc_policy": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "blank_in_source",
+              "note": "Mode printed empty; p=none in action act-08 is not traceable to this value."
+            },
+            "review_flags": [
+              "RF-01"
+            ]
+          },
+          {
+            "finding_id": "ctrl-dnssec",
+            "control": "DNSSEC",
+            "result": "missing_or_invalid",
+            "state": "findings",
+            "status_label_source": "Missing / Invalid",
+            "line_source": "DNSSEC: Missing / Invalid – authenticates DNS responses and protects against DNS cache poisoning."
+          }
+        ],
+        "guidance_source": "It is recommended to progressively enforce DMARC policies to reduce phishing and impersonation risks. DKIM RSA keys must be at least 2048 bits; 1024-bit keys are flagged as a LOW finding. DNSSEC should be enabled (DS record + RRSIG + valid chain of trust) to prevent DNS spoofing."
+      },
+      "ip_reputation": {
+        "state": "pending_review",
+        "state_label_source": "IP Reputation — Clean",
+        "reason_code": "sentinel_meaning_unconfirmed",
+        "summary_source": "Checked 4 IP(s) against threat intelligence feeds.",
+        "ips_checked": 4,
+        "rows": [
+          {
+            "ip_address": "104.21.16.16",
+            "isp": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "blank_in_source"
+            },
+            "country": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "blank_in_source"
+            },
+            "abuse_score": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "sentinel_meaning_unconfirmed",
+              "source_label": "-1"
+            },
+            "reports": {
+              "value": 0,
+              "source_label": "0",
+              "state": "pending_review",
+              "reason_code": "sentinel_meaning_unconfirmed"
+            }
+          },
+          {
+            "ip_address": "172.67.209.197",
+            "isp": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "blank_in_source"
+            },
+            "country": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "blank_in_source"
+            },
+            "abuse_score": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "sentinel_meaning_unconfirmed",
+              "source_label": "-1"
+            },
+            "reports": {
+              "value": 0,
+              "source_label": "0",
+              "state": "pending_review",
+              "reason_code": "sentinel_meaning_unconfirmed"
+            }
+          },
+          {
+            "ip_address": "2606:4700:3033:0:0:0:6815:1010",
+            "isp": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "blank_in_source"
+            },
+            "country": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "blank_in_source"
+            },
+            "abuse_score": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "sentinel_meaning_unconfirmed",
+              "source_label": "-1"
+            },
+            "reports": {
+              "value": 0,
+              "source_label": "0",
+              "state": "pending_review",
+              "reason_code": "sentinel_meaning_unconfirmed"
+            }
+          },
+          {
+            "ip_address": "2606:4700:3033:0:0:0:ac43:d1c5",
+            "isp": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "blank_in_source"
+            },
+            "country": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "blank_in_source"
+            },
+            "abuse_score": {
+              "value": null,
+              "state": "unavailable",
+              "reason_code": "sentinel_meaning_unconfirmed",
+              "source_label": "-1"
+            },
+            "reports": {
+              "value": 0,
+              "source_label": "0",
+              "state": "pending_review",
+              "reason_code": "sentinel_meaning_unconfirmed"
+            }
+          }
+        ],
+        "review_flags": [
+          "RF-07"
+        ]
+      },
+      "https_redirect": {
+        "state": "clear",
+        "state_label_source": "# HTTPS Redirect — Secure",
+        "result": "redirects_to_https",
+        "narrative_source": "HTTP correctly redirects to HTTPS. No insecure patterns detected."
+      }
+    },
+    "credential_exposure": {
+      "number": "05",
+      "title": "Credential exposure",
+      "group": "assessment_details",
+      "state": "clear",
+      "state_label_source": "100% CREDENTIAL SCORE",
+      "source_pages": [
+        3,
+        23
+      ],
+      "old_section_label": "SECTION 6 OF 8 · CREDENTIAL LEAK",
+      "intro_source": "Identifies credential leaks associated with the organization’s domains found in known data breaches. Exposed credentials represent a direct risk of unauthorized account access.",
+      "summary": "No credential exposure was found for this organisation in the sources checked.",
+      "state_reason": "No known credential leaks found for Mock Cyberrank.",
+      "metrics": [
+        {
+          "id": "credential_score",
+          "label": "Credential score",
+          "value": 100,
+          "unit": "percent",
+          "state": "clear",
+          "source_label": "100%"
+        },
+        {
+          "id": "found_headline",
+          "label": "Found (headline)",
+          "value": 0,
+          "unit": "records_unit_unverified",
+          "state": "clear",
+          "source_label": "0 Found",
+          "count_kind": "reported_headline"
+        }
+      ],
+      "register_ref": "appendices.d_evidence_registers.credential_register",
+      "empty_state_source": {
+        "title": "No credential leaks",
+        "text": "No known credential leaks found for Mock Cyberrank."
+      }
+    },
+    "data_leak_history": {
+      "number": "06",
+      "title": "Data breach and leak history",
+      "group": "assessment_details",
+      "state": "clear",
+      "state_label_source": "No Data Leaks Identified",
+      "source_pages": [
+        2,
+        21
+      ],
+      "old_section_label": "SECTION 4 OF 8 · DATA LEAK HISTORY",
+      "intro_source": "Documents publicly known data leak incidents. Historical data leaks are factored into the IISRI® score, with recency and severity both affecting the overall rating.",
+      "summary": "No data leak events were found in the sources and period checked.",
+      "metrics": [
+        {
+          "id": "data_leak_score",
+          "label": "Data leak score",
+          "value": 100,
+          "unit": "percent",
+          "state": "clear",
+          "source_label": "100%"
+        },
+        {
+          "id": "events_reported",
+          "label": "Leak events",
+          "value": 0,
+          "unit": "events",
+          "state": "clear",
+          "source_label": "0 leakes",
+          "count_kind": "reported"
+        }
+      ],
+      "last_valid_event": {
+        "value": null,
+        "state": "not_applicable",
+        "reason_code": "no_events",
+        "note": "No event to show."
+      },
+      "events": [],
+      "empty_state_source": {
+        "title": "No Data Leaks Identified",
+        "text": "No confirmed data leak events were associated with this organization during the assessed period.",
+        "coverage": "This assessment is based on automated analysis of data leak databases, public disclosures, and monitored online sources."
+      }
+    },
+    "data_sovereignty": {
+      "number": "07",
+      "title": "Data sovereignty",
+      "group": "assessment_details",
+      "state": "findings",
+      "state_label_source": "Not identified in published policies",
+      "summary": "Governing law could not be identified.",
+      "enabled": true,
+      "observed_jurisdiction": {
+        "value": null,
+        "state": "unavailable",
+        "reason_code": "not_identified",
+        "source_label": "Not identified in published policies"
+      },
+      "allowed_set": [
+        "European Union (EU)"
+      ],
+      "match_state": "unknown",
+      "quote_source": "These Terms are governed by the laws of the jurisdiction in which the contracting CyberRank entity is established, without regard to conflict-of-laws principles. Any dispute arising out of or related to these Terms will be brought exclusively in the courts of that jurisdiction, unless a mandatory consumer-protection law provides otherwise.",
+      "rows": [
+        {
+          "label": "Governing law / courts we found",
+          "value_source": "Not identified in published policies"
+        },
+        {
+          "label": "Jurisdictions you accept",
+          "value_source": "European Union (EU)"
+        }
+      ],
+      "narrative_source": "We could not identify a governing-law or court clause in the supplier's published policies, and that does not match the jurisdictions your organisation accepts (European Union (EU)). Until that is clear, treat legal location as unresolved.",
+      "review_flags": [
+        "RF-M02"
+      ],
+      "verdict_source": "does not match the jurisdictions your organisation accepts (European Union (EU))",
+      "verdict_source_page": 12,
+      "intro_source": "Where this supplier says disputes and legal obligations are handled"
+    },
+    "data_residency": {
+      "number": "08",
+      "title": "Data residency",
+      "group": "assessment_details",
+      "state": "findings",
+      "state_label_source": "XX (1 host), United States of America (4 hosts)",
+      "summary": "Hosting is outside the preferred country.",
+      "enabled": true,
+      "observed_hosting": [
+        {
+          "country": null,
+          "hosts": 1,
+          "state": "unavailable",
+          "reason_code": "country_code_placeholder",
+          "source_label": "XX (1 host)",
+          "evidence_kind": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_printed_in_source"
+          }
+        },
+        {
+          "country": "United States of America",
+          "hosts": 4,
+          "evidence_kind": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_printed_in_source"
+          }
+        }
+      ],
+      "allowed_set": [
+        "Argentina"
+      ],
+      "match_state": "mismatch",
+      "rows": [
+        {
+          "label": "Where we found their systems",
+          "value_source": "XX (1 host), United States of America (4 hosts)"
+        },
+        {
+          "label": "Countries you prefer",
+          "value_source": "Argentina"
+        }
+      ],
+      "narrative_source": "We found public systems hosted in locations that do not match the countries your organisation prefers (Argentina). Hosts observed: XX (1 host), United States of America (4 hosts). That means customer data may sit outside the places you require.",
+      "note": "IP location is not proof of where all customer data is stored.",
+      "intro_source": "Where this organisation's public systems are hosted, compared with where you allow data to live"
+    },
+    "legal_terms": {
+      "number": "09",
+      "title": "Legal terms & conditions",
+      "group": "assessment_details",
+      "state": "not_applicable",
+      "reason_code": "no_login_or_payment_portal_detected",
+      "state_label_source": "Not detected",
+      "summary": "No login or payment portal was found.",
+      "portal_detected": false,
+      "rows": [
+        {
+          "label": "Login / Payment Portal",
+          "value_source": "Not detected"
+        }
+      ],
+      "narrative_source": "No customer login or payment portal was found on the public site, so published terms are not required to cover that kind of access.",
+      "intro_source": "Login / payment portal customer-protection clauses"
+    },
+    "ai_risk_governance": {
+      "number": "10",
+      "title": "AI risk and governance",
+      "group": "assessment_details",
+      "state": "unavailable",
+      "reason_code": "section_not_in_source",
+      "source_pages": [],
+      "state_reason": "The source report has no AI usage page (its sections run 1 to 8 without one), so no AI observation or result is available for this assessment.",
+      "summary": "AI risk is not covered by this source report."
+    },
+    "quantum_security": {
+      "number": "11",
+      "title": "Quantum security",
+      "group": "assessment_details",
+      "state": "findings",
+      "state_label_source": "Quantum Security Overview",
+      "source_pages": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "old_section_label": "SECTION 8 OF 8 · QUANTUM SECURITY",
+      "intro_source": "Assesses exposure to quantum computing threats by analyzing cryptographic primitives found in TLS/SSL configurations and SSH endpoints. Includes detection of post-quantum cryptography (PQC) algorithms that may already provide protection.",
+      "summary": "The scan reported 8 high-risk, 1 moderate-risk and 37 low-risk findings across 5 scopes; ML-KEM was detected on 4 scopes and NTRU Prime on 1.",
+      "beta_notice_source": "Quantum Vulnerability is currently in beta. You may encounter incomplete data or ongoing changes as we refine the experience.",
+      "metrics": [
+        {
+          "id": "high_risk",
+          "label": "High Risk",
+          "value": 8,
+          "unit": "findings",
+          "state": "findings",
+          "source_label": "8",
+          "count_kind": "reported_headline"
+        },
+        {
+          "id": "moderate_risk",
+          "label": "Moderate Risk",
+          "value": 1,
+          "unit": "findings",
+          "state": "findings",
+          "source_label": "1",
+          "count_kind": "reported_headline"
+        },
+        {
+          "id": "low_risk",
+          "label": "Low Risk",
+          "value": 37,
+          "unit": "findings",
+          "state": "findings",
+          "source_label": "37",
+          "count_kind": "reported_headline"
+        },
+        {
+          "id": "partly_quantum_safe",
+          "label": "Partly Quantum Safe",
+          "value": null,
+          "unit": "scopes",
+          "state": "unavailable",
+          "source_label": "#",
+          "reason_code": "placeholder_in_source"
+        },
+        {
+          "id": "pqc_detected",
+          "label": "PQC Detected",
+          "value": 5,
+          "unit": "scopes_inferred",
+          "state": "findings",
+          "source_label": "5",
+          "count_kind": "reported",
+          "note": "Unit not labelled in source; equals the 4 ML-KEM + 1 NTRU Prime domain chips."
+        }
+      ],
+      "findings_by_category": [
+        {
+          "category": "Symmetric cryptography",
+          "issues": 15,
+          "domains_source_label": "1 domain",
+          "algorithms": [
+            {
+              "algorithm": "AES_128",
+              "findings": 5,
+              "protocol_labels": [
+                "ALL",
+                "TLS_1_2"
+              ],
+              "pqc_alternative_available": null,
+              "pqc_alternative_available_state": "unavailable",
+              "pqc_alternative_available_reason_code": "not_printed_in_source"
+            },
+            {
+              "algorithm": "AES_256",
+              "findings": 5,
+              "protocol_labels": [
+                "ALL",
+                "TLS_1_0"
+              ],
+              "pqc_alternative_available": null,
+              "pqc_alternative_available_state": "unavailable",
+              "pqc_alternative_available_reason_code": "not_printed_in_source"
+            },
+            {
+              "algorithm": "CHACHA20",
+              "findings": 5,
+              "protocol_labels": [
+                "ALL"
+              ],
+              "pqc_alternative_available": null,
+              "pqc_alternative_available_state": "unavailable",
+              "pqc_alternative_available_reason_code": "not_printed_in_source"
+            }
+          ]
+        },
+        {
+          "category": "Hash functions",
+          "issues": 10,
+          "domains_source_label": "1 domain",
+          "algorithms": [
+            {
+              "algorithm": "SHA256",
+              "findings": 5,
+              "protocol_labels": [
+                "ALL",
+                "TLS_1_2"
+              ],
+              "pqc_alternative_available": null,
+              "pqc_alternative_available_state": "unavailable",
+              "pqc_alternative_available_reason_code": "not_printed_in_source"
+            },
+            {
+              "algorithm": "SHA384",
+              "findings": 5,
+              "protocol_labels": [
+                "ALL",
+                "TLS_1_0"
+              ],
+              "pqc_alternative_available": null,
+              "pqc_alternative_available_state": "unavailable",
+              "pqc_alternative_available_reason_code": "not_printed_in_source"
+            }
+          ]
+        },
+        {
+          "category": "Public-key cryptography",
+          "issues": 13,
+          "domains_source_label": "2 domains",
+          "algorithms": [
+            {
+              "algorithm": "ECDSA",
+              "findings": 5,
+              "protocol_labels": [
+                "ALL",
+                "TLS_1_2",
+                "TLS_1_0"
+              ],
+              "pqc_alternative_available": null,
+              "pqc_alternative_available_state": "unavailable",
+              "pqc_alternative_available_reason_code": "not_printed_in_source"
+            },
+            {
+              "algorithm": "RSA",
+              "findings": 2,
+              "protocol_labels": [
+                "ALL"
+              ],
+              "pqc_alternative_available": "ML-KEM"
+            },
+            {
+              "algorithm": "ECDHE",
+              "findings": 5,
+              "protocol_labels": [
+                "ALL",
+                "TLS_1_2",
+                "TLS_1_0",
+                "SSH"
+              ],
+              "pqc_alternative_available": "NTRU Prime"
+            },
+            {
+              "algorithm": "DHE",
+              "findings": 1,
+              "protocol_labels": [
+                "SSH"
+              ],
+              "pqc_alternative_available": "NTRU Prime"
+            }
+          ]
+        },
+        {
+          "category": "Certificate",
+          "issues": 5,
+          "domains_source_label": "2 domains",
+          "algorithms": [
+            {
+              "algorithm": "CERT_RSA_SIGNATURE",
+              "findings": 2,
+              "protocol_labels": [
+                "ALL"
+              ],
+              "pqc_alternative_available": null,
+              "pqc_alternative_available_state": "unavailable",
+              "pqc_alternative_available_reason_code": "not_printed_in_source"
+            },
+            {
+              "algorithm": "CERT_ECDSA_SIGNATURE",
+              "findings": 3,
+              "protocol_labels": [
+                "ALL"
+              ],
+              "pqc_alternative_available": null,
+              "pqc_alternative_available_state": "unavailable",
+              "pqc_alternative_available_reason_code": "not_printed_in_source"
+            }
+          ]
+        },
+        {
+          "category": "Key exchange",
+          "issues": 3,
+          "domains_source_label": "1 domain",
+          "algorithms": [
+            {
+              "algorithm": "SSH_HOST_KEY_RSA",
+              "findings": 1,
+              "protocol_labels": [
+                "SSH"
+              ],
+              "pqc_alternative_available": null,
+              "pqc_alternative_available_state": "unavailable",
+              "pqc_alternative_available_reason_code": "not_printed_in_source"
+            },
+            {
+              "algorithm": "SSH_HOST_KEY_ECDSA",
+              "findings": 1,
+              "protocol_labels": [
+                "SSH"
+              ],
+              "pqc_alternative_available": null,
+              "pqc_alternative_available_state": "unavailable",
+              "pqc_alternative_available_reason_code": "not_printed_in_source"
+            },
+            {
+              "algorithm": "SSH_HOST_KEY_ED25519",
+              "findings": 1,
+              "protocol_labels": [
+                "SSH"
+              ],
+              "pqc_alternative_available": null,
+              "pqc_alternative_available_state": "unavailable",
+              "pqc_alternative_available_reason_code": "not_printed_in_source"
+            }
+          ]
+        }
+      ],
+      "pqc_detected": [
+        {
+          "algorithm": "ML-KEM",
+          "algorithm_alias": "CRYSTALS-Kyber",
+          "purpose": "Key exchange / encryption",
+          "status_source": "Status: NIST standardized (FIPS 203)",
+          "domains_count": 4,
+          "domains": [
+            "cyberrank.site",
+            "ai.cyberrank.site",
+            "report.cyberrank.site",
+            "mail.cyberrank.site"
+          ]
+        },
+        {
+          "algorithm": "NTRU Prime",
+          "algorithm_alias": "Streamlined NTRU Prime",
+          "purpose": "Key exchange / encryption",
+          "status_source": "Status: Deployed in OpenSSH (not NIST-selected)",
+          "domains_count": 1,
+          "domains": [
+            "test.cyberrank.site"
+          ]
+        }
+      ],
+      "affected_protocols": [
+        {
+          "protocol": "TLS_1_2",
+          "algorithms": [
+            "AES_128",
+            "SHA256",
+            "ECDSA",
+            "ECDHE"
+          ],
+          "pqc_source": "NTRU Prime, ML-KEM available",
+          "risk_level": "low"
+        },
+        {
+          "protocol": "TLS_1_0",
+          "algorithms": [
+            "AES_256",
+            "SHA384",
+            "ECDSA",
+            "ECDHE"
+          ],
+          "pqc_source": "NTRU Prime available",
+          "risk_level": "high"
+        },
+        {
+          "protocol": "SSH",
+          "algorithms": [
+            "ECDHE",
+            "SSH_HOST_KEY_RSA",
+            "SSH_HOST_KEY_ECDSA",
+            "SSH_HOST_KEY_ED25519",
+            "DHE"
+          ],
+          "pqc_source": "NTRU Prime available",
+          "risk_level": "high"
+        }
+      ],
+      "scope_summary": [
+        {
+          "subdomain": "cyberrank.site",
+          "scope_level": "root_aggregate",
+          "rows": 9,
+          "high": 7,
+          "moderate": 0,
+          "low": 32
+        },
+        {
+          "subdomain": "ai.cyberrank.site",
+          "scope_level": "subdomain",
+          "rows": 8,
+          "high": 1,
+          "moderate": 0,
+          "low": 9
+        },
+        {
+          "subdomain": "report.cyberrank.site",
+          "scope_level": "subdomain",
+          "rows": 8,
+          "high": 1,
+          "moderate": 0,
+          "low": 7
+        },
+        {
+          "subdomain": "mail.cyberrank.site",
+          "scope_level": "subdomain",
+          "rows": 9,
+          "high": 2,
+          "moderate": 0,
+          "low": 7
+        },
+        {
+          "subdomain": "test.cyberrank.site",
+          "scope_level": "subdomain",
+          "rows": 12,
+          "high": 2,
+          "moderate": 1,
+          "low": 9
+        }
+      ],
+      "scope_register_ref": "appendices.d_evidence_registers.quantum_scope_register",
+      "aggregation_note": "Row cyberrank.site is labelled the apex aggregate. Its rows sum to fewer findings than the headline (RF-M03).",
+      "scope_and_limitations_source": {
+        "title": "Our Post-Quantum Safety Scan Results",
+        "scope_and_limitations": {
+          "title": "a. Scope and limitations",
+          "intro": "We cannot guarantee that a domain or organization is fully quantum-safe based on the results of this assessment because:",
+          "items": [
+            "Post-quantum cryptography is an evolving field. Cryptographic standards, implementations, and the understanding of quantum computing capabilities continue to develop. Future advances may affect the security of algorithms considered secure today.",
+            "This is a non-invasive, external assessment. Unless an internal CyberRank agent is deployed, the scan evaluates only externally observable services and configurations. Internal systems, private networks, and services that are not externally accessible are outside the scope of this assessment."
+          ]
+        },
+        "post_quantum_readiness": {
+          "title": "b. Post-quantum readiness",
+          "intro": "A domain can only be considered fully post-quantum ready if it:",
+          "items": [
+            "Supports post-quantum cryptographic (PQC) algorithms for secure connections; and",
+            "Disables legacy TLS versions (TLS 1.0, TLS 1.1, and TLS 1.2)."
+          ],
+          "closing": "Allowing legacy TLS versions enables clients to establish connections using classical cryptographic algorithms. If an attacker can force or negotiate the use of an older protocol version (a protocol downgrade), the connection may lose the protections provided by post-quantum cryptography."
+        }
+      },
+      "review_flags": [
+        "RF-M03",
+        "RF-M04"
+      ]
+    },
+    "security_resourcing": {
+      "number": "12",
+      "title": "Security resourcing",
+      "group": "assessment_details",
+      "state": "findings",
+      "state_label_source": "Public materials show this organisation has a security function.",
+      "summary": "Public materials show this organisation has a security function.",
+      "privacy_role_evidence": null,
+      "privacy_role_evidence_reason_code": "not_printed_in_source",
+      "security_role_evidence": "detected",
+      "narrative_source": "Public materials show this organisation has a security function.",
+      "intro_source": "Whether this organisation publicly staffs security or privacy"
+    },
+    "certifications": {
+      "number": "13",
+      "title": "Certifications",
+      "group": "assessment_details",
+      "state": "clear",
+      "state_label_source": "0% COMPLIANCE SCORE",
+      "source_pages": [
+        2,
+        20
+      ],
+      "old_section_label": "SECTION 3 OF 8 · CERTIFICATION",
+      "intro_source": "Outlines industry certifications and compliance frameworks held by the organization, providing independent validation of security and privacy controls.",
+      "summary": "No certificate was detected or uploaded for this organisation; the compliance score is 0%.",
+      "state_reason": "No certificate records were found in the sources checked.",
+      "metrics": [
+        {
+          "id": "compliance_score",
+          "label": "Compliance score",
+          "value": 0,
+          "unit": "percent",
+          "state": "clear",
+          "source_label": "0%"
+        },
+        {
+          "id": "certifications_headline",
+          "label": "Certifications",
+          "value": 0,
+          "unit": "certifications",
+          "state": "clear",
+          "source_label": "0 certifications",
+          "count_kind": "reported_headline"
+        }
+      ],
+      "certificates": [],
+      "reference_standards": {
+        "is_vendor_evidence": false,
+        "title_source": "Commonly Referenced Standards",
+        "items": [
+          {
+            "standard": "ISO/IEC 27001",
+            "description": "Information Security Management"
+          },
+          {
+            "standard": "ISO/IEC 27701",
+            "description": "Privacy Information Management"
+          },
+          {
+            "standard": "SOC 2",
+            "description": "Security, Availability, Confidentiality"
+          },
+          {
+            "standard": "GDPR",
+            "description": "Data protection and privacy regulation"
+          }
+        ]
+      }
+    },
+    "fourth_party_vendors": {
+      "number": "14",
+      "title": "Fourth-party vendors",
+      "group": "assessment_details",
+      "state": "findings",
+      "state_label_source": "3 fourth-party vendor(s) have been identified",
+      "source_pages": [
+        22
+      ],
+      "old_section_label": "SECTION 5 OF 8 · FOURTH PARTIES",
+      "intro_source": "Identifies fourth-party vendors — the suppliers and service providers used by this vendor — representing extended supply chain risk. Each vendor is assessed for security posture and compliance.",
+      "summary": "3 fourth-party vendors were identified through automated discovery and technology analysis; one is in the High risk band.",
+      "lead_source": "3 fourth-party vendor(s) have been identified through automated discovery and technology analysis.",
+      "metrics": [
+        {
+          "id": "fourth_parties",
+          "label": "Fourth-party vendors",
+          "value": 3,
+          "unit": "organisations",
+          "state": "findings",
+          "source_label": "3",
+          "count_kind": "reported"
+        }
+      ],
+      "vendors": [
+        {
+          "vendor_id": "vendor-01",
+          "name": "Cloudflare",
+          "domain": "cloudflare.com",
+          "grade": "AAA",
+          "risk_band": "low",
+          "risk_band_label_source": "Low",
+          "category": "computer & network security",
+          "assessed_membership": true,
+          "employees": 5200,
+          "revenue_source": "2.2B",
+          "headquarters": "San Francisco, United States",
+          "founded": 2009,
+          "description_source": "Cloudflare, Inc. is a prominent American technology company based in San Francisco, California. Founded in 2009, it offers a comprehensive connecti...",
+          "technologies_count": 573,
+          "technologies_sample_source": [
+            ".GIS",
+            ".NET",
+            "3M 360 Encompass - Health Analytics Suite",
+            "52Degrees",
+            "ACL"
+          ],
+          "evidence": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_printed_in_source",
+            "note": "Discovery method per vendor not printed (section: automated discovery and technology analysis)."
+          }
+        },
+        {
+          "vendor_id": "vendor-02",
+          "name": "Oracle",
+          "domain": "oracle.com",
+          "grade": "AAA",
+          "risk_band": "low",
+          "risk_band_label_source": "Low",
+          "category": "information technology & services",
+          "assessed_membership": true,
+          "employees": 141000,
+          "revenue_source": "67.4B",
+          "headquarters": "Austin, United States",
+          "founded": 1977,
+          "description_source": "Oracle Corporation is a leading American multinational technology company that specializes in enterprise software, cloud computing infrastructure, ...",
+          "technologies_count": 1240,
+          "technologies_sample_source": [
+            ".GIS",
+            ".NET",
+            "123FormBuilder",
+            "3M 360 Encompass - Health Analytics Suite",
+            "ABB Distributed Control Systems"
+          ],
+          "evidence": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_printed_in_source",
+            "note": "Discovery method per vendor not printed (section: automated discovery and technology analysis)."
+          }
+        },
+        {
+          "vendor_id": "vendor-03",
+          "name": "Namecheap",
+          "domain": "namecheap.com",
+          "grade": "CC",
+          "risk_band": "high",
+          "risk_band_label_source": "High",
+          "category": "information technology & services",
+          "assessed_membership": true,
+          "employees": 1500,
+          "revenue_source": "398M",
+          "headquarters": "Phoenix, United States",
+          "founded": 2001,
+          "description_source": "Namecheap, Inc. is a U.S.-based domain name registrar and web hosting service company founded in 2000 and headquartered in Phoenix, Arizona. As an ...",
+          "technologies_count": 135,
+          "technologies_sample_source": [
+            ".NET",
+            "AI",
+            "AWS Analytics",
+            "AWS CloudFormation",
+            "Adform"
+          ],
+          "evidence": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_printed_in_source",
+            "note": "Discovery method per vendor not printed (section: automated discovery and technology analysis)."
+          }
+        }
+      ]
+    },
+    "cloud_infrastructure": {
+      "number": "15",
+      "title": "Cloud infrastructure",
+      "group": "assessment_details",
+      "state": "findings",
+      "state_label_source": "1 Cloud Providers Detected",
+      "source_pages": [
+        24
+      ],
+      "old_section_label": "SECTION 7 OF 8 · CLOUD INFRASTRUCTURE",
+      "intro_source": "Identifies cloud service providers used by the organization through analysis of DNS records, IP ranges, MX records, and NS records. Cloud infrastructure detection reveals the hosting and service provider footprint of the assessed organization.",
+      "summary": "One cloud provider, Cloudflare, was detected. Detection shows provider use, not risk.",
+      "lead_source": "1 cloud provider(s) have been identified through automated infrastructure analysis.",
+      "metrics": [
+        {
+          "id": "cloud_providers_detected",
+          "label": "Cloud providers detected",
+          "value": 1,
+          "unit": "providers",
+          "state": "findings",
+          "source_label": "1"
+        }
+      ],
+      "detection_methods": [
+        "dns_records",
+        "ip_ranges",
+        "mx_records",
+        "ns_records"
+      ],
+      "providers": [
+        {
+          "provider": "Cloudflare",
+          "detection_methods": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_printed_in_source"
+          },
+          "observed_at": {
+            "value": null,
+            "state": "unavailable",
+            "reason_code": "not_printed_in_source"
+          }
+        }
+      ],
+      "last_scanned": {
+        "value": "2026-10-13",
+        "precision": "day",
+        "source_label": "Last scanned: 13.10.2026"
+      },
+      "note": "Section-level detection_methods come from intro_source (the module description). Per-provider detection method and observed_at are not printed."
+    }
+  },
+  "appendices": {
+    "a_about": {
+      "letter": "A",
+      "title": "About this report",
+      "source_pages": [
+        31,
+        33
+      ],
+      "about_source": "This report is generated by IISRI® CyberRank.ai using automated, non-intrusive analysis of publicly accessible information. The assessment does not require access to internal systems and should be interpreted as an external risk signal.",
+      "closing_source": "Report generated on 15.10.2026",
+      "data_sources_source": [
+        "automated analysis of data leak databases, public disclosures, and monitored online sources",
+        "automated technology discovery and vendor relationship analysis",
+        "analysis of DNS records, IP ranges, MX records, and NS records"
+      ]
+    },
+    "b_rating_scale": {
+      "letter": "B",
+      "title": "IISRI rating scale",
+      "source_pages": [
+        32,
+        33
+      ],
+      "intro_source": "Reference guide to the standardized rating scale used throughout this report, with descriptions of each grade level and associated risk profile.",
+      "rows": [
+        {
+          "grade": "AAA",
+          "meaning_source": "All information security and/or privacy controls are adequate, appropriate, and effective enough to provide reasonable assurance that security and/or privacy issues are being managed, and objectives are met.",
+          "mark": "Excellent",
+          "pool360_range": [
+            316,
+            360
+          ],
+          "pool360_range_source": "reference pack Pengetahuan_dan_Arsitektur_Cyberrank (Table360, observed UI v2), not printed in this PDF",
+          "is_current_grade": false
+        },
+        {
+          "grade": "AA",
+          "meaning_source": "Almost all information security and/or privacy controls are adequate, appropriate, and effective enough to provide reasonable assurance that security and/or privacy issues are being managed, and objectives are met.",
+          "mark": "Very good",
+          "pool360_range": [
+            281,
+            315
+          ],
+          "pool360_range_source": "reference pack Pengetahuan_dan_Arsitektur_Cyberrank (Table360, observed UI v2), not printed in this PDF",
+          "is_current_grade": false
+        },
+        {
+          "grade": "A",
+          "meaning_source": "Almost all information security and/or privacy controls are adequate, appropriate, and effective enough to provide reasonable assurance that security and/or privacy issues are being managed, and objectives are met. A few specific control weaknesses have been noted. Minor additional work on information security and/or privacy is recommended.",
+          "mark": "Good",
+          "pool360_range": [
+            246,
+            280
+          ],
+          "pool360_range_source": "reference pack Pengetahuan_dan_Arsitektur_Cyberrank (Table360, observed UI v2), not printed in this PDF",
+          "is_current_grade": false
+        },
+        {
+          "grade": "BBB",
+          "meaning_source": "Main information security and/or privacy controls are adequate, appropriate, and effective enough to provide reasonable assurance that security and/or privacy issues are being managed, and objectives are met. A few specific control weaknesses have been noted. Minor additional work on information security and/or privacy is recommended.",
+          "mark": "Satisfactory",
+          "pool360_range": [
+            211,
+            245
+          ],
+          "pool360_range_source": "reference pack Pengetahuan_dan_Arsitektur_Cyberrank (Table360, observed UI v2), not printed in this PDF",
+          "is_current_grade": false
+        },
+        {
+          "grade": "BB",
+          "meaning_source": "Main information security and/or privacy controls are adequate, appropriate, and effective enough to provide reasonable assurance that security and/or privacy issues are being managed, and objectives are met. Some specific control weaknesses have been noted. Major additional work on information security and/or privacy is recommended.",
+          "mark": "Sufficient",
+          "pool360_range": null,
+          "pool360_range_state": "unavailable",
+          "pool360_range_reason": "range not verified in reference pack (only BBB..AAA observed for Table360)",
+          "is_current_grade": true
+        },
+        {
+          "grade": "B",
+          "meaning_source": "Some information security and/or privacy controls are adequate, appropriate, and effective enough to provide reasonable assurance that security and/or privacy issues are being managed, and objectives are met. Many specific control weaknesses have been noted. Major additional work on information security and/or privacy is highly recommended.",
+          "mark": "Moderate",
+          "pool360_range": null,
+          "pool360_range_state": "unavailable",
+          "pool360_range_reason": "range not verified in reference pack (only BBB..AAA observed for Table360)",
+          "is_current_grade": false
+        },
+        {
+          "grade": "CCC",
+          "meaning_source": "Main information security and/or privacy controls are unlikely to provide reasonable assurance that security and/or privacy issues are being managed and objectives are met. Major work on information security and/or privacy is highly recommended.",
+          "mark": "Insufficient",
+          "pool360_range": null,
+          "pool360_range_state": "unavailable",
+          "pool360_range_reason": "range not verified in reference pack (only BBB..AAA observed for Table360)",
+          "is_current_grade": false
+        },
+        {
+          "grade": "CC",
+          "meaning_source": "Almost all information security and/or privacy controls are unlikely to provide reasonable assurance that security and/or privacy issues are being managed and objectives are met. Major work on information security and/or privacy is highly recommended.",
+          "mark": "Very Insufficient",
+          "pool360_range": null,
+          "pool360_range_state": "unavailable",
+          "pool360_range_reason": "range not verified in reference pack (only BBB..AAA observed for Table360)",
+          "is_current_grade": false
+        },
+        {
+          "grade": "C",
+          "meaning_source": "Almost all information security and/or privacy controls are unlikely to provide reasonable assurance that security and/or privacy issues are being managed and objectives are met. Major work or completely new program on information security and/or privacy is required.",
+          "mark": "Poor",
+          "pool360_range": null,
+          "pool360_range_state": "unavailable",
+          "pool360_range_reason": "range not verified in reference pack (only BBB..AAA observed for Table360)",
+          "is_current_grade": false
+        },
+        {
+          "grade": "D",
+          "meaning_source": "All information security and/or privacy controls are not providing any assurance that security and/or privacy issues are being managed and objectives are met. Complete new program on information security and/or privacy is required.",
+          "mark": "Very poor",
+          "pool360_range": null,
+          "pool360_range_state": "unavailable",
+          "pool360_range_reason": "range not verified in reference pack (only BBB..AAA observed for Table360)",
+          "is_current_grade": false
+        }
+      ],
+      "old_appendix_label": "Appendix A. IISRI® Rating Scale"
+    },
+    "c_methodology": {
+      "letter": "C",
+      "title": "Methodology and supply-chain aggregation",
+      "source_pages": [
+        34,
+        35
+      ],
+      "is_generic_material": true,
+      "note": "Generic methodology brief appended to the old PDF; values in its diagrams (e.g. Individual risk Low, Combined risk Medium) are illustrative, not Claude results.",
+      "headline_source": "One rating for every vendor. One risk number for your whole supply chain.",
+      "lead_source": "CYBERRANK turns externally observable evidence about an organisation into a single severity rating, a normalised risk score, and a combined risk that includes the vendors — and the vendors' vendors — behind it.",
+      "columns_source": [
+        {
+          "title": "The problem",
+          "text": "Attackers reach organisations through their suppliers. Existing tools don't add up: CVSS scores single technical flaws, questionnaires rely on self-reporting, and privacy, AI and quantum exposures have no common scale at all."
+        },
+        {
+          "title": "The approach",
+          "text": "An ISO 31000-aligned model with four explicit steps, from observed weaknesses to supply-chain risk. Every step is reproducible and every number is comparable across organisations and portfolios."
+        },
+        {
+          "title": "The regulatory fit",
+          "text": "Built for the obligations in DORA, NIS2, the GDPR and the AI Act, and aligned with ISO/IEC 27001, 27701 and 42001, NIST SP 800-53 and 800-161, PCI DSS and the NIST CSF."
+        }
+      ],
+      "steps_source": [
+        {
+          "n": 1,
+          "title": "Observe",
+          "text": "Continuous external signals are collected without touching the organisation's systems.",
+          "signals": [
+            "Vulnerabilities",
+            "Privacy compliance",
+            "Credential & data leaks",
+            "Data sovereignty",
+            "Data residency",
+            "Terms of use",
+            "AI",
+            "Quantum"
+          ],
+          "callout": "Certified controls earn credits: ISO 27001, ISO 27701, SOC 2, ISAE 3402, PCI DSS. Optional questionnaires add a second, bounded evidence channel."
+        },
+        {
+          "n": 2,
+          "title": "Rate",
+          "text": "Every organisation starts with a full point budget, split evenly between a security bucket and a privacy bucket. Weaknesses deduct capped demerits; certifications add capped credits.",
+          "callout": "The net score maps to the IISRI rating, AAA to D. The rating reflects the organisation's own posture only — a vendor's weakness never changes it."
+        },
+        {
+          "n": 3,
+          "title": "Score the risk",
+          "text": "Likelihood = threat probability × weakness. Threat probability comes from sector, size and internet exposure; weakness comes from the rating. Impact is one of four tiers you assign: Critical, High, Medium or Low.",
+          "callout": "Risk = normalised likelihood × impact, reported as a score and a band: Low, Medium, High or Critical."
+        },
+        {
+          "n": 4,
+          "title": "Combine",
+          "text": "Vendors and sub-vendors are discovered automatically and rated with the same pipeline. Their risks are folded into yours, attenuated by distance in the chain.",
+          "callout": "The combined risk shows the cascading exposure that your own rating cannot see."
+        }
+      ],
+      "scale_caption_source": "Ten grades. Higher grades mean lower weakness values and therefore lower likelihood.",
+      "scale_ends_source": {
+        "top": "All controls adequate, appropriate and effective",
+        "bottom": "Controls provide no assurance"
+      },
+      "supply_chain": {
+        "headline_source": "Your rating describes you. Your combined risk describes your supply chain.",
+        "text_source": "Every vendor and sub-vendor is rated with the same pipeline as you are. A weak vendor never lowers your own rating — that stays attributable to your posture. But an exploited vendor can open an attack path into your systems, so the same weakness does enter your combined risk, attenuated by how far away it sits in the chain. The result is two complementary numbers. Read together, they show that an excellent rating does not certify a healthy supply chain.",
+        "illustrative_values": {
+          "individual_risk": "Low",
+          "combined_risk": "Medium",
+          "is_illustrative": true
+        },
+        "formula_title_source": "Combined risk — the \"at least one adverse event\" composition, applied recursively through the chain",
+        "formula": "R(N) = 1 − (1 − o_N) · Π_{s ∈ suppliers(N)} ( 1 − R(s) / (f + d(s))² )",
+        "formula_explainer_source": "Every supplier's effective risk R(s) already contains its own suppliers, so the chain unrolls from the outermost leaves inward. Each factor is one party's chance of not causing an incident; one minus the product is the chance that something, somewhere in the chain, goes wrong.",
+        "variables": [
+          {
+            "symbol": "o_N",
+            "text": "A node's own individual risk score — from its rating, threat probability and impact tier."
+          },
+          {
+            "symbol": "R(s)",
+            "text": "A supplier's effective risk, computed the same way from its own suppliers. A leaf with no suppliers has R = o_N."
+          },
+          {
+            "symbol": "d(s)",
+            "text": "Hops from the centre: d(s) = d(N) + 1. Each supplier sits one step further out and is damped more."
+          },
+          {
+            "symbol": "f",
+            "text": "The transmission fraction you configure. A larger f trusts distance more and shrinks every supplier's contribution."
+          },
+          {
+            "symbol": "R(A)",
+            "text": "Your combined risk: the formula evaluated at your own organisation A, the centre of the graph (d = 0)."
+          }
+        ],
+        "impact_tiers": [
+          {
+            "tier": "Critical",
+            "text": "Failure immediately stops a critical service or causes a serious regulatory breach. DORA: critical."
+          },
+          {
+            "tier": "High",
+            "text": "Essential, but a temporary loss can be bridged with workarounds. DORA: important."
+          },
+          {
+            "tier": "Medium",
+            "text": "Supports normal operations; disruption means inconvenience. The default tier at onboarding."
+          },
+          {
+            "tier": "Low",
+            "text": "Minimal or no operational impact."
+          }
+        ],
+        "reliance_points": [
+          {
+            "title": "Standards-grounded",
+            "text": "ISO 31000, ISO/IEC 27001, 27701 and 42001, NIST SP 800-30 and 800-53, DORA and NIS2."
+          },
+          {
+            "title": "Certified operator",
+            "text": "an independently audited ISO/IEC 27001 management system; ISO/IEC 42001 certification in progress."
+          },
+          {
+            "title": "Human in the loop",
+            "text": "users report inaccuracies and appeal findings; feedback tunes detection confidence over time."
+          },
+          {
+            "title": "Honest about limits",
+            "text": "vendor compromises are treated as independent, some detections are heuristic, and the continuous score is primary over the qualitative heat map."
+          }
+        ],
+        "closing_source": "An organisation's own excellent rating does not certify its supply chain. Only the combined risk does.",
+        "dashboard_note_source": "The dashboard shows, for you and every (sub-)vendor, six domains — Security, Privacy, Data leaks, Controls, AI, Quantum — plus the IISRI rating, the individual risk and the combined risk."
+      },
+      "copyright_source": "Copyright © 2026 IISRI. All rights reserved. Full methodology paper: \"An Integrated Quantitative Methodology for Third-Party Security, Privacy and AI Risk Rating\", July 2026. Available upon request."
+    },
+    "d_evidence_registers": {
+      "letter": "D",
+      "title": "Detailed evidence registers",
+      "state": "findings",
+      "quantum_scope_register": {
+        "source_pages": [
+          27,
+          28,
+          29,
+          30
+        ],
+        "state": "findings",
+        "columns": [
+          "id",
+          "subdomain",
+          "scope_level",
+          "category",
+          "pre_qc_algorithm",
+          "source",
+          "post_qc_source",
+          "post_qc_algorithm",
+          "risk_level",
+          "high",
+          "moderate",
+          "low",
+          "source_page",
+          "post_qc_algorithm_state",
+          "post_qc_algorithm_reason_code"
+        ],
+        "counts": {
+          "rows": 46,
+          "scopes": 5,
+          "root_aggregate_rows": 9
+        },
+        "rows": [
+          {
+            "id": "qscope-0001",
+            "subdomain": "cyberrank.site",
+            "scope_level": "root_aggregate",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "AES_128",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 5,
+            "source_page": 27,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0002",
+            "subdomain": "cyberrank.site",
+            "scope_level": "root_aggregate",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "AES_256",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 5,
+            "source_page": 27,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0003",
+            "subdomain": "cyberrank.site",
+            "scope_level": "root_aggregate",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "CHACHA20",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 5,
+            "source_page": 27,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0004",
+            "subdomain": "cyberrank.site",
+            "scope_level": "root_aggregate",
+            "category": "Hash functions",
+            "pre_qc_algorithm": "SHA256",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 5,
+            "source_page": 27,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0005",
+            "subdomain": "cyberrank.site",
+            "scope_level": "root_aggregate",
+            "category": "Hash functions",
+            "pre_qc_algorithm": "SHA384",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 5,
+            "source_page": 27,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0006",
+            "subdomain": "cyberrank.site",
+            "scope_level": "root_aggregate",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "ECDSA",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 5,
+            "source_page": 27,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0007",
+            "subdomain": "cyberrank.site",
+            "scope_level": "root_aggregate",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "RSA",
+            "source": "standard scan",
+            "post_qc_source": "ML-KEM",
+            "post_qc_algorithm": "ML-KEM",
+            "risk_level": "low",
+            "high": 2,
+            "moderate": 0,
+            "low": 0,
+            "source_page": 27,
+            "risk_note_source": "This finding is covered by ML-KEM, therefore the risk is Low."
+          },
+          {
+            "id": "qscope-0008",
+            "subdomain": "cyberrank.site",
+            "scope_level": "root_aggregate",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "ECDHE",
+            "source": "standard scan",
+            "post_qc_source": "NTRU Prime",
+            "post_qc_algorithm": "NTRU Prime",
+            "risk_level": "low",
+            "high": 5,
+            "moderate": 0,
+            "low": 0,
+            "source_page": 27,
+            "risk_note_source": "This finding is covered by ML-KEM, therefore the risk is Low."
+          },
+          {
+            "id": "qscope-0009",
+            "subdomain": "cyberrank.site",
+            "scope_level": "root_aggregate",
+            "category": "Certificate",
+            "pre_qc_algorithm": "CERT_RSA_SIGNATURE",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 2,
+            "source_page": 27,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0010",
+            "subdomain": "ai.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "AES_128",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 27,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0011",
+            "subdomain": "ai.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "AES_256",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 27,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0012",
+            "subdomain": "ai.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "CHACHA20",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 27,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0013",
+            "subdomain": "ai.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Hash functions",
+            "pre_qc_algorithm": "SHA256",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0014",
+            "subdomain": "ai.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Hash functions",
+            "pre_qc_algorithm": "SHA384",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0015",
+            "subdomain": "ai.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "ECDSA",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0016",
+            "subdomain": "ai.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "ECDHE",
+            "source": "standard scan",
+            "post_qc_source": "ML-KEM",
+            "post_qc_algorithm": "ML-KEM",
+            "risk_level": "low",
+            "high": 1,
+            "moderate": 0,
+            "low": 0,
+            "source_page": 28,
+            "risk_note_source": "This finding is covered by ML-KEM, therefore the risk is Low."
+          },
+          {
+            "id": "qscope-0017",
+            "subdomain": "ai.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Certificate",
+            "pre_qc_algorithm": "CERT_ECDSA_SIGNATURE",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 3,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0018",
+            "subdomain": "report.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "AES_128",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0019",
+            "subdomain": "report.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "AES_256",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0020",
+            "subdomain": "report.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "CHACHA20",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0021",
+            "subdomain": "report.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Hash functions",
+            "pre_qc_algorithm": "SHA256",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0022",
+            "subdomain": "report.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Hash functions",
+            "pre_qc_algorithm": "SHA384",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0023",
+            "subdomain": "report.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "ECDSA",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0024",
+            "subdomain": "report.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "ECDHE",
+            "source": "standard scan",
+            "post_qc_source": "ML-KEM",
+            "post_qc_algorithm": "ML-KEM",
+            "risk_level": "low",
+            "high": 1,
+            "moderate": 0,
+            "low": 0,
+            "source_page": 28,
+            "risk_note_source": "This finding is covered by ML-KEM, therefore the risk is Low."
+          },
+          {
+            "id": "qscope-0025",
+            "subdomain": "report.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Certificate",
+            "pre_qc_algorithm": "CERT_ECDSA_SIGNATURE",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0026",
+            "subdomain": "mail.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "AES_128",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0027",
+            "subdomain": "mail.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "AES_256",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0028",
+            "subdomain": "mail.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "CHACHA20",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0029",
+            "subdomain": "mail.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Hash functions",
+            "pre_qc_algorithm": "SHA256",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 28,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0030",
+            "subdomain": "mail.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Hash functions",
+            "pre_qc_algorithm": "SHA384",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 29,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0031",
+            "subdomain": "mail.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "ECDSA",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 29,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0032",
+            "subdomain": "mail.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "RSA",
+            "source": "standard scan",
+            "post_qc_source": "ML-KEM",
+            "post_qc_algorithm": "ML-KEM",
+            "risk_level": "low",
+            "high": 1,
+            "moderate": 0,
+            "low": 0,
+            "source_page": 29,
+            "risk_note_source": "This finding is covered by ML-KEM, therefore the risk is Low."
+          },
+          {
+            "id": "qscope-0033",
+            "subdomain": "mail.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "ECDHE",
+            "source": "standard scan",
+            "post_qc_source": "ML-KEM",
+            "post_qc_algorithm": "ML-KEM",
+            "risk_level": "low",
+            "high": 1,
+            "moderate": 0,
+            "low": 0,
+            "source_page": 29,
+            "risk_note_source": "This finding is covered by ML-KEM, therefore the risk is Low."
+          },
+          {
+            "id": "qscope-0034",
+            "subdomain": "mail.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Certificate",
+            "pre_qc_algorithm": "CERT_RSA_SIGNATURE",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 29,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0035",
+            "subdomain": "test.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "AES_128",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 29,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0036",
+            "subdomain": "test.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "AES_256",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 29,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0037",
+            "subdomain": "test.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Symmetric cryptography",
+            "pre_qc_algorithm": "CHACHA20",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 29,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0038",
+            "subdomain": "test.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Hash functions",
+            "pre_qc_algorithm": "SHA256",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 29,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0039",
+            "subdomain": "test.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Hash functions",
+            "pre_qc_algorithm": "SHA384",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 29,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0040",
+            "subdomain": "test.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "ECDSA",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 29,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0041",
+            "subdomain": "test.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "ECDHE",
+            "source": "standard scan",
+            "post_qc_source": "NTRU Prime",
+            "post_qc_algorithm": "NTRU Prime",
+            "risk_level": "high",
+            "high": 1,
+            "moderate": 0,
+            "low": 0,
+            "source_page": 29,
+            "risk_note_source": "Partial coverage: NTRU Prime detected, but not on the TLS scope — risk unchanged."
+          },
+          {
+            "id": "qscope-0042",
+            "subdomain": "test.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Public-key cryptography",
+            "pre_qc_algorithm": "DHE",
+            "source": "standard scan",
+            "post_qc_source": "NTRU Prime",
+            "post_qc_algorithm": "NTRU Prime",
+            "risk_level": "low",
+            "high": 1,
+            "moderate": 0,
+            "low": 0,
+            "source_page": 29,
+            "risk_note_source": "This finding is covered by NTRU Prime, therefore the risk is Low."
+          },
+          {
+            "id": "qscope-0043",
+            "subdomain": "test.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Certificate",
+            "pre_qc_algorithm": "CERT_ECDSA_SIGNATURE",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 29,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0044",
+            "subdomain": "test.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Key exchange",
+            "pre_qc_algorithm": "SSH_HOST_KEY_RSA",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "moderate",
+            "high": 0,
+            "moderate": 1,
+            "low": 0,
+            "source_page": 29,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0045",
+            "subdomain": "test.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Key exchange",
+            "pre_qc_algorithm": "SSH_HOST_KEY_ECDSA",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 30,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          },
+          {
+            "id": "qscope-0046",
+            "subdomain": "test.cyberrank.site",
+            "scope_level": "subdomain",
+            "category": "Key exchange",
+            "pre_qc_algorithm": "SSH_HOST_KEY_ED25519",
+            "source": "standard scan",
+            "post_qc_source": "—",
+            "post_qc_algorithm": null,
+            "risk_level": "low",
+            "high": 0,
+            "moderate": 0,
+            "low": 1,
+            "source_page": 30,
+            "post_qc_algorithm_state": "unavailable",
+            "post_qc_algorithm_reason_code": "dash_in_source"
+          }
+        ]
+      },
+      "vulnerability_asset_register": {
+        "source_pages": [
+          14,
+          15,
+          16,
+          17,
+          18
+        ],
+        "state": "findings",
+        "columns": [
+          "asset_label_source",
+          "finding_ids",
+          "finding_count",
+          "max_severity"
+        ],
+        "counts": {
+          "rows": 5,
+          "memberships": 36
+        },
+        "rows": [
+          {
+            "asset_label_source": "test.cyberrank.site",
+            "finding_ids": [
+              "vuln-01",
+              "vuln-05",
+              "vuln-12"
+            ],
+            "finding_count": 3,
+            "max_severity": "high"
+          },
+          {
+            "asset_label_source": "cyberrank.site / 172.67.209.197",
+            "finding_ids": [
+              "vuln-02",
+              "vuln-03",
+              "vuln-06",
+              "vuln-07",
+              "vuln-08",
+              "vuln-09",
+              "vuln-10",
+              "vuln-11"
+            ],
+            "finding_count": 8,
+            "max_severity": "medium"
+          },
+          {
+            "asset_label_source": "mail.cyberrank.site",
+            "finding_ids": [
+              "vuln-02",
+              "vuln-03",
+              "vuln-04",
+              "vuln-06",
+              "vuln-07",
+              "vuln-08",
+              "vuln-09",
+              "vuln-10",
+              "vuln-11",
+              "vuln-12"
+            ],
+            "finding_count": 10,
+            "max_severity": "medium"
+          },
+          {
+            "asset_label_source": "ai.cyberrank.site",
+            "finding_ids": [
+              "vuln-03",
+              "vuln-04",
+              "vuln-06",
+              "vuln-07",
+              "vuln-08",
+              "vuln-10",
+              "vuln-11"
+            ],
+            "finding_count": 7,
+            "max_severity": "medium"
+          },
+          {
+            "asset_label_source": "report.cyberrank.site",
+            "finding_ids": [
+              "vuln-03",
+              "vuln-04",
+              "vuln-06",
+              "vuln-07",
+              "vuln-08",
+              "vuln-10",
+              "vuln-11",
+              "vuln-12"
+            ],
+            "finding_count": 8,
+            "max_severity": "medium"
+          }
+        ]
+      },
+      "pqc_domain_register": {
+        "source_pages": [
+          26,
+          27
+        ],
+        "state": "findings",
+        "columns": [
+          "domain",
+          "algorithm"
+        ],
+        "rows": [
+          {
+            "domain": "cyberrank.site",
+            "algorithm": "ML-KEM"
+          },
+          {
+            "domain": "ai.cyberrank.site",
+            "algorithm": "ML-KEM"
+          },
+          {
+            "domain": "report.cyberrank.site",
+            "algorithm": "ML-KEM"
+          },
+          {
+            "domain": "mail.cyberrank.site",
+            "algorithm": "ML-KEM"
+          },
+          {
+            "domain": "test.cyberrank.site",
+            "algorithm": "NTRU Prime"
+          }
+        ]
+      }
+    }
+  },
+  "review_flags": [
+    {
+      "id": "RF-01",
+      "pages": [
+        8,
+        18
+      ],
+      "ref": "fixture extraction",
+      "text": "Action 8 recommends moving DMARC from p=none, but the DMARC line prints an empty mode (\"Enabled ( mode)\")."
+    },
+    {
+      "id": "RF-07",
+      "pages": [
+        18
+      ],
+      "ref": "fixture extraction",
+      "text": "IP reputation prints \"Clean\" while every abuse score is the sentinel -1."
+    },
+    {
+      "id": "RF-M01",
+      "pages": [
+        1,
+        32
+      ],
+      "ref": "fixture extraction",
+      "text": "Cover band text for BB (\"risks\", \"Moderate additional work\") differs from the BB meaning in Appendix A (\"issues\", \"Major additional work\")."
+    },
+    {
+      "id": "RF-M02",
+      "pages": [
+        12
+      ],
+      "ref": "fixture extraction",
+      "text": "Governing law is printed as \"Not identified in published policies\" next to a quoted governing-law clause."
+    },
+    {
+      "id": "RF-M03",
+      "pages": [
+        25,
+        27
+      ],
+      "ref": "fixture extraction",
+      "text": "Headline 8 / 1 / 37 equals the findings-by-category totals; the apex rows of the scope breakdown sum to 7 / 0 / 32."
+    },
+    {
+      "id": "RF-M04",
+      "pages": [
+        26,
+        27
+      ],
+      "ref": "fixture extraction",
+      "text": "Scope rows print Risk \"Low\" with \"covered by ML-KEM\" next to Post-QC \"NTRU Prime\", and counts in the High column for rows whose Risk is Low."
+    }
+  ]
+}
