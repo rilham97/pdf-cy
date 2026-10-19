@@ -330,7 +330,7 @@ def test_s07_resume_states_and_rows():                                  # fourth
     assert '(Amazon and Aws)' in text and 'not merged' in text            # alias note, no merge
     assert 'Assessed on' in text and '20 Sep 2026' in text                 # phase 1 ready
     assert 'BBB Satisfactory' in text and 'Not an assessed member (as reported)' in text   # rating not hidden
-    assert 'Not rated (reason not reported)' in text and 'Sector (as reported)' in text
+    assert 'Not rated' in text and '(reason not reported)' not in text and '(as reported)' not in text.split('Not an assessed')[0]
     assert 'A detected relationship is not evidence of a contract.' in text
     for word in (' direct', 'Direct', ' hop', 'supplier of', 'Not assessed yet'):
         assert word not in text, word
@@ -340,7 +340,7 @@ def test_s07_resume_states_and_rows():                                  # fourth
     text, _ = _gap('vendors_nullreason')
     assert not [m for m in RAW if m in text], text
     assert 'Not rated (the organisation has not been scanned yet)' in text
-    assert text.count('Not rated (reason not reported)') >= 1
+    assert 'Not rated (reason' not in text and 'Not rated' in text
 
 
 def test_s07_t2_register():
@@ -523,6 +523,21 @@ def test_s01_rating_overview_concept_a():                         # user-approve
         assert s in ov, (s, ov)
 
 
+def test_about_and_fourth_party_trimmed():                             # owner, 2026-10-19
+    t = _fixture_text('demo-preview', ['appA'])
+    assert 'Assessment ID' in t and 'Time zone' not in t and 'Methodology version' not in t
+    t = _fixture_text('instagram-2026-10-02', ['s14', 'appD'])
+    assert 'Sector (as reported)' not in t and 'Risk band (as sent)' not in t and 'Sector' in t
+    assert 'reason not recorded' not in t and 'Not rated (reason not reported)' not in t
+
+
+def test_s01_rating_panel_has_no_score_context():                   # owner removed it, 2026-10-19
+    for f in ('demo-preview', 'gmail-2026-10-15'):                     # demo carries a score_context value
+        t = _fixture_text(f, ['s01'])
+        assert 'Score context' not in t and 'Methodology version' in t, f
+        assert 'Sector comparison' in t and '360-point' not in t, f                 # sector note dropped too
+
+
 def test_s01_rating_overview_grammar_and_missing_scores():
     from cyberrank_report.sections import adjust_report
     from cyberrank_report.sections.s01_executive_overview import NA, aspect_rows, result_markup
@@ -594,7 +609,7 @@ def test_credential_section_source_vs_payload_counts():                         
     assert 'Source metric' not in t                                          # no payload count labelled as source
     assert 'Payload count (prepared from the source rows; not printed by the source)' in t and '3,685' in t
     assert 'Rows with organisation email domain' not in t                   # subdomains counted apart: no false diff
-    assert 'Exposure years as listed by the source: “2008-2009-' in t and 'Earlier (' not in t
+    assert '2021 and before' in t and 'Earlier (' not in t and 'Exposure years as listed' not in t   # fixed buckets
     assert '3685' not in t and '15879 (' not in t                           # formatted numbers in the summary
     t = _fixture_text('instagram-2026-10-02', ['s05'])
     assert '19 dated 2025–2026; 13 with latest year 2015–2024; 109 with period “Unknown” only' in t
@@ -656,14 +671,32 @@ def test_credential_register_d44_prints_labels_as_received():
     t = _fixture_text('claude-2026-10-02', ['s05', 'appD'])
     for r in rows:                                                   # every label, exactly as delivered
         assert r['account_label_masked'] in t, r['id']
-    assert 'Row-level detail: Appendix D.2.4 lists all 30 register rows' in t
-    assert 'D.2.4 Credential register · continued' in t and 'of 30' in t           # continued caption
+    assert 'Full register D.2 Credential exposure' in t and '30 rows' in t      # one pointer, no repeat line
+    assert 'D.2.4 Credential register' in t and 'End of register · 30 rows' in t
     assert 'Account (masked, as delivered) Approximate exposure period Exposed fields' in t
     assert 'Status' not in t.split('D.2.4 Credential register', 1)[1].split('End of register', 1)[0]  # no status
     assert ('End of register · 30 rows. 30 of 30 register rows shown; 0 not shown (none withheld). Totals: '
             'claude.com 29 + other email domains 0 + Unknown Email 1 = 30 rows = Section 05 overview total; '
             'source headline 40') in t
     assert not [i for i in qa.ISSUES if i['check'] == 'unmasked_account_label']
+
+
+def test_credential_year_buckets_and_affected_domains():                 # owner, 2026-10-19
+    from cyberrank_report.page import identity_from_report
+    from cyberrank_report.sections import s05_credential_exposure as s05
+    report = json.loads((FIXTURE.parent / 'gmail-2026-10-15.json').read_text(encoding='utf-8'))
+    d = s05.derive(report['sections']['credential_exposure'], report, identity_from_report(report))
+    b = s05.year_buckets(d)
+    assert [x for x, _ in b] == ['2026', '2025', '2024', '2023', '2022', '2021 and before', 'Unknown'], b
+    assert sum(n for _, n in b) == d['analysed']                       # exclusive buckets
+    t = _fixture_text('gmail-2026-10-15', ['s05'])
+    assert 'Affected domains' not in t                                 # no affected_domain in the rows: no table
+    t = _fixture_text('demo-preview', ['s05', 'appD'])
+    assert 'Affected domains Domain Rows With password Latest year example.com 19 4 2026 app.example.com 10' in t
+    assert '2026 2025 2024 2023 2022 2021 and before Unknown' in t
+    assert 'D.2.3 Rows by affected domain' in t and 'example.com 19 rows' in t       # register grouped by domain
+    for w in ('Row-level detail', 'Credential score printed', 'unit not defined by source)', 'Not available'):
+        assert w not in t.split('Recommended mitigation')[0], w
 
 
 def test_credential_register_order_status_and_unmasked_warning():
@@ -897,7 +930,7 @@ def test_appendix_d_ids_follow_section_order():                       # user dec
     assert ids == ['D.1', 'D.1.2', 'D.2', 'D.3', 'D.4', 'D.5', 'D.6'], ids
     marks = [t.split()[0] for _, t, _ in doc.get_toc() if re.match(r'D\.\d', t)]
     assert marks == sorted(marks) and marks[:2] == ['D.1', 'D.2'], marks
-    assert 'Appendix D.2.4 lists all 30 register rows' in ' '.join(text.split())
+    assert 'D.2.4 lists every register row' in ' '.join(text.split())
     assert not re.search(r'D\.4\.4|D\.5\.[12]', text)                  # old ids gone
 
 

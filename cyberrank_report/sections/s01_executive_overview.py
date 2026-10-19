@@ -1,4 +1,4 @@
-"""01 Executive overview: rating badge + score context, scope and coverage, rating overview
+"""01 Executive overview: rating badge + net score, scope and coverage, rating overview
 (score meters for the aspects with a system score, then a two-column checklist of every assessed
 aspect 03-15 with one result line and its state), sector comparison, then a pointer to 02. The
 demerit ledger is never printed. Sector and risk-band strings are rendered
@@ -187,12 +187,11 @@ def rating_panel(rating, snapshot, report, pages):
                  c.P(c.sentence(c.reason_text({'reason_code': rating.get('grade_reason_code')})), 'note_flush')]
     left += band_chip(rating)
     pairs = [('Net score', rating.get('net')), ('Point pool', rating.get('pool')),
-             ('Score context', snapshot.get('score_context')),
              ('Methodology version', c.fmt_version(snapshot.get('methodology_version')))]
     pairs = [(k, v if v is not None else {'value': None, 'reason_code': 'not_printed_in_source'}) for k, v in pairs]
     pad = 12
     right_w = T.CW - T.COL3 - pad - T.GUTTER          # right column incl. its right padding
-    right = [c.P('Score context', PANEL_LABEL)] + kv_block(pairs, width=right_w - pad, dense=True, label_width=92)
+    right = kv_block(pairs, width=right_w - pad, dense=True, label_width=92)
     rows, cmds = [[left, '', right], [GradeScale(g), '', '']], []
     if rating.get('band_description_source'):
         rows.append([c.P(rating['band_description_source'], 'body_flush'), '', ''])
@@ -641,9 +640,7 @@ def sector_block(ic):
     out += kv_block([('Sector', ic.get('sector') or ic.get('industry') or nr),
                      ('Performance gap', ic.get('performance_gap', nr)),
                      ('Peer cohort', cohort)])
-    if ic.get('note'):
-        out.append(c.note(ic['note']))
-    return out
+    return out                                   # sector_comparison.note is not printed (owner, 2026-10-19)
 
 
 # --- next step --------------------------------------------------------------------

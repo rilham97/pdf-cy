@@ -11,22 +11,25 @@ reconciled against the source headline and the payload metrics; differences prin
 Grounded redesign (Verdict_Section08_Credential): the email domain is the account's
 mailbox provider, never "where" a credential was exposed, so the caveat always prints;
 the Unknown period is its own bucket; the origin flag is a count of its own.
+Affected domains (owner request 2026-10-19, like the app's credential view): rows carrying
+`affected_domain` (the organisation domain/subdomain the leaked entry is linked to) get a domain table
+here and are grouped by domain in <D.n>.4; without it neither prints.
 """
 import re
 from collections import Counter
 
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from reportlab.platypus import Table, TableStyle
 
 from .. import components as C
 from .. import qa
 from .. import theme as T
-from .app_d_evidence_registers import (RID, H2T, H3T, assessment_year, const_line, fill, gap, intro, long_list_card,
-                                       lookup, pol, register_table, signed)
+from .app_d_evidence_registers import (RID, H2T, H3T, assessment_year, const_line, fill, gap, group_row, intro,
+                                       long_list_card, lookup, pol, register_table, signed)
+from .s11_quantum_security import mono
 
 LIST = 'lists.credential_exposure'
 DOMAIN_CLASSES = ('assessed', 'assessed_subdomain', 'other_domain', 'unknown_email')
-CROSS_COLS = ('Password category listed', 'No password category', 'Fields not reported')
+CROSS_COLS = ('With password', 'Without password', 'Fields not reported')
 CLASSES = ('password', 'unclassified', 'sensitive_personal', 'other_identity', 'service_recorded_only',
            'none_provided')
 OPTIONAL_CLASSES = ('unclassified', 'service_recorded_only')     # <D.n>.2 rows printed only when non-zero
@@ -41,15 +44,13 @@ _MAP = {'password': ['password'], 'sensitive_personal': ['ssn', 'dob', 'address'
                            'city', 'country', 'district', 'province', 'state', 'zip'],
         'service_recorded': ['origin']}
 UNKNOWN = 'Period “Unknown” in source'
-CAVEAT = ("The email domain shows the account's mailbox provider, not the service or subdomain where the "
-          'credential was obtained.')
+CAVEAT = "The email domain is the account's mailbox provider, not the site where the credential leaked."
+HOST = re.compile(r'[a-z0-9-]+(\.[a-z0-9-]+)+')
+INLINE_DOMAINS, TOP_DOMAINS = 30, 10      # long-list rule: <=30 inline, else top 10 + the rest in <D.n>.3
+RECENT_YEARS = 5     # year buckets: A .. A-4 one by one, then '<A-5> and before'
 CROSS_WN = 78.0      # the four sibling count columns share one width
 ZERO_C = T.STYLES['cell_num'].clone('cred_zero', textColor=T.MUTED)
 LEAD_C = T.STYLES['cell_head_num'].clone('cred_lead')
-
-
-def comp(cid):
-    return next((x for x in pol(f'{LIST}.overview_components', []) or [] if x.get('id') == cid), {})
 
 
 def _map():
@@ -129,6 +130,12 @@ def domain_class(row, assessed):
     return 'other_domain'
 
 
+def affected(row):
+    """The row's affected domain as a plain host name, or None (missing, or not a host: never printed)."""
+    v = str(row.get('affected_domain') or '').strip().lower().rstrip('.')
+    return v if HOST.fullmatch(v) else None
+
+
 def derive(data, report, identity):
     """All overview numbers from the register rows. Rows whose domain looks like an
     address ('@' or '*') are withheld, never printed (mask_policy_violation)."""
@@ -141,6 +148,7 @@ def derive(data, report, identity):
     by_class, by_field, years, enriched, unmapped = Counter(), Counter(), Counter(), [], Counter()
     lead_recent = lead_unknown = origin = year_and_unknown = 0
     lead_older = Counter()       # lead rows by latest year, older than the recent range
+    doms = {}                    # affected domain -> {rows, pw, latest, unknown}
     for r in ok:
         dc = domain_class(r, assessed)
         ys = [y for y in r.get('exposure_years') or [] if isinstance(y, int)]
@@ -161,7 +169,12 @@ def derive(data, report, identity):
             lead_unknown += latest is None and unknown      # period printed only as 'Unknown'
             if latest is not None and not recent:
                 lead_older[latest] += 1
-        enriched.append({**r, '_class': dc, '_latest': latest, '_cls': cls, '_cats': cats})
+        g = doms.setdefault(affected(r), {'rows': 0, 'pw': 0, 'latest': None, 'unknown': False})
+        g['rows'] += 1
+        g['pw'] += cls == 'password'
+        g['latest'] = max(g['latest'] or 0, latest or 0) or None
+        g['unknown'] |= unknown
+        enriched.append({**r, '_class': dc, '_latest': latest, '_cls': cls, '_cats': cats, '_dom': affected(r)})
     for cat, n in sorted(unmapped.items()):
         qa.add('unmapped_field_category', 'warn', f'credential field category "{cat}" is not in the data class map '
                f'({n} rows); counted as its own class, not as a password', once=True)
@@ -178,7 +191,15 @@ def derive(data, report, identity):
             'lead_older': lead_older,
             'origin': origin, 'year_and_unknown': year_and_unknown,
             'pw_rows': by_class['password'], 'latest': max(latest_all) if latest_all else None,
-            'unknown_any': sum(bool(r.get('exposure_period_has_unknown')) for r in ok), 'metrics': metrics}
+            'unknown_any': sum(bool(r.get('exposure_period_has_unknown')) for r in ok), 'metrics': metrics,
+            'domains': doms if any(doms) else {}}
+
+
+def domain_order(d):
+    """Assessed domain first, then its subdomains, then other hosts; each by rows (desc); 'not given' last."""
+    a = d.get('assessed') or ''
+    return sorted(d.get('domains') or {}, key=lambda k: (k is None, k != a, not (a and str(k).endswith('.' + a)),
+                                                        -d['domains'][k]['rows'], str(k)))
 
 
 def status_line(d):
@@ -189,13 +210,26 @@ def status_line(d):
     parts = ', '.join(f'{k} {C.fmt_number(n)}' for k, n in st.most_common())
     missing = d['analysed'] - sum(st.values())
     tail = f'; {C.fmt_number(missing)} rows without a status' if missing else ''
-    return [C.note(f'Row status as recorded: {parts}{tail}. Status is the source\'s per-row flag; it is not a '
-                   'confirmation that a password was reset.')]
+    return [C.note(f'Row status as recorded: {parts}{tail}.')]
 
 
 def none_on_assessed(d):
     """Rows were listed but none is on the assessed domain (or its subdomains)."""
     return d['analysed'] > 0 and not (sum(d['cross']['assessed']) + sum(d['cross']['assessed_subdomain']))
+
+
+def lead_recency(d):
+    """'4 dated 2025–2026; 3 with latest year 2019–2021; 1 with period “Unknown” only' ('' when none)."""
+    if d['lead_recent'] is None or not d['lead']:
+        return ''
+    old = d.get('lead_older') or {}
+    parts = [f'{C.fmt_number(d["lead_recent"])} dated {d["A"] - 1}–{d["A"]}']
+    if old:
+        span = f'{min(old)}–{max(old)}' if min(old) != max(old) else str(min(old))
+        parts.append(f'{C.fmt_number(sum(old.values()))} with latest year {span}')
+    if d['lead_unknown']:
+        parts.append(f'{C.fmt_number(d["lead_unknown"])} with period “Unknown” only')
+    return '; '.join(parts)
 
 
 def lead_label(d, recency=True):
@@ -204,19 +238,9 @@ def lead_label(d, recency=True):
     if none_on_assessed(d):      # a bare 0 would read as good news
         return f'of {C.fmt_number(d["analysed"])} listed rows are on {dom}; all are on other email domains'
     sub = ' or its subdomains' if d['cross']['assessed_subdomain'][0] else ''
-    label = fill(comp('kpi_assessed_password').get('label', 'rows on {assessed_domain} listing a password category'),
-                 assessed_domain=dom + sub)
-    if recency and d['lead_recent'] is not None and d['lead']:
-        # buckets by latest year: recent range, older years, period printed only as 'Unknown'
-        old = d.get('lead_older') or {}
-        parts = [f'{C.fmt_number(d["lead_recent"])} dated {d["A"] - 1}–{d["A"]}']
-        if old:
-            span = f'{min(old)}–{max(old)}' if min(old) != max(old) else str(min(old))
-            parts.append(f'{C.fmt_number(sum(old.values()))} with latest year {span}')
-        if d['lead_unknown']:
-            parts.append(f'{C.fmt_number(d["lead_unknown"])} with period “Unknown” only')
-        label += f' ({"; ".join(parts)})'
-    return label
+    label = f'rows on {dom}{sub} with a password'
+    rec = lead_recency(d) if recency else ''
+    return f'{label} ({rec})' if rec else label
 
 
 def lead_metric(data, report, identity):
@@ -230,26 +254,19 @@ def lead_metric(data, report, identity):
 
 # --- overview modules ------------------------------------------------------------
 def kpis(d, ctx):
-    m = d['metrics']
-    ua = m.get('unique_accounts') or {'label': 'Unique accounts', 'value': None,
-                                      'reason': comp('kpi_unique_accounts').get('else', 'not confirmed by source')}
-    if ua.get('value') is not None and ua.get('grain', ua.get('unique_accounts_grain')) != 'account':
-        ua = {**ua, 'value': None, 'reason': 'unique-account count not confirmed by source', 'state': 'unavailable'}
-    ua = {**ua, 'label': 'unique accounts', 'state': None}
-    head = {'value': d['headline'], 'unit': None,
-            'label': f'reported by source (unit not defined by source); {C.fmt_number(d["analysed"])} register rows '
-                     'listed', 'reason': 'headline not printed in source'}
-    items = [{'label': lead_label(d), 'value': d['lead'], 'unit': 'rows'},
-             {'label': comp('kpi_rows_password').get('label', 'rows listing a password category'),
-              'value': d['pw_rows'], 'unit': 'rows'},
-             {'label': comp('kpi_origin_rows').get('label', 'rows recording a service/URL (origin); value not '
-                                                             'provided by source'),
-              'value': d['origin'], 'unit': 'rows'},
-             head,
-             {'label': 'latest exposure year in source', 'value': str(d['latest']) if d['latest'] else None,
-              'reason': UNKNOWN},
-             ua]
-    return C.kpi_strip(items)
+    """Short tiles only; the detail behind each number sits in the tables below."""
+    ua = d['metrics'].get('unique_accounts') or {}
+    unique = ua.get('value') is not None and ua.get('grain', ua.get('unique_accounts_grain')) == 'account'
+    items = [{'label': 'exposed account records', 'value': d['analysed'], 'unit': None},
+             {'label': 'include a password', 'value': d['pw_rows'], 'unit': None},
+             {'label': lead_label(d, recency=False), 'value': d['lead'], 'unit': None}]
+    if d['domains']:
+        items.append({'label': 'affected domains', 'value': sum(1 for k in d['domains'] if k), 'unit': None})
+    items.append({'label': 'latest exposure year', 'value': str(d['latest']) if d['latest'] else None,
+                  'reason': UNKNOWN})
+    if unique:      # printed only when the source confirms an account grain
+        items.append({**ua, 'label': 'unique accounts', 'unit': None, 'state': None})
+    return C.kpi_strip(items, per_row=len(items) if len(items) <= 4 else 3)
 
 
 def reconciliation(d, ctx):
@@ -279,10 +296,6 @@ def reconciliation(d, ctx):
     if d['suppressed']:
         lines.append(fill(pol('reconciliation.suppressed', '{suppressed} rows withheld — {suppression_reason}.'),
                           suppressed=d['suppressed'], suppression_reason='domain text failed the masking check'))
-    score = d['metrics'].get('credential_score')
-    if score and not C.is_missing(score):
-        lines.append(f'Credential score printed by the source: {C.fmt_value(score)}. It is a source value, identical '
-                     'across the reports reviewed, and is not used as a result here.')
     split_sub = 'rows_org_subdomain' in d['metrics']     # payload counts subdomains apart
     derived = {'returned_rows': d['received'],
                'rows_org_domain': sum(d['cross']['assessed']) + (0 if split_sub else sum(d['cross']['assessed_subdomain'])),
@@ -303,13 +316,45 @@ def reconciliation(d, ctx):
     return [C.note(x) for x in lines]
 
 
+def domains_block(d):
+    """Affected domains (the app's grouping): rows, rows with a password, latest year per domain.
+    Long lists (> INLINE_DOMAINS) show the top TOP_DOMAINS plus one 'other domains' row; all in <D.n>.3."""
+    if not d['domains']:
+        return []
+    keys = domain_order(d)
+    named = [k for k in keys if k]
+    cut = named[:TOP_DOMAINS] if len(named) > INLINE_DOMAINS else named
+    rest = [k for k in named if k not in cut]
+    rows = [domain_row(k, d['domains'][k]) for k in cut]
+    if rest:
+        g = {'rows': sum(d['domains'][k]['rows'] for k in rest), 'pw': sum(d['domains'][k]['pw'] for k in rest),
+             'latest': max((d['domains'][k]['latest'] or 0) for k in rest) or None,
+             'unknown': any(d['domains'][k]['unknown'] for k in rest)}
+        rows.append(domain_row(f'{C.fmt_number(len(rest))} other domains', g, plain=True))
+    if None in d['domains']:
+        rows.append(domain_row('Domain not given', d['domains'][None], plain=True))
+    out = [C.heading('Affected domains', 2, style=H2T),
+           gap(C.compact_table(['Domain', 'Rows', 'With password', 'Latest year'], rows, numeric_cols=(1, 2, 3),
+                               widths=[T.CW - 3 * CROSS_WN] + [CROSS_WN] * 3), 6)]
+    if rest:
+        out.append(C.note(f'All {C.fmt_number(len(named))} domains: Appendix {RID["s05"]}.3.'))
+    return out
+
+
+def domain_row(name, g, plain=False, dense=False):
+    num = lambda n: C.P(C.fmt_number(n), ZERO_C if n == 0 else 'dense_num' if dense else 'cell_num')
+    base = 'dense' if dense else 'cell'
+    latest = str(g['latest']) if g['latest'] else 'Unknown' if g['unknown'] else 'Not given'
+    return [C.P(C.esc(name), base + '_muted') if plain else C.M(mono(name, dense), base),
+            num(g['rows']), num(g['pw']), C.P(latest, base + '_num')]
+
+
 def crosstab(d):
-    """Breakdown (a): email domain of the exposed accounts x password category listed."""
+    """Email domain of the exposed accounts (mailbox provider) x password category listed."""
     dom = d['assessed']
-    label = {'assessed': f'{dom} (assessed domain)' if dom else 'Assessed domain',
+    label = {'assessed': dom or 'Assessed domain',
              'assessed_subdomain': f'Subdomains of {dom}' if dom else 'Subdomains of the assessed domain',
-             'other_domain': 'Other email domains (counted, not named)',
-             'unknown_email': 'Unknown Email (source label)'}
+             'other_domain': 'Other email domains', 'unknown_email': 'Unknown Email'}
     keys = [k for k in DOMAIN_CLASSES if k != 'assessed_subdomain' or sum(d['cross'][k])]
     cell = lambda n, lead=False: C.P(C.fmt_number(n), LEAD_C if lead and n else ZERO_C if n == 0 else 'cell_num')
     rows = [[label[k], *[cell(n, k == 'assessed' and j == 0) for j, n in enumerate(d['cross'][k])],
@@ -317,48 +362,46 @@ def crosstab(d):
     tot = [sum(d['cross'][k][j] for k in DOMAIN_CLASSES) for j in range(3)]
     rows.append([C.P('All listed rows', 'cell_head')] + [C.P(C.fmt_number(n), 'cell_head_num')
                                                          for n in tot + [sum(tot)]])
-    listed = (f'Listed rows: {C.fmt_number(d["analysed"])} of {C.fmt_number(d["headline"])} reported. '
-              if d['headline'] is not None else f'Listed rows: {C.fmt_number(d["analysed"])}. ')
     return [C.heading('Email domain of exposed accounts', 2, style=H2T),
-            intro(listed + 'Each row counts once, by the domain of its email address and by the field categories '
-                           'the source lists.'),
             gap(C.compact_table(['Account email domain', *CROSS_COLS, 'Total'], rows, numeric_cols=(1, 2, 3, 4),
-                                widths=[T.CW - 4 * CROSS_WN] + [CROSS_WN] * 4), 8),
-            C.note(comp('domain_caveat').get('text') or CAVEAT)]
+                                widths=[T.CW - 4 * CROSS_WN] + [CROSS_WN] * 4), 6),
+            C.note(CAVEAT)]
 
 
-def by_year(d, years_source=None):
-    """Breakdown (b): rows by latest exposure year; 'Unknown' is its own bucket."""
-    A, n = d['A'], d['analysed']
-    # every year printed on its own (the last ten always; older years when they have rows)
-    keys = sorted({*(A - k for k in range(10) if A), *(y for y, n in d['years'].items() if isinstance(y, int) and n)},
-                  reverse=True)
-    yr = [[str(y), d['years'][y]] for y in keys]
-    unk = d['years']['unknown']
-    yr.append([f'{UNKNOWN} ({round(100 * unk / n) if n else 0}%)', unk])
+def year_buckets(d):
+    """Fixed buckets (owner rule 2026-10-19): the assessment year and the RECENT_YEARS - 1 years before it one by
+    one, then '<A - RECENT_YEARS> and before', then 'Unknown' (and 'Not given' when any). A year after the
+    assessment year (never seen) gets its own column. Returns [(label, rows)]; the rows sum to the listed rows."""
+    years = {y: n for y, n in d['years'].items() if isinstance(y, int)}
+    A = d['A'] or max(years, default=None)
+    if A is None:
+        out = []
+    else:
+        first = A - RECENT_YEARS + 1
+        out = [(str(y), n) for y, n in sorted(years.items(), reverse=True) if y > A]
+        out += [(str(y), years.get(y, 0)) for y in range(A, first - 1, -1)]
+        out.append((f'{first - 1} and before', sum(n for y, n in years.items() if y < first)))
+    out.append(('Unknown', d['years']['unknown']))
     if d['years'][None]:
-        yr.append(['Period not given by source', d['years'][None]])
-    notes = []
+        out.append(('Not given', d['years'][None]))
+    return out
+
+
+def by_year(d):
+    """Rows by latest exposure year in fixed buckets (year_buckets), one line, newest first."""
+    b = year_buckets(d)
+    cell = lambda n: C.P(C.fmt_number(n), ZERO_C if n == 0 else 'cell_num')
+    tables = [gap(C.compact_table([x for x, _ in b], [[cell(n) for _, n in b]], numeric_cols=tuple(range(len(b))),
+                                  widths=[T.CW / len(b)] * len(b)), 4)]      # equal columns; a long label wraps
+    notes = ['Each row counts once, under the latest year the source gives; “Unknown” rows have no year.']
     if d['year_and_unknown']:
         n1 = d['year_and_unknown'] == 1
         notes.append(f'{C.fmt_number(d["year_and_unknown"])} {"row lists" if n1 else "rows list"} both a year and '
-                     f'“Unknown”; counted under the latest year.')
-    left = [C.compact_table(['Latest exposure year', 'Rows'], yr, numeric_cols=(1,), total_width=T.COL2)]
-    st = T.STYLES['note_flush']      # the source year list breaks at its hyphens, never inside a year
-    right = [C.M(C.breakable(x, T.COL2, st.fontName, st.fontSize), st, spaceAfter=6) for x in
-             ['Each row counts once, under the latest year the source gives for it. Rows whose period the '
-              f'source prints only as “Unknown” are a separate bucket, not counted as earlier.'] + notes
-             + ([f'Exposure years as listed by the source: “{years_source}”.'] if years_source else [])]
-    return [C.heading('Rows by latest exposure year', 2, style=H2T),
-            intro(f'Exclusive: the buckets sum to the {C.fmt_number(n)} listed rows.'), gap(_two_up(left, right), 8)]
-
-
-def _two_up(left, right):
-    t = Table([[left, '', right]], colWidths=[T.COL2, T.GUTTER, T.COL2], hAlign='LEFT')
-    t.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'), ('LEFTPADDING', (0, 0), (-1, -1), 0),
-                           ('RIGHTPADDING', (0, 0), (-1, -1), 0), ('TOPPADDING', (0, 0), (-1, -1), 0),
-                           ('BOTTOMPADDING', (0, 0), (-1, -1), 0)]))
-    return t
+                     '“Unknown” and count under the year.')
+    if lead_recency(d):
+        notes.append(f'Rows on {d["assessed"] or "the assessed domain"} with a password: {lead_recency(d)}.')
+    return [C.keep(C.heading('Rows by latest exposure year', 2, style=H2T), *tables,
+                   C.P(' '.join(notes), 'note_flush', spaceBefore=2, spaceAfter=6))]
 
 
 def by_data_class(d):
@@ -376,12 +419,6 @@ def episodes_text(data):
                 reason=f'episode grouping and breach source names are {reason}')
 
 
-def pointer_text(report, d):
-    return fill(comp('pointer').get('text') or 'Row-level detail: Appendix {register_id} lists all {n} register rows '
-                '(account as delivered, masked; approximate exposure period; exposed fields).',
-                n=C.fmt_number(d['analysed']), register_id=f'{RID["s05"]}.4')
-
-
 def register_order(rows):
     """Old-report order: newest period first (by the latest year a row lists); rows whose period is only
     'Unknown', then rows without a period, last. Stable: the delivered order breaks ties."""
@@ -395,31 +432,46 @@ REG_COLS = ['#', 'Account (masked, as delivered)', 'Approximate exposure period'
 def row_register(d):
     """Appendix <D.n>.4: every analysed register row. The label prints AS RECEIVED (masking is upstream);
     QA flags labels without a mask character. Status column only when a row carries one; one value in
-    every row collapses into the caption line. Returns (flowables, rows printed, labels flagged)."""
+    every row collapses into the caption line. With affected domains the rows are grouped by domain
+    (domain_order), newest period first inside each group. Returns (flowables, rows printed, labels flagged)."""
     rows = register_order(d['rows'])
+    doms = d.get('domains') or {}
+    if doms:
+        rank = {k: i for i, k in enumerate(domain_order(d))}
+        rows = sorted(rows, key=lambda r: rank[r.get('_dom')])      # stable: period order kept inside a group
     flagged = qa.check_account_labels([(r.get('id'), r.get('account_label_masked')) for r in rows])
     statuses = [str(r['status']).strip() for r in rows if str(r.get('status') or '').strip()]
     with_status = bool(statuses)
     dense = T.STYLES['dense']
     sw = lambda t, font=dense.fontName: stringWidth(t, font, dense.fontSize) + 2 * T.CELL_PAD_H + 1
-    entries = [('row', [str(i), str(r.get('account_label_masked') or 'Label not delivered'),
-                        str(r.get('exposure_period_source') or 'Period not given by source'),
-                        ', '.join(r.get('exposed_field_categories') or []) or 'Not provided by source']
-                + ([str(r.get('status') or '').strip() or 'Not recorded'] if with_status else []))
-               for i, r in enumerate(rows, 1)]
+    entries, current = [], object()
+    for i, r in enumerate(rows, 1):
+        if doms and r.get('_dom') != current:
+            current = r.get('_dom')
+            g = doms[current]
+            name = mono(current, True) if current else 'Domain not given'
+            entries.append(('group', group_row(C.M(name, 'dense_head'),
+                                               C.P(f'{C.fmt_number(g["rows"])} rows', 'note_flush', alignment=2),
+                                               T.CW - 2 * T.CELL_PAD_H), current or 'Domain not given'))
+        entries.append(('row', [str(i), str(r.get('account_label_masked') or 'Label not delivered'),
+                                str(r.get('exposure_period_source') or 'Period not given by source'),
+                                ', '.join(r.get('exposed_field_categories') or []) or 'Not provided by source']
+                        + ([str(r.get('status') or '').strip() or 'Not recorded'] if with_status else [])))
     w0 = max(24, sw(C.fmt_number(len(rows))))
-    mono = T.STYLES['dense_tech']        # account labels: JetBrains Mono
-    w_acc = min(max([stringWidth(str(r.get('account_label_masked') or ''), mono.fontName, mono.fontSize)
+    mono_st = T.STYLES['dense_tech']        # account labels: JetBrains Mono
+    w_acc = min(max([stringWidth(str(r.get('account_label_masked') or ''), mono_st.fontName, mono_st.fontSize)
                      + 2 * T.CELL_PAD_H + 1 for r in rows] + [110]), 170)
     w_per = min(max([sw(str(r.get('exposure_period_source') or '')) for r in rows] + [96]), 150)
     w_st = max([sw(x) for x in statuses] + [sw('Status', T.MEDIUM)]) if with_status else 0
     widths = [w0, w_acc, w_per, T.CW - w0 - w_acc - w_per - w_st] + ([w_st] if with_status else [])
     t = register_table(REG_COLS + (['Status'] if with_status else []), entries, title=f'{RID["s05"]}.4 Credential register',
                        sec_id='s05', numeric_cols=(0,), ident='regD44', widths=widths, text_cells=True, tech_cols=(1,))
+    order = ('Grouped by affected domain; inside a group, newest period first' if doms else
+             'Sorted by the newest period a row lists')
     lead = intro('One row per register row as delivered by the Cyberrank system. The account label is printed '
-                 'exactly as received (masking is applied upstream, not by this report). Sorted by the newest '
-                 'period a row lists; rows whose period is only “Unknown” come last. Exposed fields are category '
-                 'names only; no password or other value is printed.', 'note_flush')
+                 f'exactly as received (masking is applied upstream, not by this report). {order}; rows whose '
+                 'period is only “Unknown” come last. Exposed fields are category names only; no password or '
+                 'other value is printed.', 'note_flush')
     return [C.heading(f'{RID["s05"]}.4  Credential register', 3, style=H3T), lead, *const_line(t), t], len(rows), flagged
 
 
@@ -460,9 +512,8 @@ def build(data, ctx):
                     C.P('No register rows are listed in the assessment data, so no breakdown by domain, period or '
                         'data class can be shown.', 'body')]
         return [C.P(f'Register rows: {C.missing_text({"reason_code": "not_printed_in_source"})}.', 'body')]
-    out = [kpis(d, ctx)] + reconciliation(d, ctx) + crosstab(d)
-    out += by_year(d, C.val(data.get('exposure_years_source'))) + status_line(d)
-    out += [C.P(pointer_text(ctx.report, d), 'body', spaceBefore=4),
-            C.register_pointer(RID['s05'], {'value': d['analysed'], 'unit': 'rows'},
+    out = [kpis(d, ctx)] + reconciliation(d, ctx) + domains_block(d) + crosstab(d)
+    out += by_year(d) + status_line(d)
+    out += [C.register_pointer(RID['s05'], {'value': d['analysed'], 'unit': 'rows'},
                                title=f'{RID["s05"]} {pol(f"{LIST}.register_title", "Credential exposure — supporting tables")}')]
     return out + mitigations(data, d)

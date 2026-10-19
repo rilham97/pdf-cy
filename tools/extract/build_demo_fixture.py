@@ -236,12 +236,14 @@ for i, local in enumerate(LOCALS, start=1):
         'exposure_period_source': ', '.join(map(str, years)) + (', Unknown' if unknown else ''),
         'exposure_years': years, 'exposure_period_has_unknown': unknown,
         'exposed_field_categories': fields, 'breach_source_name': nr(),
+        'affected_domain': ('portal.example.com' if i % 5 == 0 else 'vpn.example.com' if i % 7 == 0
+                            else 'app.example.com' if i % 3 == 0 else DOMAIN),
         'status': 'Resolved' if i % 5 == 0 else 'Open'})
 cred_rows.append({'id': f'cred-{len(cred_rows) + 1:04d}', 'email_domain': None, 'email_domain_state': 'unavailable',
                   'email_domain_reason_code': 'unknown_email_in_source', 'email_state': 'unknown_email',
                   'account_label_masked': 'Unknown Email', 'exposure_period_source': 'Unknown', 'exposure_years': [],
                   'exposure_period_has_unknown': True, 'exposed_field_categories': ['password'],
-                  'breach_source_name': nr(), 'status': 'Open'})
+                  'breach_source_name': nr(), 'affected_domain': DOMAIN, 'status': 'Open'})
 N_CRED = len(cred_rows)
 years_all = sorted({y for r in cred_rows for y in r['exposure_years']}, reverse=True)
 by_year = [{'year': y, 'rows': sum(y in r['exposure_years'] for r in cred_rows)} for y in years_all]
@@ -832,7 +834,7 @@ appendices = {
         'credential_register': {'state': 'findings', 'sanitised': True,
                                 'columns': ['id', 'email_domain', 'email_state', 'account_label_masked',
                                             'exposure_period_source', 'exposure_years', 'exposure_period_has_unknown',
-                                            'exposed_field_categories', 'breach_source_name', 'status'],
+                                            'exposed_field_categories', 'breach_source_name', 'affected_domain', 'status'],
                                 'counts': {'returned_rows': N_CRED, 'total_rows': {'value': N_CRED},
                                            'headline_found': N_CRED, 'status': status_counts},
                                 'rows': cred_rows},

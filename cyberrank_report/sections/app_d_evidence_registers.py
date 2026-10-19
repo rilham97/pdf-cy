@@ -384,6 +384,20 @@ def d1_assets(report, as_of):
     return info
 
 
+def d23_domains(s05, d, sec, rid):
+    """<D.n>.3: every affected domain (rows, rows with a password, latest year) when the rows carry one;
+    otherwise the episode/source message."""
+    if not d['domains']:
+        return [C.heading(f'{rid}.3  Exposure episodes and sources', 3, style=H3T), C.P(s05.episodes_text(sec), 'body')]
+    keys = s05.domain_order(d)
+    entries = [('row', [str(i), *s05.domain_row(k or 'Domain not given', d['domains'][k], plain=not k, dense=True)])
+               for i, k in enumerate(keys, 1)]
+    t = register_table(['#', 'Domain', 'Rows', 'With password', 'Latest year'], entries,
+                       title=f'{rid}.3 Rows by affected domain', sec_id='s05', numeric_cols=(0, 2, 3, 4), ident='regD43',
+                       widths=[28, T.CW - 28 - 3 * s05.CROSS_WN] + [s05.CROSS_WN] * 3)
+    return [C.heading(f'{rid}.3  Rows by affected domain', 3, style=H3T), *const_line(t), t]
+
+
 def d4_credentials(report, identity, as_of):
     from . import s05_credential_exposure as s05
     sec = (report.get('sections') or {}).get('credential_exposure') or {}
@@ -427,8 +441,7 @@ def d4_credentials(report, identity, as_of):
              s05.by_data_class(d),
              C.note(f'Service/URL recorded (origin), counted apart from the classes: {C.fmt_number(d["origin"])} '
                     f'row{"s" if d["origin"] != 1 else ""}; the value itself is not provided by the source.'),
-             C.heading(f'{rid}.3  Exposure episodes and sources', 3, style=H3T),
-             C.P(s05.episodes_text(sec), 'body')]
+             *d23_domains(s05, d, sec, rid)]
     reg_flow, printed, flagged = s05.row_register(d)
     flow += reg_flow
     dom = d['assessed'] or 'assessed domain'

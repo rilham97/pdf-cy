@@ -36,7 +36,7 @@ NO_REASON = {None, '', 'dash_in_source', 'not_printed_in_source', 'blank_in_sour
 ALIASES = [{'amazon.com', 'aws.com', 'aws.amazon.com'}, {'facebook.com', 'fb.com'}, {'google.com', 'gmail.com'}]
 BANNER = ('Ratings are as shown on the report date. How each organisation is connected to {org}'
           '{dates} are not reported.')
-WIDTHS = {'Organisation': 170, 'Sector (as reported)': 144, 'Grade': 124, 'Risk band (as sent)': 84,
+WIDTHS = {'Organisation': 170, 'Sector': 144, 'Grade': 124, 'Risk band': 84,
           'Assessed on': 66, 'Why listed': 92}
 
 
@@ -63,11 +63,11 @@ def band_text(v):
 
 
 def not_rated(v):
-    """'Not rated (reason not reported)', or the reason when the payload gives a real one."""
+    """'Not rated', or 'Not rated (<reason>)' when the payload gives a real one."""
     rec = field(v, 'grade')
     rec = rec if isinstance(rec, dict) else {}
     if rec.get('reason_code') in NO_REASON:
-        return 'Not rated (reason not reported)'
+        return 'Not rated'
     return f'Not rated ({plain(C.reason_text(rec)).rstrip(".")})'
 
 
@@ -310,7 +310,7 @@ def needs_a_look(vendors, report, top_n):
 
 def look_table(c, rows, vendors, dense=False):
     dated = has_dates(vendors)
-    cols = ['Organisation', 'Sector (as reported)', 'Grade', 'Why listed'] + (['Assessed on'] if dated else [])
+    cols = ['Organisation', 'Sector', 'Grade', 'Why listed'] + (['Assessed on'] if dated else [])
     w = widths(cols, WIDTHS, 'Organisation')
     data = [[org_cell(c, v, w[0], dense, profile=False), label(field(v, 'category')), grade_cell(c, v, dense),
              reason_chips(c, why, dense)] + ([assessed_on(v)] if dated else []) for v, why in rows]
@@ -318,15 +318,15 @@ def look_table(c, rows, vendors, dense=False):
 
 
 def register_columns(vendors):
-    return ['Organisation', 'Sector (as reported)', 'Grade', 'Risk band (as sent)'] + \
+    return ['Organisation', 'Sector', 'Grade', 'Risk band'] + \
         (['Assessed on'] if has_dates(vendors) else [])
 
 
 def register_cells(c, v, cols, w, dense, report, chip=True):
     cells = {'Organisation': org_cell(c, v, w[cols.index('Organisation')], dense, report),
-             'Sector (as reported)': label(field(v, 'category')),
+             'Sector': 'Unknown' if C.is_missing(field(v, 'category')) else label(field(v, 'category')),
              'Grade': (grade_cell(c, v, dense) if chip else grade(v) or c.P(not_rated(v), 'dense_muted')),
-             'Risk band (as sent)': band_text(v), 'Assessed on': assessed_on(v) if has_dates([v]) else
+             'Risk band': band_text(v), 'Assessed on': assessed_on(v) if has_dates([v]) else
              field(v, 'assessed_at')}
     return [cells[h] for h in cols]
 
@@ -362,7 +362,7 @@ def build(data, ctx):
                 look_table(c, look, vendors, dense=True)]
     if tr == 'T1':
         cols = register_columns(vendors)
-        w = widths(cols, {**WIDTHS, 'Sector (as reported)': 120, 'Risk band (as sent)': 92}, 'Organisation')
+        w = widths(cols, {**WIDTHS, 'Sector': 120, 'Risk band': 92}, 'Organisation')
         dense = True                                     # policy: the register is dense
         out += [c.heading(f'All connected organisations ({len(vendors)})', 3),
                 c.compact_table(cols, [register_cells(c, v, cols, w, dense, rep) for v in vendors], widths=w,
@@ -383,7 +383,7 @@ def register_entries(c, vendors, report):
     """(columns, widths, entries) for the flat register: '#', plain grade, band as sent."""
     vendors = sorted(vendors, key=order)
     cols = ['#'] + register_columns(vendors)
-    fixed = {**WIDTHS, '#': 24, 'Sector (as reported)': 120, 'Grade': 72, 'Risk band (as sent)': 92}
+    fixed = {**WIDTHS, '#': 24, 'Sector': 120, 'Grade': 72, 'Risk band': 92}
     w = widths(cols, fixed, 'Organisation')
     rows = [('row', [str(i)] + register_cells(c, v, cols[1:], w[1:], True, report, chip=False))
             for i, v in enumerate(vendors, 1)]

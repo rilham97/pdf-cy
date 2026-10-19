@@ -56,8 +56,7 @@ REGISTRY = [
                 's01_executive_overview', toc_sub='Scope and coverage / rating overview / sector comparison'),
     SectionSpec('s02', 'priority_actions', '02', 'Priority actions', 'overview_and_priorities', 's02_priority_actions'),
     # assessment sections follow the demerit ledger A-J (rule letter in DEMERIT_RULES below)
-    SectionSpec('s03', 'privacy', '03', 'Privacy', 'assessment_details', 's03_privacy',
-                toc_sub='Policy / assessed areas (A–P) / active issues'),
+    SectionSpec('s03', 'privacy', '03', 'Privacy', 'assessment_details', 's03_privacy'),
     SectionSpec('s04', 'vulnerabilities', '04', 'Vulnerabilities', 'assessment_details', 's04_vulnerabilities'),
     SectionSpec('s05', 'credential_exposure', '05', 'Credential exposure', 'assessment_details',
                 's05_credential_exposure'),

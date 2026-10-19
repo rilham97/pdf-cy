@@ -64,6 +64,14 @@ Each was asked for or approved by the product owner; changing one needs their ap
   "All aspects" (name + one result line + state chip, two columns). No aspect numbers: section numbers
   start at 03 and a 1–13 count would clash with the TOC; names link to the section. No intro or
   explanatory captions — owner wants labels cut to what the reader needs.
+- Rating panel (section 01): Net score, Point pool, Methodology version only; no "Score context" heading or row.
+- Credential exposure (05): short KPI tiles; "Affected domains" table (domain, rows, with password, latest year)
+  only when register rows carry `affected_domain` — then D.2.3 lists every domain and D.2.4 groups rows by domain,
+  like the app. Years in fixed buckets: assessment year and the 4 before it one by one, "<year> and before",
+  "Unknown". The email-domain table is the mailbox provider, not where the credential leaked.
+- Labels stay short: no "(as reported)" / "(as sent)" suffixes in column heads; a missing fourth-party sector
+  prints "Unknown", an unrated vendor "Not rated" (a real reason only when the payload gives one).
+  Appendix A report details carry no methodology version or time zone rows.
 - Residency map (`geo_map.py`): mode C table only when ≤1 relevant country (IP country lookups can fail),
   A2 auto-zoom regional, A3 world map with ISO-code badges + insets. Unknown/placeholder countries go to an
   off-map counter, never guessed. Circle = in preference, square = outside, ring = preferred.

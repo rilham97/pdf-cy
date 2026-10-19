@@ -3051,6 +3051,7 @@
      "exposure_period_has_unknown",
      "exposed_field_categories",
      "breach_source_name",
+     "affected_domain",
      "status"
     ],
     "counts": {
@@ -3087,6 +3088,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3109,6 +3111,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3132,6 +3135,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "app.example.com",
       "status": "Open"
      },
      {
@@ -3156,6 +3160,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3179,6 +3184,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "portal.example.com",
       "status": "Resolved"
      },
      {
@@ -3203,6 +3209,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "app.example.com",
       "status": "Open"
      },
      {
@@ -3225,6 +3232,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "vpn.example.com",
       "status": "Open"
      },
      {
@@ -3248,6 +3256,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3273,6 +3282,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "app.example.com",
       "status": "Open"
      },
      {
@@ -3298,6 +3308,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "portal.example.com",
       "status": "Resolved"
      },
      {
@@ -3322,6 +3333,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3343,6 +3355,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "app.example.com",
       "status": "Open"
      },
      {
@@ -3365,6 +3378,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3387,6 +3401,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "vpn.example.com",
       "status": "Open"
      },
      {
@@ -3410,6 +3425,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "portal.example.com",
       "status": "Resolved"
      },
      {
@@ -3435,6 +3451,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3458,6 +3475,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3480,6 +3498,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "app.example.com",
       "status": "Open"
      },
      {
@@ -3501,6 +3520,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3526,6 +3546,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "portal.example.com",
       "status": "Resolved"
      },
      {
@@ -3548,6 +3569,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "vpn.example.com",
       "status": "Open"
      },
      {
@@ -3574,6 +3596,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3599,6 +3622,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3621,6 +3645,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "app.example.com",
       "status": "Open"
      },
      {
@@ -3643,6 +3668,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "portal.example.com",
       "status": "Resolved"
      },
      {
@@ -3668,6 +3694,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3691,6 +3718,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "app.example.com",
       "status": "Open"
      },
      {
@@ -3715,6 +3743,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "vpn.example.com",
       "status": "Open"
      },
      {
@@ -3737,6 +3766,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3760,6 +3790,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "portal.example.com",
       "status": "Resolved"
      },
      {
@@ -3784,6 +3815,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3806,6 +3838,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3829,6 +3862,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "app.example.com",
       "status": "Open"
      },
      {
@@ -3853,6 +3887,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3876,6 +3911,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "portal.example.com",
       "status": "Resolved"
      },
      {
@@ -3900,6 +3936,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "app.example.com",
       "status": "Open"
      },
      {
@@ -3923,6 +3960,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3947,6 +3985,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      },
      {
@@ -3968,6 +4007,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "app.example.com",
       "status": "Open"
      },
      {
@@ -3988,6 +4028,7 @@
        "state": "unavailable",
        "reason_code": "not_printed_in_source"
       },
+      "affected_domain": "example.com",
       "status": "Open"
      }
     ]

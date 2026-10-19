@@ -30,8 +30,6 @@ def _details(ctx):
         ('Report generated', _date(snap.get('generated_at') or absent, c)),
         ('Issued by', issuer.get('organisation_name') or {'value': None, **issuer}),
         ('Assessment ID', snap.get('assessment_id') or absent),
-        ('Methodology version', c.fmt_version(snap.get('methodology_version')) or absent),
-        ('Time zone', snap.get('timezone') or absent),
     ]
 
 
