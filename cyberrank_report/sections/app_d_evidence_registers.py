@@ -475,18 +475,21 @@ def d5_quantum(report, as_of):
     info = {'rid': rid, 'state': sec.get('state'), 'sec': 's11', 'title': title}
     sc = s11.scope(sec, report)
     if not sc['rows'] or sc['tier'] == 'T1' or sec.get('state') not in ('findings', 'partial', 'pending_review'):
-        return {**info, 'content': state_message(sec, SEC_NUM['s11'], 'scope rows', len(sc['rows']) if sc['tier'] == 'T1'
-                                                 else None)}
+        # T1 (inline in Section 11) passes the row count; no rows -> 'no register data'
+        return {**info, 'content': state_message(sec, SEC_NUM['s11'], 'scope rows',
+                                                 len(sc['rows']) if sc['rows'] and sc['tier'] == 'T1' else None)}
     key = str(sec.get('scope_register_ref') or '').rsplit('.', 1)[-1] or 'quantum_scope_register'
     scopes = len(sc['groups']) + bool(sc['apex'])
     n_rows = C.fmt_number(len(sc['rows']))
+    apex = (f' The apex aggregate{sc["apex_scope"].replace("(", "(the source ")} comes first; subdomain rows are '
+            'not added to it.') if sc['apex'] else ''
+    src = f' Source: {sc["source_note"]}.' if sc['source_note'] else ''      # omitted when no row has one
     flow = opening(rid, title, 's11', [
         f'{rid}.1 lists one row per scope with its post-quantum (PQC) status, ordered by High, then Moderate, then '
-        f'Low findings. The apex aggregate{sc["apex_scope"].replace("(", "(the source ")} comes first; subdomain '
-        f'rows are not added to it. Showing {scopes} of {scopes} scopes. {rid}.2 lists every scope × algorithm '
+        f'Low findings.{apex} Showing {scopes} of {scopes} scopes. {rid}.2 lists every scope × algorithm '
         f'row ({n_rows} of {n_rows}).',
-        f'Unit: scopes ({rid}.1) and scope × algorithm rows ({rid}.2); counts are findings. Source: '
-        f'{sc["source_note"]}. State: {T.STATE.get(sec.get("state"), {}).get("label")}. Snapshot {as_of}.'],
+        f'Unit: scopes ({rid}.1) and scope × algorithm rows ({rid}.2); counts are findings.{src} '
+        f'State: {T.STATE.get(sec.get("state"), {}).get("label")}. Snapshot {as_of}.'],
         [key, 'pqc_domain_register'], legend=s11.legend(sec))      # names the siren-only count headers
     t = s11.pivot_table(sc, title=f'{rid}.1 {title}', ident='regD5')
     flow += [C.keep(C.heading(f'{rid}.1  Scopes', 3, style=H3T), *const_line(t), t)]
@@ -561,7 +564,7 @@ def cert_documents(report, sec):
     rid, title = RID['s13'], 'Uploaded certificate documents'
     info = {'rid': rid, 'state': sec.get('state'), 'sec': 's13', 'title': title}
     docs = [x for x in s13.grouped([x for x in sec.get('certificates') or [] if isinstance(x, dict)])
-            if s13.origin(x) == 'uploaded' and x.get('document') is not None]
+            if s13.origin(x) == 'uploaded' and s13.has_document(x)]
     if not docs:
         return {**info, 'content': 'Not required — no uploaded certificate documents in the assessment data.'}
     flow = opening(rid, title, 's13', [

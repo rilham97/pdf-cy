@@ -184,6 +184,18 @@ def _checks(issues):
     return {(i['check'], i['detail'].split(':', 1)[0]) for i in issues}
 
 
+def _payload_text(report, only):
+    """Flattened text + QA issues of a synthetic payload built through validate + build (0 QA errors)."""
+    import pymupdf
+    from cyberrank_report.build import validate
+    qa.ISSUES.clear()
+    out = Path(tempfile.mkdtemp()) / 'p.pdf'
+    _, counts = build(validate(report), out, only=only)
+    issues = json.loads(out.with_suffix('.qa.json').read_text())['issues']
+    assert counts['error'] == 0, [i for i in issues if i['severity'] == 'error']
+    return ' '.join(' '.join(p.get_text() for p in pymupdf.open(out)).split()), issues
+
+
 def test_gap_privacy():
     text, issues = _gap('privacy_a')
     assert 'Not recognised (“draft”)' in text and 'Result held for review' in text            # P5
@@ -223,6 +235,32 @@ def test_gap_certifications():
     assert 'PCI DSS is rejected' in warned and 'ISO/IEC 27701' not in warned
 
 
+def test_certifications_review_fixes():                                # code review 2026-10-19 (13)
+    import gap_fixtures as G
+    nr = G.NR
+    r = G.report_with(G.section(
+        'certifications', 'Certifications', 'clear', 'Synthetic: review fixes.',
+        metrics=[{'id': 'certifications_headline', 'label': 'Certifications', 'value': 4, 'unit': 'certifications'}],
+        reference_standards={'items': [{'standard': 'SOC 2', 'description': 'Service controls'}]},
+        certificates=[G.cert(1, 'ISO/IEC 27001', 'approved', None, None),           # legacy origin, no state
+                      G.cert(2, 'ISO/IEC 27001', 'uploaded', 'approved', None),    # same standard: one certification
+                      G.cert(3, 'SOC 2', 'uploaded', 'approved', None, document=nr),
+                      G.cert(4, 'OTHER', 'detected', 'pending', None),
+                      G.cert(5, 'PCI DSS', 'detected', 'approved', None, expired={'value': True},
+                             valid_from=nr, valid_until=nr),
+                      G.cert(6, 'ISO 22301', 'detected', 'rejected', None)]))
+    r['sections']['priority_actions'] = {'title': 'Priority actions', 'state': 'findings', 'actions': [{
+        'action_id': 'act-01', 'rank': 1, 'priority': 'medium', 'title': 'Example action',
+        'action_required_source': 'Example action text.'}]}
+    text, issues = _payload_text(r, ['s02', 's13', 'appD'])
+    assert 'not a confirmation that it is valid' not in text, text                     # 15: legacy shows Approved
+    assert ('data_mismatch', 's13') not in _checks(issues), issues                    # 14: 4 standards, 6 records
+    assert 'Document in Appendix' not in text and 'missing_document' not in str(issues)  # 16: null document
+    assert text.count('(Other (standard not named))') == 2 and '(OTHER)' not in text, text  # 17: 13 + 02
+    assert 'SOC 2 also appears among the certificates on record' in text, text         # 18: clear with records
+    assert 'Expired Not available (not provided in the assessment data)' in text, text  # 19: reason kept
+
+
 def test_gap_leaks():
     text, issues = _gap('leaks')
     assert 'Used in rating' not in text and 'Reported inaccurate · not scored' in text          # D3/D4
@@ -254,6 +292,56 @@ def test_gap_quantum():
     assert 'Not assessed' in text and 'switched off' in text                                    # Q2
     text, _ = _gap('quantum_q5')
     assert 'apex only (1 scope)' in text and '1 scopes' not in text and 'No PQC detected' in text  # Q5
+
+
+def test_quantum_review_fixes():                                       # code review 2026-10-19 (11)
+    import gap_fixtures as G
+    from cyberrank_report.sections import s11_quantum_security as s11
+    sub = lambda i: f's{i}.example.com'
+    # 1: apex rows count one by one -> 25 apex + 6 subdomain rows is T2, D.4 is produced
+    r = G.quantum([G.qrow(i, G.DOMAIN, 1, 0) for i in range(25)] + [G.qrow(25 + i, sub(i % 2), 1, 0) for i in range(6)],
+                  (25, 0))
+    sec = r['sections']['quantum_security']
+    assert s11.scope(sec, r)['tier'] == 'T2'
+    # 2/4: T1, headline = rows by level: rows listed below (no D.4), uniform source printed once
+    r = G.quantum([G.qrow(1, G.DOMAIN, 1, 0), G.qrow(2, sub(1), 0, 1)], (1, 1))
+    text, _ = _payload_text(r, ['s11', 'appD'])
+    assert 'every row is listed below' in text and 'Appendix D.4)' not in text, text
+    assert 'Source: all rows “standard scan”.' in text and 'all 2 scope rows shown in Section 11' in text, text
+    # 3/5/6/11: T2 without an apex row and without a source
+    rows = [G.qrow(i, sub(i), 1, 0) for i in range(31)]
+    for x in rows:
+        x.pop('source')
+    r = G.quantum(rows, (31, 0))
+    sc = s11.scope(r['sections']['quantum_security'], r)
+    assert sc['tier'] == 'T2' and sc['source_note'] is None
+    assert not [f for f in s11.breakdown(r['sections']['quantum_security'], sc)
+                if getattr(f, 'style', None) is not None and f.style.name == 'note' and not f.getPlainText().strip()]
+    text, _ = _payload_text(r, ['s11', 'appD'])
+    assert 'Same as apex' not in text and 'all rows “None”' not in text and 'Source:' not in text, text
+    assert 'The apex aggregate' not in text and 'apex aggregate, not added' not in text, text
+    assert 'no apex aggregate row; the subdomain total matches the Section 11 headline' in text, text
+    # 7/10: one risk-explained row with a missing count; 8: PQC detected without a scope register
+    row = {**G.qrow(1, G.DOMAIN, 1, 0), 'moderate': None, 'moderate_reason_code': 'not_printed_in_source',
+           'risk_level': 'low', 'risk_note_source': 'Covered by PQC.'}
+    import pymupdf
+    r = G.quantum([row], (1, 0))
+    pdf, issues = _render(s11.risk_adjusted(s11.scope(r['sections']['quantum_security'], r)))
+    assert not [i for i in issues if i['severity'] == 'error'], issues
+    risk = ' '.join(' '.join(p.get_text() for p in pymupdf.open(pdf)).split())
+    assert '1 scope row carries a risk explanation' in risk and 'Moderate not available' in risk, risk
+    assert '1 row prints a Risk level' in risk and 'Moderate 0' not in risk, risk
+    r = G.quantum([], (1, 0), pqc=[{'algorithm': 'ML-KEM', 'domains': [sub(1), sub(2)]}])
+    text, _ = _payload_text(r, ['s11'])
+    assert 'Detected on 2 domains.' in text and 'of 0 scopes' not in text and 'holds 0 scopes' not in text, text
+    # 9: clear card: source empty-state text / coverage win; generated default is singular
+    r = G.quantum([G.qrow(1, G.DOMAIN, 0, 0)], (0, 0))
+    r['sections']['quantum_security']['state'] = 'clear'
+    text, _ = _payload_text(r, ['s11'])
+    assert 'endpoints on 1 scope ' in text + ' ' and '1 scopes' not in text, text
+    r['sections']['quantum_security']['empty_state_source'] = {'text': 'Source empty text.', 'coverage': ['Src cov']}
+    text, _ = _payload_text(r, ['s11'])
+    assert 'Source empty text.' in text and 'Src cov' in text and 'TLS/SSL' not in text, text
 
 
 def test_gap_new_conditions():                                          # 2026-10-15 samples (N1-N15)
@@ -820,6 +908,18 @@ def test_new_sections_render_in_every_state():
                 assert {'s07': 'Source verdict “does not match”', 's08': '3 hosts',
                         's09': 'One clause found; not counted against the rating.',
                         's12': 'Not detected in the sources checked'}[sid] in text, (sid, text[:600])
+
+
+def test_security_resourcing_review_fixes():                           # code review 2026-10-19 (12)
+    r = _layout_report('s12', 'findings')
+    r['sections']['security_resourcing']['security_role_evidence'] = 'maybe'
+    text, issues = _payload_text(r, ['s12'])
+    assert 'Not recognised (“maybe”)' in text and ('unknown_term', 's12') in _checks(issues), (text, issues)
+    r['sections']['security_resourcing']['enabled'] = False
+    text, _ = _payload_text(r, ['s12'])
+    text = text[text.index('12 · ASSESSMENT DETAILS'):]                     # the cover has its own reason line
+    assert 'Not applicable' in text and 'switched off for this assessment' in text, text
+    assert 'Reason not recorded' not in text, text
 
 
 def test_privacy_holds_no_subarea_content_and_alias_lifts_old_shape():

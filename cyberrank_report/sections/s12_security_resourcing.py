@@ -6,6 +6,7 @@ not evidence of absence.
 """
 from .. import components as C
 from .. import icons as I
+from .. import qa
 from . import _shared as S
 
 ROLE = {'detected': ('Detected', True), 'not_detected': ('Not detected in the sources checked', False)}
@@ -13,7 +14,9 @@ KINDS = ('privacy', 'security')
 
 
 def adjust(data, report):
-    return S.adjust_switched_off(data, any(data.get(f'{k}_role_evidence') for k in KINDS))
+    return S.adjust_switched_off(data, any(data.get(f'{k}_role_evidence') for k in KINDS),
+                                 'The security resourcing check was switched off for this assessment, so public '
+                                 'evidence of privacy and security roles was not looked for.')
 
 
 card = S.card
@@ -31,7 +34,10 @@ def _role(v):
     if C.val(v) in ROLE:
         label, flag = ROLE[C.val(v)]      # no public evidence is not a failure (staff may exist): attention
         return I.yes_no_label(flag, label, status=None if flag else 'not_detected')
-    return v if C.is_missing(v) else {'value': None, 'reason_code': 'not_printed_in_source'}
+    if C.is_missing(v):
+        return v
+    qa.add('unknown_term', 'warn', f's12: role evidence "{C.val(v)}" is not a known value', once=True)    # as s13
+    return I.status_label('not_assessed', f'Not recognised (“{C.val(v)}”)', 'unknown')
 
 
 def _body(data):

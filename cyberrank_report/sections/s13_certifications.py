@@ -178,8 +178,15 @@ def awaiting_review(data):
             if isinstance(x, dict) and origin(x) == 'detected' and approval(x) == 'pending']
 
 
+def has_document(cert):
+    """An uploaded file path is recorded (a null record with a reason is no document)."""
+    return bool(val(cert.get('document')))
+
+
 def review_text(todo):
-    names = join(list(dict.fromkeys(val(x.get('standard')) or 'standard not recorded' for x in todo)))
+    """'Next step' in Section 13 and the added action in Section 02: display names ('Other (standard not named)')."""
+    names = join(list(dict.fromkeys(std_name(x) if val(x.get('standard')) else 'standard not recorded'
+                                    for x in todo)))
     n = len(todo)
     return (f'{n} system-detected certificate{"s" if n > 1 else ""} ({names}) '
             f'{"are" if n > 1 else "is"} awaiting approval. Check the source, then approve or reject '
@@ -202,7 +209,7 @@ def _origin_chip(c, cert, ref=''):
     out = [c.P(text, 'cell')]
     if origin(cert) == 'uploaded' and ref and not is_missing(ref):
         out.append(LinkTech(str(_v(ref)), 'dense_tech'))
-    if origin(cert) == 'uploaded' and cert.get('document') is not None:
+    if origin(cert) == 'uploaded' and has_document(cert):
         from .app_d_evidence_registers import RID
         out.append(c.P(f'Document in Appendix {RID["s13"]}', 'note_flush'))
     if len(out) > 1:
@@ -254,7 +261,7 @@ def _validity(c, cert):
     if not expired(cert):
         return vu if text is None else text
     flag = I.status_label('no', 'Expired', 'expired', style=T.STYLES['cell'])
-    return [flag, c.P(text, 'cell')] if text else flag
+    return [flag, c.P(text or c.missing_text(vu), 'cell')]      # dates missing: the reason stays under the flag
 
 
 def _num(v):
@@ -329,16 +336,19 @@ def certificates_block(c, data, ctx):
     notes = [dropped] if dropped else []
     if any(approval(x) == 'rejected' for x in certs):
         notes.append('Rejected certificates are listed for completeness.')
-    if any(is_missing(field(x, 'approval_state')) for x in certs):
+    if any(approval(x) is None for x in certs):      # a status is not recorded (legacy 'approved' origin is one)
         notes.append('A listed certificate is a record of what was found, not a confirmation that it is valid '
                      'or approved.')
-    head = next((m for m in data.get('metrics') or [] if isinstance(m, dict) and m.get('unit') == 'certifications_headline'
+    head = next((m for m in data.get('metrics') or [] if isinstance(m, dict)
+                 and 'certifications_headline' in (m.get('id'), m.get('unit'))
                  and isinstance(_v(m.get('value')), int)), None)
-    if head and _v(head['value']) != len(certs):     # quote the source headline, then what is listed
-        notes.append(f'The assessment headline counts {_v(head["value"])} certifications; {len(certs)} certificate '
-                     'records are listed here.')
-        qa.add('data_mismatch', 'warn', f's13: headline {_v(head["value"])} certifications vs {len(certs)} records',
-               once=True)
+    # the headline counts certifications: distinct standards on record, rejected ones not counted
+    held = len({std_key(x) for x in certs if counted(x)})
+    if head and _v(head['value']) != held:     # quote the source headline, then what is listed
+        notes.append(f'The assessment headline counts {_v(head["value"])} certifications; {held} '
+                     f'standard{"s are" if held != 1 else " is"} on record here (rejected records not counted).')
+        qa.add('data_mismatch', 'warn', f's13: headline {_v(head["value"])} certifications vs {held} standards '
+               'on record (not rejected)', once=True)
     if notes:
         out.append(c.note(' '.join(notes)))
     out += src
@@ -354,7 +364,8 @@ def reference_block(c, data, ctx):
     if not items:
         return []
     org = ctx.identity.get('org') or 'the organisation'
-    shown = ctx.state in ('findings', 'partial', 'pending_review')   # certificate table is on the page
+    # certificate table is on the page whenever records exist outside a no-result state (also `clear`)
+    shown = ctx.state not in ('not_assessed', 'not_applicable', 'unavailable')
     held = {str(x.get('standard') or '').casefold().replace(' ', '')
             for x in (data.get('certificates') or [] if shown else []) if isinstance(x, dict) and counted(x)}
     also = [val(i['standard']) for i in items if val(i.get('standard')) and str(i.get('standard') or '').casefold().replace(' ', '') in held]

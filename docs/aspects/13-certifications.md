@@ -7,17 +7,17 @@ This is an inventory section (`theme.INVENTORY`): payload state `findings` shows
 ## Layout (top to bottom)
 
 1. Section opener: "13", title, state chip, `summary` as verdict, `intro_source`. The module has no `verdict()`.
-2. State card. For `none_identified` the card title is "No certificates identified" (`s13:398-399`).
-3. KPI strip from `metrics[]` (`s13:405-407`). Not printed in no-result states.
-4. "Certificates on record" (H2) + table (`s13:289-348`). It prints when certificates exist, or when the state is not `clear` / `none_identified` (`s13:408-409`).
-5. One combined note line (dropped columns, rejected, unconfirmed status, headline mismatch) (`s13:329-343`).
-6. Source URL list: "Source" or "[1]", "[2]", … (`s13:344`).
-7. "**Next step:** …" when a detected certificate is awaiting approval (`s13:345-347`).
-8. "Commonly referenced standards" (H2): standards table with the note beside it (≤ 10 rows) or above it (`s13:351-377`).
+2. State card. For `none_identified` the card title is "No certificates identified" (`s13:409-410`).
+3. KPI strip from `metrics[]` (`s13:416-418`). Not printed in no-result states.
+4. "Certificates on record" (H2) + table (`s13:296-358`). It prints when certificates exist, or when the state is not `clear` / `none_identified` (`s13:419-420`).
+5. One combined note line (dropped columns, rejected, unconfirmed status, headline mismatch) (`s13:336-353`).
+6. Source URL list: "Source" or "[1]", "[2]", … (`s13:354`).
+7. "**Next step:** …" when a detected certificate is awaiting approval (`s13:355-357`).
+8. "Commonly referenced standards" (H2): standards table with the note beside it (≤ 10 rows) or above it (`s13:361-388`).
 
-No-result states show the opener, the card and block 8 only (`s13:413-415`).
+No-result states show the opener, the card and block 8 only (`s13:424-426`).
 
-Appendix D.5 "Uploaded certificate documents" (`appD:558-595`):
+Appendix D.5 "Uploaded certificate documents" (`appD:561-598`):
 
 1. H2 "D.5  Uploaded certificate documents", two opening lines, "Back to Section 13 Certifications, p. n".
 2. "Not shown: …" when any document failed to load.
@@ -31,23 +31,23 @@ Section 02 gets one extra action row (`s02:187-196, 222`).
 | Field path | Printed as / used for | If missing or null |
 |---|---|---|
 | `summary`, `intro_source`, `title` | Opener | No verdict / no intro / "Certifications" |
-| `metrics[]` | KPI tiles in payload order. `compliance_score` (percent) is also the 01 aspect score (`s01_executive_overview.py:274`) | No certificates and no numeric `compliance_score`: a "Compliance score 0%" tile is added (`s13:390-395`) |
-| `metrics[unit=certifications_headline].value` (int) | Compared with the number of records; prints a note when different (`s13:335-341`) | No check |
+| `metrics[]` | KPI tiles in payload order. `compliance_score` (percent) is also the 01 aspect score (`s01_executive_overview.py:274`) | No certificates and no numeric `compliance_score`: a "Compliance score 0%" tile is added (`s13:401-406`) |
+| `metrics[id or unit = certifications_headline].value` (int) | Compared with the distinct standards on record, rejected records not counted (records of one standard count once; each `OTHER` record counts on its own); prints a note when different (`s13:342-351`) | No check |
 | `certificates[].standard` | "Standard" / "Certificate" cell. Also the grouping key (case and spaces ignored) | "Standard not recorded". The value `OTHER` prints "Other (standard not named)" and is never grouped (`s13:151-161`) |
 | `certificates[].standard_full_name` | Scope line, first part | Omitted. If nothing else is in the scope cell: missing-value text |
-| `certificates[].category` (`security` / `privacy` / `both` / `security_privacy` / `security_and_privacy`) | Scope line: "Security", "Privacy", "Security + Privacy". Other values are humanised (`s13:32-33, 274-276`) | Omitted |
-| `certificates[].scope_source`, `.issuer` | Extra scope lines "Scope: …" and "Issuer: …" (`s13:278-279`) | Omitted |
-| `certificates[].origin` (`detected` / `uploaded`; legacy `approved` / `team_approved` = detected) | "Origin" cell: "System detected" / "Uploaded" (`s13:29, 137-140, 194-210`) | Null record: "Not available (<reason>)". Unknown code: `origin_label_source` humanised, or the code itself |
+| `certificates[].category` (`security` / `privacy` / `both` / `security_privacy` / `security_and_privacy`) | Scope line: "Security", "Privacy", "Security + Privacy". Other values are humanised (`s13:32-33, 281-283`) | Omitted |
+| `certificates[].scope_source`, `.issuer` | Extra scope lines "Scope: …" and "Issuer: …" (`s13:285-286`) | Omitted |
+| `certificates[].origin` (`detected` / `uploaded`; legacy `approved` / `team_approved` = detected) | "Origin" cell: "System detected" / "Uploaded" (`s13:29, 137-140, 201-217`) | Null record: "Not available (<reason>)". Unknown code: `origin_label_source` humanised, or the code itself |
 | `certificates[].origin_label_source` | Origin text only when `origin` is not a known code | — |
-| `certificates[].approval_state` (`pending` / `pending_approval` / `awaiting_approval` / `approved` / `rejected`) | "Status" cell: "Awaiting approval" / "Approved" / "Rejected" (`s13:213-225`) | Missing (and no legacy origin): "Not available (<reason>)" plus the unconfirmed-status note. Unknown value: "Not recognised (“x”)" plus QA `unknown_term` |
-| `certificates[].valid_from`, `.valid_until` (ISO date or `{value, precision}`) | "Validity" cell, see rules (`s13:242-257`) | Uses the null reason. Both `not_detected`: "Not detected by the system" |
-| `certificates[].expired` (bool or `{value}`) | "Expired" (red icon) above the dates (`s13:237-239, 254-257`) | Not expired. Expiry is never computed from the dates |
-| `certificates[].source_url` | Source list ("Source" or numbered links) and "[n]" in the Origin cell (`s13:294-300`) | Detected record shows "[source not recorded]" when other records have URLs |
-| `certificates[].file_reference` | Link line under "Uploaded" (`s13:201-204`). Also in the D.5 meta line | Omitted |
-| `certificates[].document` (path relative to the JSON file: `.png` / `.jpg` / `.jpeg` / `.pdf`) | "Document in Appendix D.5" under "Uploaded". The file prints in D.5 (`s13:205-207`, `appD:535-555`) | No D.5 entry |
+| `certificates[].approval_state` (`pending` / `pending_approval` / `awaiting_approval` / `approved` / `rejected`) | "Status" cell: "Awaiting approval" / "Approved" / "Rejected" (`s13:220-232`) | Missing (and no legacy origin): "Not available (<reason>)" plus the unconfirmed-status note. Unknown value: "Not recognised (“x”)" plus QA `unknown_term` |
+| `certificates[].valid_from`, `.valid_until` (ISO date or `{value, precision}`) | "Validity" cell, see rules (`s13:249-264`) | Uses the null reason. Both `not_detected`: "Not detected by the system" |
+| `certificates[].expired` (bool or `{value}`) | "Expired" (red icon) above the dates (`s13:244-246, 261-264`) | Not expired. Expiry is never computed from the dates |
+| `certificates[].source_url` | Source list ("Source" or numbered links) and "[n]" in the Origin cell (`s13:301-307`) | Detected record shows "[source not recorded]" when other records have URLs |
+| `certificates[].file_reference` | Link line under "Uploaded" (`s13:208-211`). Also in the D.5 meta line | Omitted |
+| `certificates[].document` (path relative to the JSON file: `.png` / `.jpg` / `.jpeg` / `.pdf`) | "Document in Appendix D.5" under "Uploaded". The file prints in D.5 (`s13:181-183, 212-214`, `appD:538-558`) | Null, a null record (with its reason) or an empty value: no line, no D.5 entry, no QA warn |
 | `certificates[].certificate_id` | Grouping key only for an unnamed standard | Object identity |
 | `reference_standards.items[] {standard, description}` | "Commonly referenced standards" table, columns "Standard", "Scope" | Missing-value cell. If there are no items, the block is omitted |
-| `reference_standards.is_vendor_evidence` | Truthy: the "Reference list only …" sentence is not printed (`s13:361-362`) | Sentence printed |
+| `reference_standards.is_vendor_evidence` | Truthy: the "Reference list only …" sentence is not printed (`s13:372-373`) | Sentence printed |
 | `identity.org` (display identity) | "It is not evidence that <org> holds them." | "the organisation" |
 | `state`, `state_reason`, `reason_code`, `what_checked`, `empty_state_source`, `next_step` | State card (default card) | Shared fallbacks |
 | `report._source_dir` (set by the loader) | Base folder for `document` paths | Current folder |
@@ -56,38 +56,38 @@ Section 02 gets one extra action row (`s02:187-196, 222`).
 
 | Text or label (exact) | Where it prints | Notes (e.g. policy override key) |
 |---|---|---|
-| "Certificates on record" | H2 | `s13:292, 327` |
-| "No certificate records in the assessment data." | Note when the table block runs with no records | `s13:292` |
-| Columns "Standard", "Scope", "Origin", "Status", "Validity"; or "Certificate" (standard + scope stacked) | Certificate table | `s13:304, 318-322` |
+| "Certificates on record" | H2 | `s13:299, 334` |
+| "No certificate records in the assessment data." | Note when the table block runs with no records | `s13:299` |
+| Columns "Standard", "Scope", "Origin", "Status", "Validity"; or "Certificate" (standard + scope stacked) | Certificate table | `s13:311, 325-329` |
 | "Standard not recorded", "Other (standard not named)" | Standard cell | `s13:160-161` |
 | "Security", "Privacy", "Security + Privacy" | Scope line | `s13:32-33` |
-| "Scope: <x>", "Issuer: <x>" | Scope lines | `s13:278` |
+| "Scope: <x>", "Issuer: <x>" | Scope lines | `s13:285` |
 | "System detected", "Uploaded" | Origin cell | `s13:29` |
-| "Document in Appendix D.5" | Under "Uploaded" | `s13:207` |
-| "[n]", "[source not recorded]" | Origin cell suffix | `s13:299-300` |
-| "Approved" (same for every origin), "Awaiting approval", "Rejected", "Not recognised (“x”)" | Status cell. Never "verified" | `s13:219-225` |
-| "<from> – <until>", "Until <until>", "From <from>; end date not available (<reason>)", "Not detected by the system" | Validity cell (dates as "01 Mar 2025") | `s13:246-253` |
-| "Expired" | Validity cell, above the dates | `s13:256` |
-| "<Columns>: not available for any certificate (<reason>)." (Scope column is named "scope and category") | Note | `s13:62-76, 286` |
-| "Rejected certificates are listed for completeness." | Note | `s13:331` |
-| "A listed certificate is a record of what was found, not a confirmation that it is valid or approved." | Note | `s13:333-334` |
-| "The assessment headline counts <h> certifications; <n> certificate records are listed here." | Note | `s13:338-339` |
+| "Document in Appendix D.5" | Under "Uploaded" | `s13:214` |
+| "[n]", "[source not recorded]" | Origin cell suffix | `s13:306-307` |
+| "Approved" (same for every origin), "Awaiting approval", "Rejected", "Not recognised (“x”)" | Status cell. Never "verified" | `s13:226-232` |
+| "<from> – <until>", "Until <until>", "From <from>; end date not available (<reason>)", "Not detected by the system" | Validity cell (dates as "01 Mar 2025") | `s13:253-260` |
+| "Expired" | Validity cell, above the dates | `s13:263` |
+| "<Columns>: not available for any certificate (<reason>)." (Scope column is named "scope and category") | Note | `s13:62-76, 293` |
+| "Rejected certificates are listed for completeness." | Note | `s13:338` |
+| "A listed certificate is a record of what was found, not a confirmation that it is valid or approved." | Note | `s13:340-341` |
+| "The assessment headline counts <h> certifications; <n> standard(s) is/are on record here (rejected records not counted)." | Note | `s13:348-349` |
 | "Source" / "[1]", "[2]" … + link | Source list (http/https URLs only are live links) | `s13:119-129, 100-116` |
-| "**Next step:** <n> system-detected certificate(s) (<standards>) is/are awaiting approval. Check the source, then approve or reject it/each in Cyberrank." | After the source list | `s13:181-186, 347` |
-| "standard not recorded" | Inside the Next-step list of names | `s13:182` |
-| "Commonly referenced standards"; columns "Standard", "Scope" | H2 + table | `s13:365-367` |
-| "Reference list only: standards commonly referenced for organisations of this kind. It is not evidence that <org> holds them." | Beside or above the table | `s13:361-362` |
-| " <A and B> also appear(s) among the certificates on record." | Appended | `s13:363-364` |
-| "No certificates identified" | Card title, `none_identified` | `s13:399` |
-| "No certificate records were found in the sources checked." | Card reason when there is no `state_reason` | `s13:388-389` |
-| "Compliance score", 0, percent | Injected KPI tile | `s13:393` |
+| "**Next step:** <n> system-detected certificate(s) (<standards>) is/are awaiting approval. Check the source, then approve or reject it/each in Cyberrank." `<standards>` are display names, so `OTHER` prints "Other (standard not named)" (also in the 02 action, which reuses this text) | After the source list | `s13:186-193, 357` |
+| "standard not recorded" | Inside the Next-step list of names | `s13:188` |
+| "Commonly referenced standards"; columns "Standard", "Scope" | H2 + table | `s13:376-378` |
+| "Reference list only: standards commonly referenced for organisations of this kind. It is not evidence that <org> holds them." | Beside or above the table | `s13:372-373` |
+| " <A and B> also appear(s) among the certificates on record." | Appended | `s13:374-375` |
+| "No certificates identified" | Card title, `none_identified` | `s13:410` |
+| "No certificate records were found in the sources checked." | Card reason when there is no `state_reason` | `s13:399-400` |
+| "Compliance score", 0, percent | Injected KPI tile | `s13:404` |
 | 02 row: title "Review system-detected certificates", priority low, Effort "Not available (not tracked by the assessment)", Team "Cyberrank admin", sub-line "Added by this report from the certificate records; not part of the assessment action list.", action text = Next-step text | Section 02 table + its Low-priority KPI | `s02:193-196` |
-| D.5: "Uploaded certificate documents" | H2 | `appD:561` (not a policy key) |
-| "D.5 shows the <n> certificate document(s) uploaded to Cyberrank, in the order of Section 13, one document per page." / "Shown as uploaded; dates and scope printed on a document are not read into the report data." | D.5 opening | `appD:567-570` |
-| "Not shown: D.5.i <standard> (<why>); …." with why = "no file in the assessment data" / "file path not accepted" / "file not found" | D.5 | `appD:543-549, 572, 577` |
-| "D.5.i  <standard>"; meta "Issuer: <x> · <file_reference>" | D.5 per document | `appD:581-585` |
-| "End of register · <N> documents. <shown> of <N> uploaded documents shown." | D.5 end | `appD:593` |
-| Index content: "<shown> of <N> uploaded certificate documents" / "Not required — no uploaded certificate documents in the assessment data." | Appendix D index | `appD:566, 594` |
+| D.5: "Uploaded certificate documents" | H2 | `appD:564` (not a policy key) |
+| "D.5 shows the <n> certificate document(s) uploaded to Cyberrank, in the order of Section 13, one document per page." / "Shown as uploaded; dates and scope printed on a document are not read into the report data." | D.5 opening | `appD:570-573` |
+| "Not shown: D.5.i <standard> (<why>); …." with why = "no file in the assessment data" / "file path not accepted" / "file not found" | D.5 | `appD:546-552, 575, 580` |
+| "D.5.i  <standard>"; meta "Issuer: <x> · <file_reference>" | D.5 per document | `appD:584-588` |
+| "End of register · <N> documents. <shown> of <N> uploaded documents shown." | D.5 end | `appD:596` |
+| Index content: "<shown> of <N> uploaded certificate documents" / "Not required — no uploaded certificate documents in the assessment data." | Appendix D index | `appD:569, 597` |
 
 The module has no policy-file overrides.
 
@@ -95,39 +95,39 @@ The module has no policy-file overrides.
 
 | Condition | What prints | Code |
 |---|---|---|
-| State is `findings` / `clear` / `partial` / `none_identified` and no certificate objects | State becomes `none_identified` (`no_certificate_records`). Metric `state` keys are stripped. A 0% "Compliance score" is prepended unless a numeric one is sent. QA `state_adjusted` | `s13:380-395` |
-| Certificates present, or state not `clear` / `none_identified` | Certificate block | `s13:408-409` |
-| Records of the same standard | Sorted together (first-seen order, detected before uploaded). The second row has a blank Standard and keeps only its own "Scope:" / "Issuer:" lines | `s13:164-172, 306-314` |
+| State is `findings` / `clear` / `partial` / `none_identified` and no certificate objects | State becomes `none_identified` (`no_certificate_records`). Metric `state` keys are stripped. A 0% "Compliance score" is prepended unless a numeric one is sent. QA `state_adjusted` | `s13:391-406` |
+| Certificates present, or state not `clear` / `none_identified` | Certificate block | `s13:419-420` |
+| Records of the same standard | Sorted together (first-seen order, detected before uploaded). The second row has a blank Standard and keeps only its own "Scope:" / "Issuer:" lines | `s13:164-172, 313-321` |
 | Every record of a standard is rejected | That standard moves to the end | `s13:170-172` |
-| Every record has the same `source_url` | One "Source" link row, no "[n]" | `s13:126-128, 296` |
-| `source_url` values differ (absent counts as a value) | Numbered list; detected rows get "[n]" or "[source not recorded]"; uploaded rows without a URL get nothing | `s13:296-300` |
+| Every record has the same `source_url` | One "Source" link row, no "[n]" | `s13:126-128, 303` |
+| `source_url` values differ (absent counts as a value) | Numbered list; detected rows get "[n]" or "[source not recorded]"; uploaded rows without a URL get nothing | `s13:303-307` |
 | No URL anywhere | No source list, no "[n]" | `s13:124-125` |
-| Origin `uploaded` + `file_reference` | Link line | `s13:203-204` |
-| Origin `uploaded` + `document` key not null | "Document in Appendix D.5" + D.5 entry | `s13:205-207`, `appD:563-564` |
+| Origin `uploaded` + `file_reference` | Link line | `s13:210-211` |
+| Origin `uploaded` + `document` value present (not null, not a null record) | "Document in Appendix D.5" + D.5 entry | `s13:212-214`, `appD:566-567` |
 | `approval_state` missing but origin is legacy `approved` / `team_approved` | Status "Approved" | `s13:146-147` |
-| Unknown `approval_state` | "Not recognised (“x”)" + QA `unknown_term` | `s13:224-225` |
-| Both dates missing, both `reason_code: not_detected` | "Not detected by the system" | `s13:245-247` |
-| Both dates missing, other reasons | `valid_until` missing-value text | `s13:254-255` |
-| Only `valid_until` missing | "From <from>; end date not available (<reason>)" | `s13:250-251` |
-| Only `valid_from` missing | "Until <until>" | `s13:253` |
-| `expired` is true | "Expired" + the date text (only "Expired" when both dates are missing for a reason other than `not_detected`) | `s13:254-257` |
-| A column (except Standard, Origin) is missing in every row with one shared reason | Column dropped + "…: not available for any certificate (<reason>)." note | `s13:315-316` |
-| Content width minus (Origin 92 + Status 140 + Validity 110 for the columns kept) < 300 pt | Scope stacked under the standard in a "Certificate" column. With all columns kept this always applies (CW ≈ 516 pt) | `s13:285, 317-322` |
-| Else Scope kept | Scope lines joined " · " | `s13:323-325` |
-| Any record rejected | "Rejected certificates are listed for completeness." | `s13:330-331` |
-| Any record has a missing `approval_state` field | "A listed certificate is a record of what was found…" | `s13:332-334` |
-| Headline metric (unit `certifications_headline`, int) ≠ number of records | Headline note + QA `data_mismatch` | `s13:335-341` |
-| ≥ 1 record with origin detected and status pending | "Next step:" line in 13 **and** a low-priority action in 02 (rank = last + 1) | `s13:175-178, 345-347`, `s02:187-196` |
-| Rejected record with `credit_applied` > 0 | QA `data_mismatch` only | `s13:265-270` |
-| `reference_standards.items` empty | No reference block | `s13:353-355` |
-| State is `findings` / `partial` / `pending_review` and a non-rejected certificate has the same standard as an item | "… also appear(s) among the certificates on record." | `s13:357-364` |
-| More than 10 items, or `is_vendor_evidence` true with no overlap | Stacked: heading, text, full-width table | `s13:368-369` |
-| Else | Half-width table with the note beside it, kept on one page | `s13:371-377` |
-| No-result state | Card + reference block | `s13:413-415` |
-| D.5: no uploaded record with `document` | Index row only | `appD:563-566` |
-| D.5: path outside the JSON folder or not .png / .jpg / .jpeg / .pdf | "file path not accepted" + QA `missing_document` | `appD:544-547, 575` |
-| D.5: PDF document | Every page rasterised at 150 dpi, one report page each | `appD:552-555` |
-| D.5: last page of the last document | Shrunk to leave room for the end line | `appD:589-591` |
+| Unknown `approval_state` | "Not recognised (“x”)" + QA `unknown_term` | `s13:231-232` |
+| Both dates missing, both `reason_code: not_detected` | "Not detected by the system" | `s13:252-254` |
+| Both dates missing, other reasons | `valid_until` missing-value text (also under "Expired" when the flag is set) | `s13:261-264` |
+| Only `valid_until` missing | "From <from>; end date not available (<reason>)" | `s13:257-258` |
+| Only `valid_from` missing | "Until <until>" | `s13:260` |
+| `expired` is true | "Expired" + the date text; both dates missing for a reason other than `not_detected`: "Expired" + "Not available (<reason>)" | `s13:261-264` |
+| A column (except Standard, Origin) is missing in every row with one shared reason | Column dropped + "…: not available for any certificate (<reason>)." note | `s13:322-323` |
+| Content width minus (Origin 92 + Status 140 + Validity 110 for the columns kept) < 300 pt | Scope stacked under the standard in a "Certificate" column. With all columns kept this always applies (CW ≈ 516 pt) | `s13:292, 324-329` |
+| Else Scope kept | Scope lines joined " · " | `s13:330-332` |
+| Any record rejected | "Rejected certificates are listed for completeness." | `s13:337-338` |
+| Any record has no recorded status (missing `approval_state` and not a legacy `approved` / `team_approved` origin, which shows "Approved") | "A listed certificate is a record of what was found…" | `s13:339-341` |
+| Headline metric (id or unit `certifications_headline`, int) ≠ distinct standards on record (not rejected) | Headline note + QA `data_mismatch` | `s13:342-351` |
+| ≥ 1 record with origin detected and status pending | "Next step:" line in 13 **and** a low-priority action in 02 (rank = last + 1) | `s13:175-178, 355-357`, `s02:187-196` |
+| Rejected record with `credit_applied` > 0 | QA `data_mismatch` only | `s13:272-277` |
+| `reference_standards.items` empty | No reference block | `s13:363-365` |
+| State is not a no-result state (so also `clear` with records) and a non-rejected certificate has the same standard as an item | "… also appear(s) among the certificates on record." | `s13:367-375` |
+| More than 10 items, or `is_vendor_evidence` true with no overlap | Stacked: heading, text, full-width table | `s13:379-380` |
+| Else | Half-width table with the note beside it, kept on one page | `s13:382-388` |
+| No-result state | Card + reference block | `s13:424-426` |
+| D.5: no uploaded record with `document` | Index row only | `appD:566-569` |
+| D.5: path outside the JSON folder or not .png / .jpg / .jpeg / .pdf | "file path not accepted" + QA `missing_document` | `appD:547-550, 578` |
+| D.5: PDF document | Every page rasterised at 150 dpi, one report page each | `appD:555-558` |
+| D.5: last page of the last document | Shrunk to leave room for the end line | `appD:592-594` |
 
 ## Computed by the generator
 
@@ -139,7 +139,7 @@ The module has no policy-file overrides.
 | Row order | Live standards first (first-seen), detected before uploaded | `s13:164-172` |
 | Awaiting review | Records with origin detected and approval pending | `s13:175-178` |
 | Source references | Distinct `source_url` values in row order → [1], [2]… | `s13:122-123` |
-| 0% compliance score | Only when there are no records and no numeric `compliance_score` | `s13:392-394` |
+| 0% compliance score | Only when there are no records and no numeric `compliance_score` | `s13:403-405` |
 | 01 "All aspects" result line | Distinct standards of non-rejected records ("<n> certification(s)") + "<k> awaiting approval", "<k> rejected" | `s01_executive_overview.py:389-395` |
 | 02 KPI counts | The added action counts in "Total" and "Low priority" | `s02:222-228` |
 
@@ -161,7 +161,7 @@ The module has no policy-file overrides.
 | Payload state | Chip shown | Body |
 |---|---|---|
 | `findings` | Identified | No card. KPIs, certificate block, reference block |
-| `clear` with records | No findings | Card + KPIs + certificate block + reference block. The "also appear" sentence is not added |
+| `clear` with records | No findings | Card + KPIs + certificate block + reference block (with the "also appear" sentence) |
 | `clear` / `findings` / `partial` without records | None identified (adjusted) | As `none_identified` |
 | `none_identified` | None identified | Card "No certificates identified" + KPIs (0% if no score) + reference block |
 | `partial` | Partial coverage | Banner + full body |
@@ -173,10 +173,10 @@ The module has no policy-file overrides.
 | check id | severity | when |
 |---|---|---|
 | `state_adjusted` | info | No certificate records → `none_identified` (`__init__.py:176`) |
-| `unknown_term` | warn | `approval_state` is not a known value (`s13:224`) |
-| `data_mismatch` | warn | Rejected certificate with `credit_applied` > 0 (`s13:269`) |
-| `data_mismatch` | warn | Headline metric (unit `certifications_headline`) ≠ number of records (`s13:340`) |
-| `missing_document` | warn | A D.5 document cannot be shown (no file / path not accepted / not found) (`appD:575`) |
+| `unknown_term` | warn | `approval_state` is not a known value (`s13:231`) |
+| `data_mismatch` | warn | Rejected certificate with `credit_applied` > 0 (`s13:276`) |
+| `data_mismatch` | warn | Headline metric (id or unit `certifications_headline`) ≠ distinct standards on record, rejected not counted (`s13:350`) |
+| `missing_document` | warn | A D.5 document cannot be shown (no file / path not accepted / not found) (`appD:578`) |
 
 ## Backend checklist
 
@@ -196,7 +196,7 @@ The module has no policy-file overrides.
   - `issuer`
   - `scope_source`
   - `file_reference`
-  - `document`: a relative path inside the JSON's folder (.png / .jpg / .jpeg / .pdf). Omit the key instead of sending null.
+  - `document`: a relative path inside the JSON's folder (.png / .jpg / .jpeg / .pdf). Omit the key, or send a null record with a reason, when there is no file.
 - Optional:
   - a headline metric with unit `certifications_headline`
   - `reference_standards {is_vendor_evidence: false, items[] {standard, description}}`
