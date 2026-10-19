@@ -445,6 +445,22 @@ def aspect_score(key, sec, breakdown):
     return min(v, 100) if isinstance(v, (int, float)) and not isinstance(v, bool) else NA
 
 
+# Backend-computed aspect score (owner decision 2026-10-19: the backend computes every aspect percent, e.g.
+# (cap - demerit) / cap x 100, and sends it as sections.<key>.aspect_score; the report never derives one).
+SCORE_LABELS = {'no_preference_set': 'Not compared'}      # null aspect_score reason -> track label
+
+
+def backend_score(sec):
+    """sections.<key>.aspect_score: percent (0-100) | a label for a null with a known reason | NA | None (absent)."""
+    v = sec.get('aspect_score')
+    if v is None:
+        return None
+    x = v.get('value') if isinstance(v, dict) else v
+    if isinstance(x, (int, float)) and not isinstance(x, bool):
+        return max(0, min(x, 100))
+    return SCORE_LABELS.get(v.get('reason_code') if isinstance(v, dict) else None, NA)
+
+
 def aspect_rows(report, breakdown):
     """[(spec, title, score | NA | None (never scored), result | None (no result), state)] in report order."""
     by = {b.get('section'): b for b in breakdown if isinstance(b, dict)}
@@ -454,7 +470,9 @@ def aspect_rows(report, breakdown):
         st = sec.get('state')
         has = not sec.get('_card_only') and (st not in NO_RESULT or sec.get('_no_preference'))
         res = RESULTS[spec.key](sec, report) if has and spec.key in RESULTS else None
-        score = aspect_score(spec.key, sec, by) if spec.key in SCORED else None
+        score = backend_score(sec)
+        if score is None:
+            score = aspect_score(spec.key, sec, by) if spec.key in SCORED else None
         rows.append((spec, sec.get('title') or spec.title, score, res, st))
     return rows
 
@@ -498,15 +516,15 @@ class Meter(Flowable):
 
     def draw(self):
         cv, w, mid = self.canv, self.width, self.height / 2 + 1
-        if self.score != NA:
+        if not isinstance(self.score, str):
             cv.setFillColor(T.SAPPHIRE_100)
             cv.roundRect(0, mid - 3, w, 6, 3, stroke=0, fill=1)
             if self.score > 0:
                 cv.setFillColor(T.NAVY)
                 cv.roundRect(0, mid - 3, max(6, w * self.score / 100), 6, 3, stroke=0, fill=1)
             return
-        fs = 7.2
-        tw = stringWidth(self.LABEL, T.LIGHT, fs)
+        fs, label = 7.2, self.LABEL if self.score == NA else self.score
+        tw = stringWidth(label, T.LIGHT, fs)
         cv.setStrokeColor(T.SLATE_400)
         cv.setLineWidth(0.6)
         cv.setDash(1.5, 2)
@@ -514,7 +532,7 @@ class Meter(Flowable):
         cv.setDash()
         cv.setFillColor(T.MUTED)
         cv.setFont(T.LIGHT, fs)
-        cv.drawString(0, mid - fs * 0.36, self.LABEL)
+        cv.drawString(0, mid - fs * 0.36, label)
 
 
 def _frame(pad_v=0):
@@ -528,7 +546,7 @@ def scores_block(rows, pages):
     mw, other = 230, len(rows) - len(scored)
     data = [[_num(r[0], pages), _name(r[0], r[1], pages), Meter(r[2], mw),
              c.M(f'<font name="{T.MEDIUM}" color="{HX}">{c.fmt_value(r[2], "percent")}</font>', 'cell_num')
-             if r[2] != NA else ''] for r in scored]
+             if not isinstance(r[2], str) else ''] for r in scored]
     t = Table(data, colWidths=[24, 170, mw + 12, 44], hAlign='LEFT')
     t.setStyle(TableStyle(_frame(3.5) + [('VALIGN', (0, 0), (-1, -1), 'MIDDLE')]))
     head = Table([[c.P('Aspect scores', 'h3', spaceBefore=0), c.P('0%', 'note_flush'),

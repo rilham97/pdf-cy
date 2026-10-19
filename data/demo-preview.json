@@ -1368,7 +1368,11 @@
      "value_source": "United Kingdom, European Union (EU)"
     }
    ],
-   "narrative_source": "The terms of service name the courts of England and Wales, which matches the jurisdictions your organisation accepts."
+   "narrative_source": "The terms of service name the courts of England and Wales, which matches the jurisdictions your organisation accepts.",
+   "aspect_score": {
+    "value": 100,
+    "unit": "percent"
+   }
   },
   "data_residency": {
    "number": "08",
@@ -1463,7 +1467,11 @@
      "value_source": "United Kingdom, Germany, Ireland, United States, Singapore, Australia"
     }
    ],
-   "narrative_source": "We found one public system hosted in a country outside the countries you prefer."
+   "narrative_source": "We found one public system hosted in a country outside the countries you prefer.",
+   "aspect_score": {
+    "value": 0,
+    "unit": "percent"
+   }
   },
   "legal_terms": {
    "number": "09",
@@ -1494,7 +1502,11 @@
      "value_source": "https://www.example.com/legal/terms"
     }
    ],
-   "narrative_source": "The portal terms describe how customer data is protected, but we found no clause that commits to notifying customers after a breach."
+   "narrative_source": "The portal terms describe how customer data is protected, but we found no clause that commits to notifying customers after a breach.",
+   "aspect_score": {
+    "value": 100,
+    "unit": "percent"
+   }
   },
   "ai_risk_governance": {
    "number": "10",
@@ -1886,6 +1898,10 @@
      ],
      "closing": "Allowing legacy TLS versions enables clients to establish connections using classical cryptographic algorithms. If an attacker can force or negotiate the use of an older protocol version (a protocol downgrade), the connection may lose the protections provided by post-quantum cryptography."
     }
+   },
+   "aspect_score": {
+    "value": 0,
+    "unit": "percent"
    }
   },
   "security_resourcing": {
@@ -1913,7 +1929,11 @@
      ]
     }
    ],
-   "narrative_source": "Public materials show this organisation has a security function and a data protection officer."
+   "narrative_source": "Public materials show this organisation has a security function and a data protection officer.",
+   "aspect_score": {
+    "value": 100,
+    "unit": "percent"
+   }
   },
   "certifications": {
    "number": "13",

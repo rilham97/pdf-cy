@@ -1336,6 +1336,27 @@ def test_uploaded_certificate_documents_in_appendix_d5():                 # user
     assert any(i['check'] == 'missing_document' for i in issues), issues
     assert 'Approved' in flat and 'automatically' not in flat and 'Approved by team' not in flat
 
+
+def test_backend_aspect_score_in_rating_overview():                       # owner decision 2026-10-19
+    import copy
+    import pymupdf
+    rep = copy.deepcopy(json.loads((Path(__file__).resolve().parents[1] / 'data/demo-preview.json').read_text()))
+    secs = rep['sections']
+    secs['data_sovereignty']['aspect_score'] = {'value': 0, 'unit': 'percent'}
+    secs['data_residency']['aspect_score'] = {'value': None, 'reason_code': 'no_preference_set'}
+    secs['legal_terms']['aspect_score'] = {'value': 140, 'unit': 'percent'}          # capped at 100%
+    secs['cloud_infrastructure'].pop('aspect_score', None)
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / 'r.pdf'
+        build(rep, out, only=['s01'])
+        text = ' '.join(' '.join(p.get_text() for p in pymupdf.open(out)).split())
+    block = text[text.index('Aspect scores'):text.index('All aspects')]
+    assert '07 Data sovereignty' in block and '0%' in block, block
+    assert '08 Data residency' in block and 'Not compared' in block, block
+    assert '09 Legal terms & conditions' in block and '140%' not in block, block
+    assert 'Cloud infrastructure' not in block, block
+    assert 'demerit' not in text.lower() and 'cap ' not in text.lower(), text
+
 if __name__ == '__main__':
     for name, fn in list(globals().items()):
         if name.startswith('test_'):

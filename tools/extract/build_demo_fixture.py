@@ -947,6 +947,14 @@ def check(text):
     assert not other, f'non-example domains: {sorted(other)}'
 
 
+# Backend-computed aspect scores for the aspects without a score metric (synthetic values that follow
+# the demo's own results: governing law matches, a host outside the preference, a clause present,
+# a high-risk quantum finding, no resourcing demerit).
+for key, pct in (('data_sovereignty', 100), ('data_residency', 0), ('legal_terms', 100),
+                 ('quantum_security', 0), ('security_resourcing', 100)):
+    REPORT['sections'][key]['aspect_score'] = {'value': pct, 'unit': 'percent'}
+
+
 if __name__ == '__main__':
     write_documents()
     text = json.dumps(REPORT, indent=1, ensure_ascii=False) + '\n'
