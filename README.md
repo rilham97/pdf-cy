@@ -1,8 +1,63 @@
 # Cyberrank report generator
 
 JSON payload -> "Cyber Risk Report" PDF with ReportLab Platypus 5 (flowing story, no HTML/CSS).
+AI agents: read [AGENTS.md](AGENTS.md) first.
 
-## Install
+## Cara pakai (versi super gampang)
+
+Bayangkan mesin cetak: kamu masukkan **satu file data (JSON)**, keluar **satu file PDF report**.
+
+### 1. Siapkan komputernya (sekali saja)
+
+Butuh **Python 3.13**. Lalu di terminal, masuk ke folder ini dan ketik:
+
+    python3.13 -m venv .venv
+    .venv/bin/pip install -r requirements.txt
+
+(Windows: ganti `.venv/bin/` dengan `.venv\Scripts\`.)
+
+### 2. Siapkan datanya
+
+Satu file JSON per organisasi. Contoh lengkap yang 100% fiktif: `data/demo-preview.json`.
+Isinya, gampangnya:
+
+| Bagian JSON | Isinya apa |
+|---|---|
+| `identity` | nama organisasi + domain (misal `example.com`) |
+| `snapshot` | tanggal assessment, tanggal generate, versi metodologi |
+| `sections.<nama>` | hasil tiap aspek: privacy, vulnerabilities, credential_exposure, data_leak_history, data_sovereignty, data_residency, legal_terms, ai_risk_governance, quantum_security, security_resourcing, certifications, fourth_party_vendors, cloud_infrastructure, + executive_overview, priority_actions |
+| `appendices` | data register panjang untuk lampiran (credential, quantum, dll.) |
+
+Aturan wajib di data (kalau dilanggar, program berhenti dan bilang salahnya di mana):
+- Setiap section punya `state`: `findings`, `clear`, `partial`, `pending_review`, `not_assessed`, `not_applicable`, `unavailable`, atau `none_identified`.
+- Nilai yang kosong (`null`) **harus** ada alasannya (`reason_code`). Report tidak pernah menulis 0 untuk data yang tidak ada.
+- Setiap angka punya satuan (`unit`).
+- Tanggal ditulis `YYYY-MM-DD`.
+- Email akun sudah disamarkan oleh sistem (contoh `j*****n@example.com`).
+- Dokumen sertifikat upload (opsional): `certificates[].document` = path file PNG/JPG/PDF, relatif ke file JSON.
+
+Daftar lengkap semua field: [data/report-schema.md](data/report-schema.md).
+
+### 3. Cetak reportnya
+
+    .venv/bin/python -m cyberrank_report.build data/demo-preview.json -o output/report.pdf
+
+Selesai. Hasilnya `output/report.pdf` + `output/report.qa.json` (hasil pengecekan otomatis).
+
+- `error: 0` = aman. Ada error = baca `report.qa.json`, di situ tertulis masalahnya.
+- Halaman "Supply-chain aggregation" di Appendix C diambil dari PDF lain yang **tidak ada di repo**.
+  Kasih tahu lokasinya sebelum mencetak, kalau tidak QA akan melapor 1 error:
+
+      export CYBERRANK_SUPPLY_CHAIN_PDF="/path/ke/report-produksi.pdf"
+      export CYBERRANK_SUPPLY_CHAIN_INDEX=44     # nomor halaman, mulai dari 0
+
+### 4. Cek semuanya masih benar (setelah mengubah kode)
+
+    .venv/bin/python -I tests/test_kit.py
+
+Semua baris harus `ok`.
+
+## Install (detail)
 
     python3.13 -m venv .venv          # Homebrew 3.13/3.14 may have a broken pyexpat; a uv-managed Python works
     .venv/bin/pip install -r requirements.txt
