@@ -46,7 +46,7 @@ def build(data, ctx):
         out += [c.heading('Data sources', 3)] + c.bullets([c.sentence(s) for s in sources])
     out += [c.heading('Report details', 3), c.key_value_list(_details(ctx))]
     out += [c.heading('Reading the result states', 3),
-            c.P('Every section carries one of these states next to its verdict.', 'body'),
+            c.P('Each assessed section shows one of these states next to its verdict.', 'body'),
             c.compact_table(['State', 'Meaning'],
                             [[c.state_chip(s, dense=True), m] for s, m in STATE_MEANING.items()],
                             widths=[104, ctx.t.CW - 104], dense=True, header_fill=False)]

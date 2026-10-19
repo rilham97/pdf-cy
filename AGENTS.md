@@ -55,7 +55,7 @@ Each was asked for or approved by the product owner; changing one needs their ap
   orange attention, grey neutral, blue only for structure. Colour sits on small markers only; label text,
   rows and card backgrounds stay neutral.
 - State names: "Findings" means weaknesses only (as in the old reports) and is orange; severity sirens and
-  scores say how serious. Inventory / good-news sections (02, 12–15, `theme.INVENTORY`) show the payload state
+  scores say how serious. Inventory / good-news sections (02, 12–15, Appendix D; `theme.INVENTORY`) show the payload state
   `findings` as "Identified" (blue, display-only via `theme.shown_state`; never a payload value). 01 shows no
   chip unless partial / unavailable / ….
 - Motif (network dot field) sits at the page bottom **behind** text like a watermark, plus the

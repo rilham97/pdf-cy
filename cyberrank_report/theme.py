@@ -124,7 +124,7 @@ STATE = {s: {'label': lbl, 'accent': {'findings': STATUS['attention'], 'identifi
 # Sections whose results are an inventory or good news, not weaknesses (owner decision 2026-10-19): the payload
 # state 'findings' reads 'Identified' there. 'clear' keeps 'No findings' (in 12 it means roles found, nothing missing).
 INVENTORY = frozenset({'priority_actions', 'security_resourcing', 'certifications', 'fourth_party_vendors',
-                       'cloud_infrastructure'})
+                       'cloud_infrastructure', 'd_evidence_registers'})      # D: evidence lists, not weaknesses
 
 
 def shown_state(state, section_key=None):
