@@ -72,8 +72,9 @@ def not_rated(v):
     """'Not rated', or 'Not rated (<reason>)' when the payload gives a real one."""
     rec = field(v, 'grade')
     rec = rec if isinstance(rec, dict) else {}
-    if rec.get('reason_code') in NO_REASON and not (rec.get('reason') or rec.get('state_reason')):
-        return 'Not rated'
+    code = rec.get('reason_code')
+    if code in NO_REASON and (code or not (rec.get('reason') or rec.get('state_reason'))):
+        return 'Not rated'      # a placeholder code ('—', blank) is no reason, whatever free text restates it
     return f'Not rated ({plain(C.reason_text(rec)).rstrip(".")})'
 
 

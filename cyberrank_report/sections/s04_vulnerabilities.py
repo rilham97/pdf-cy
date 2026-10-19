@@ -263,10 +263,10 @@ def _summary_table(findings, ctx):
 
 
 def _hosts(label, hosts):
-    """Label line + host list (JetBrains Mono) that wraps only between hosts (inner spaces are
-    non-breaking). One paragraph, so the label never ends a page alone."""
+    """Label line + comma-separated host list (JetBrains Mono; owner: commas, not middle dots) that wraps
+    only after a comma (inner spaces are non-breaking). One paragraph, so the label never ends a page alone."""
     mono = T.STYLES['dense_tech']
-    text = f'<font name="{T.LIGHT}" size="{T.STYLES["dense"].fontSize}">\u00a0\u00b7 </font>'.join(
+    text = f'<font name="{T.LIGHT}" size="{T.STYLES["dense"].fontSize}">,</font> '.join(
         C.esc(h).replace(' ', '\u00a0') for h in hosts)
     head = f'<font name="{T.MEDIUM}" color="{C.hexstr(T.HEADING)}">{C.esc(label)}</font>'
     return C.M(f'{head}<br/><font name="{mono.fontName}" size="{mono.fontSize}">{text}</font>', 'dense', spaceBefore=5)
