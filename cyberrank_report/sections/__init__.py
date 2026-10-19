@@ -159,7 +159,7 @@ def lift_privacy_subsections(report):
 
 
 def adjust_report(report):
-    """Shallow copy of the report with every section adjusted (so s01 tiles see the same state)."""
+    """Shallow copy of the report with every section adjusted (so the s01 rating overview sees the same state)."""
     lift_privacy_subsections(report)
     out = {**report}
     for spec in REGISTRY:

@@ -267,8 +267,8 @@ Rule: the source's own wording, verdict or headline is quoted; our interpretatio
 
 | Section | Field | Rendering |
 | --- | --- | --- |
-| 01 | `rating_overview.aspect_breakdown[] {display_label_source, summary_label_source, caption_source, secondary.source_label}` | Under each tile: "Source: “…”" (display label only when it differs from the value shown); a "(100% = …)" anchor in `secondary.source_label` (same value) is appended to the tile label |
-| 01 | credential tile | Lead rows + "Source headline: N found (unit not defined by the source); M register rows listed." |
+| 01 | `rating_overview.aspect_breakdown[]`, `rating_overview.note` | Not quoted: the rating overview prints no source text. `aspect_breakdown[].value` (unit percent) is only the fallback score when the section has no score metric |
+| 01 | credential result line | "N exposed account records" = register rows listed (as the section's register pointer) |
 | 01 | `identity.review_flags[]`, any `review_flags[]` on 02 `remediation_impact` and on 04 | "Review flag RF-x: <text from top-level review_flags>" note |
 | 02 | credential action (`linked_sections` credential_exposure, text counting accounts) | "Source: “<action_required_source>”", then "Note: <rows reading>" |
 | 03 | `policy.policy_state {value, source_label, source_page}` | "Valid policy, assessed (source p. 2: “…”)" |

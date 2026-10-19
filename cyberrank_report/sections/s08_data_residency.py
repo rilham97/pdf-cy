@@ -63,14 +63,6 @@ def metrics(data):
                                        if h.get('country_code') or h.get('country')}), 'unit': 'countries', 'state': st}]
 
 
-def tile(data):
-    """s01 tile metric: hosts observed; the comparison result on the line below."""
-    if data.get('_card_only') or data.get('state') in S.NO_RESULT and not data.get('_no_preference'):
-        return None, []
-    m = next((m for m in metrics(data) if m.get('id') in ('hosts_observed', 'hosts_observed_residency')), None)
-    return m, [S.MATCH[S.matched(data)][0] + '.']
-
-
 def _rows(vm, choice, nopref, notes, with_ev):
     """Table under the map: hosting countries (ISO code as on the map badge), preferred countries with no
     hosts, then the hosts not placed on the map. Key cell = the map shape."""

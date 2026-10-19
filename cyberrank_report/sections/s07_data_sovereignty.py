@@ -16,7 +16,6 @@ TEXT = {
     'unknown': 'No governing-law or court clause could be matched in the published policies, so legal location '
                'cannot be compared with {owner} ({allowed}). Treat it as unresolved until confirmed.',
 }
-TILE = {'match': 'Match', 'mismatch': 'Mismatch', 'unknown': 'Cannot be compared', 'no_preference': 'Not compared'}
 
 
 def adjust(data, report):
@@ -33,13 +32,6 @@ def _text(data):
 
 def verdict(data, ctx):
     return None if data.get('_card_only') else _text(data)
-
-
-def tile(data):
-    """s01 tile metric: the comparison result."""
-    if data.get('_card_only') or data.get('state') in S.NO_RESULT and not data.get('_no_preference'):
-        return None, []
-    return {'value': TILE[S.matched(data)], 'label': 'Governing law against the preference'}, []
 
 
 def _body(data):

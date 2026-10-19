@@ -87,19 +87,6 @@ def metrics(data):
              'unit': 'clauses', 'state': data.get('state')}]
 
 
-def tile(data):
-    """s01 tile metric: clauses found of 2 when a portal is present, else the portal result."""
-    if data.get('_card_only'):
-        return None, []
-    n = _clauses(data, _raw(data))[0]
-    if n is not None:
-        return {'value': f'{n} of 2', 'label': 'Customer-protection clauses found'}, []
-    if data.get('portal_detected') is not None:
-        return {'value': 'Detected' if data['portal_detected'] else 'Not detected',
-                'label': 'Login / payment portal'}, []
-    return None, []
-
-
 def _body(data, ctx):
     raw = _raw(data)
     rows = [(lbl, _tc_value(v, 'not_compared' if 'portal' in str(lbl).lower() else None)) for lbl, v in raw]

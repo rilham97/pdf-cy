@@ -496,23 +496,82 @@ def _fixture_text(name, only=None):
     return _FIX_TEXT[key]
 
 
-def test_s01_tile_source_caption_and_scale_anchor():                                   # item 1, 5
-    from cyberrank_report.sections.s01_executive_overview import scale_anchor, source_caption
-    m = {'unit': 'percent', 'value': 0}
-    assert scale_anchor(m, {'secondary': {'value': 0, 'source_label': 'Compliance Score: 0% (100% = fully certified)'}}) \
-        == '(100% = fully certified)'
-    assert scale_anchor(m, {'secondary': {'value': 5, 'source_label': 'x (100% = leak-free)'}}) is None   # other value
-    assert source_caption({'display_label_source': '56%', 'summary_label_source': 'Policy exists'}, '56%') \
-        == 'Source: “Policy exists”'                                       # display label equal to the value: once
-    assert source_caption({'display_label_source': '17 leakes'}, '0%') == 'Source: “17 leakes”'
+def _overview(text):
+    a = text.index('Rating overview All')
+    return text[a:text.index('Sector comparison', a)]
+
+
+def test_s01_rating_overview_concept_a():                         # user-approved Concept A, 2026-10-19
     t = _fixture_text('gmail-2026-10-15', ['s01'])
-    for s in ('Compliance score (100% = fully certified)', 'Data leak score (100% = leak-free)',
-              'Source: “Privacy policy exists but has 13 active risks requiring attention”',
-              'Source headline: 15,879 found (unit not defined by the source); 5,395 register rows listed',
-              'The primary gap is in Privacy (56%)', 'Review flag RF-G01'):                # items 1, 5, 6, 11
-        assert s in t, s
-    t = _fixture_text('mock-cyberrank-2026-10-13', ['s01'])
-    assert 'Source: “0 Found”' in t and '(100% = leak-free)' in t
+    ov = _overview(t)
+    for s in ('All 13 aspects in report order. Five have their own score (100% = best); the rest are judged by '
+              'their result.', 'Aspect scores 0% 100% = best 03 Privacy 56%', '13 Certifications 0%',
+              'Only these five aspects have their own score. The other eight have no separate score',
+              'All aspects Reading order: down the left column, then the right.',
+              '03 Privacy 13 active privacy issues Findings',
+              '04 Vulnerabilities 15 finding types · 1 High, 6 Medium, 8 Low Findings',      # zero tiers omitted
+              '05 Credential exposure 5,395 exposed account records',                    # register rows listed
+              '07 Data sovereignty Cannot be compared', '08 Data residency 1 of 1 hosting country outside the preference',
+              '09 Legal terms & conditions 0 of 2 customer-protection clauses found',
+              '10 AI risk and governance No result Unavailable', '11 Quantum security 30 high-risk findings',
+              '13 Certifications 0 certifications None identified',
+              '14 Fourth-party vendors 0 connected organisations None identified', '15 Cloud infrastructure 1 cloud provider'):
+        assert s in ov, (s, ov)
+    for w in ('demerit', 'ledger', 'point', 'weighting', 'credit', 'A–J', 'Source', '“'):   # never the ledger / quotes
+        assert w.lower() not in ov.lower(), (w, ov)
+    ov = _overview(_fixture_text('demo-preview', ['s01']))
+    for s in ('12 finding types · 1 Critical, 2 High, 5 Medium, 4 Low', '3 events · 1 resolved', 'Matches the preference',
+              '1 of 6 hosting countries outside the preference', '1 of 2 customer-protection clauses found',
+              '3 certifications · 1 awaiting approval', '34 connected organisations · 5 need a look', '4 cloud providers'):
+        assert s in ov, (s, ov)
+
+
+def test_s01_rating_overview_grammar_and_missing_scores():
+    from cyberrank_report.sections import adjust_report
+    from cyberrank_report.sections.s01_executive_overview import NA, aspect_rows, result_markup
+    report = adjust_report({
+        'identity': {'organisation_name': 'Example Org', 'domain': 'example.com'},
+        'snapshot': {'assessed_at': {'value': '2026-10-02'}},
+        'sections': {
+            'privacy': {'state': 'findings', 'policy': {'policy_state': 'excluded_no_policy', 'metrics': [
+                {'id': 'privacy_score', 'value': 40, 'unit': 'percent'}, {'id': 'active_issues', 'value': 2}]}},
+            'vulnerabilities': {'state': 'not_assessed', 'reason_code': 'module_not_assessed'},
+            'data_leak_history': {'state': 'findings', 'metrics': [{'id': 'data_leak_score', 'value': 60, 'unit': 'percent'}],
+                                  'events': [{'event_id': 'e1'}]},
+            'data_sovereignty': {'state': 'findings', 'enabled': False, 'observed_jurisdiction': {'value': 'Singapore'},
+                                 'allowed_set': []},
+            'certifications': {'state': 'clear', 'certificates': []},
+            'cloud_infrastructure': {'state': 'clear', 'providers': []}}})
+    rows = {r[0].key: r for r in aspect_rows(report, [])}
+    assert rows['privacy'][2] == NA and rows['privacy'][3] == ('', 'No privacy policy (excluded)', [])   # never 0%
+    assert rows['vulnerabilities'][2] == NA and rows['vulnerabilities'][3] is None                       # 'No result'
+    assert rows['data_leak_history'][2:4] == (60, ('1', 'event', []))                                    # singular
+    assert rows['data_sovereignty'][3] == ('', 'Not compared: no preference set', [])
+    assert rows['certifications'][2] == 0 and rows['certifications'][4] == 'none_identified'          # rule 2026-10-19
+    assert rows['cloud_infrastructure'][3] == ('0', 'cloud providers', [])
+    assert rows['ai_risk_governance'][2] is None and rows['ai_risk_governance'][4] == 'unavailable'     # never scored
+    assert 'No result' in result_markup(None)
+    # qualifier and the last two words never part; the qualifier wraps as one unit
+    assert result_markup(('3', 'events', ['1 resolved'])).endswith('events&nbsp;· 1&nbsp;resolved')
+    assert 'outside&nbsp;the preference' not in result_markup(('1 of 6', 'hosting countries outside the preference', []))
+    assert 'the&nbsp;preference' in result_markup(('1 of 6', 'hosting countries outside the preference', []))
+
+
+def test_certifications_without_records_are_none_identified():   # business rule 2026-10-19
+    from cyberrank_report.sections import BY_ID, adjusted
+    qa.ISSUES.clear()
+    out = adjusted(BY_ID['s13'], {'title': 'Certifications', 'state': 'clear', 'certificates': [],
+                                  'metrics': [{'id': 'compliance_score', 'value': None, 'reason_code': 'x',
+                                               'state': 'clear'}]}, {})
+    assert out['state'] == 'none_identified', out
+    assert [m['value'] for m in out['metrics'] if m['id'] == 'compliance_score'] == [0]
+    assert not any('state' in m for m in out['metrics'])
+    assert any(i['check'] == 'state_adjusted' and i['severity'] == 'info' for i in qa.ISSUES), qa.ISSUES
+    kept = {'state': 'findings', 'certificates': [{'standard': 'SOC 2'}],
+            'metrics': [{'id': 'compliance_score', 'value': 68, 'unit': 'percent'}]}
+    assert adjusted(BY_ID['s13'], kept, {}) is kept                   # with records the system score stands
+    t = _fixture_text('instagram-2026-10-02', ['s13'])
+    assert 'None identified' in t and 'No certificates identified' in t and 'No findings' not in t, t
 
 
 def test_privacy_policy_state_and_sovereignty_verdict():                              # items 2, 3
@@ -771,9 +830,13 @@ def test_cross_references_resolve_to_section_pages():
                 if ln.get('kind') != pymupdf.LINK_GOTO:
                     continue
                 txt = ' '.join(pg.get_textbox(ln['from']).split())
+                in_s01 = openers['01'] <= i < openers['02']
+                if in_s01 and txt in titles.values():        # rating overview: the aspect name links too
+                    txt = next(n for n, ti in titles.items() if ti == txt) + ' ' + txt
                 m = re.match(r'(?:Section )?(\d{2})\b', txt)
-                if not m or m.group(1) not in titles or not (txt.startswith('Section') or titles[m.group(1)] in txt):
-                    continue      # e.g. a bare page number in Contents
+                if not m or m.group(1) not in titles or not (txt.startswith('Section') or titles[m.group(1)] in txt
+                                                             or (in_s01 and txt == m.group(1))):
+                    continue      # e.g. a bare page number in Contents (overview section numbers are checked)
                 num = m.group(1)       # the opener, or an anchor inside that section (e.g. IP reputation)
                 end = min([v for v in openers.values() if v > openers[num]] + [len(doc)])
                 assert openers[num] <= ln['page'] < end, (name, i + 1, txt, ln['page'] + 1, openers[num] + 1)

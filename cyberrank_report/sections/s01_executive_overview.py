@@ -538,7 +538,10 @@ def scores_block(rows, pages):
             f'own score. The other {_word(other)} have no separate score and are judged by their result below.')
     if any(r[2] == NA for r in scored):
         note += ' “Score not available”: this aspect normally has a score, but none is given in this assessment.'
-    return c.keep(Spacer(0, 4), head, Spacer(0, 2), t, c.P(note, 'note'))
+    # one unsplittable cell: the 'Rating overview' heading and intro (Keep in rating_overview) move with it
+    box = Table([[[Spacer(0, 4), head, Spacer(0, 2), t, c.P(note, 'note')]]], colWidths=[T.CW], hAlign='LEFT')
+    box.setStyle(TableStyle(_frame()))
+    return box
 
 
 def checklist_block(rows, pages):

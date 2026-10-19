@@ -377,13 +377,35 @@ def reference_block(c, data, ctx):
     return [head, side]
 
 
+def adjust(data, report):
+    """Business rule 2026-10-19: no certificate records -> none_identified (never 'No findings'), and the
+    compliance score reads 0% when the payload gives none. With records the system's score stands."""
+    if data.get('state') not in ('findings', 'clear', 'partial', 'none_identified'):
+        return data
+    if any(isinstance(x, dict) for x in data.get('certificates') or []):
+        return data
+    from . import hold
+    out = hold(data, 'no_certificate_records', data.get('state_reason') or
+               'No certificate records were found in the sources checked.', 'none_identified')
+    ms = [{k: v for k, v in m.items() if k != 'state'}      # a metric 'clear' chip would contradict the state
+          for m in out.get('metrics') or [] if isinstance(m, dict)]
+    if not any(m.get('id') == 'compliance_score' and isinstance(m.get('value'), (int, float)) for m in ms):
+        ms = [{'id': 'compliance_score', 'label': 'Compliance score', 'value': 0, 'unit': 'percent'}] + \
+             [m for m in ms if m.get('id') != 'compliance_score']
+    return {**out, 'metrics': ms}
+
+
+def card(data, ctx):
+    return {'title': 'No certificates identified'} if ctx.state == 'none_identified' else {}
+
+
 def build(data, ctx):
     c = ctx.c
     out = []
     metrics = [m for m in data.get('metrics') or [] if isinstance(m, dict)]
     if metrics:
         out.append(c.kpi_strip(metrics))
-    if data.get('certificates') or ctx.state not in ('clear',):
+    if data.get('certificates') or ctx.state not in ('clear', 'none_identified'):
         out += certificates_block(c, data, ctx)
     return out + reference_block(c, data, ctx)
 

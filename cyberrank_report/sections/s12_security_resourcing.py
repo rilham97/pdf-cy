@@ -27,14 +27,6 @@ def verdict(data, ctx):
     return None if data.get('_card_only') else _message(data)
 
 
-def tile(data):
-    """s01 tile metric: role areas (privacy, security) with public evidence, of 2."""
-    ev = [C.val(data.get(f'{k}_role_evidence')) for k in KINDS]
-    if data.get('_card_only') or not any(e in ROLE for e in ev):
-        return None, []
-    return {'value': f'{ev.count("detected")} of 2', 'label': 'Privacy and security roles with public evidence'}, []
-
-
 def _role(v):
     if C.val(v) in ROLE:
         label, flag = ROLE[C.val(v)]      # no public evidence is not a failure (staff may exist): attention
