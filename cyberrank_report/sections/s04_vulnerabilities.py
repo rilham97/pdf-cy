@@ -10,6 +10,7 @@ from .. import components as C
 from .. import icons as I
 from .. import qa
 from .. import theme as T
+from . import app_d_evidence_registers as D
 
 NO_RESULT = ('not_assessed', 'not_applicable', 'unavailable')
 SEVERITIES = ('critical', 'high', 'medium', 'low')
@@ -52,6 +53,11 @@ def _human(code):
 
 def _fkey(ctx, f):
     return f'{ctx.spec.anchor}-{f.get("finding_id")}'
+
+
+def _name(f):
+    """Finding name in the summary and the details: type, else its ID."""
+    return C.val(f.get('finding_type')) or C.val(f.get('finding_id')) or 'Unnamed finding'
 
 
 def _count(f):
@@ -244,8 +250,7 @@ def _ordered(findings):
 def _summary_table(findings, ctx):
     rows = []
     for f in findings:
-        code = _broken(C.val(f.get('finding_type')) or C.val(f.get('finding_id')) or 'Unnamed finding',
-                       T.CW - sum(_SUMMARY_FIXED) - 2 * T.CELL_PAD_H, _LINK)
+        code = _broken(_name(f), T.CW - sum(_SUMMARY_FIXED) - 2 * T.CELL_PAD_H, _LINK)
         rows.append([C.P(C.val(f.get('finding_id')) or '', 'cell_muted'),
                      C.severity_icon(f.get('severity')),
                      C.M(f'<a href="#{C.esc(_fkey(ctx, f))}">{code}</a>', _LINK),
@@ -275,12 +280,12 @@ def _detail_table(findings, ctx):
         siren = I.severity_cell(f.get('severity'), style=_CODE_SIREN)    # own column, after '#'
         sirens.append(siren)
         code = C.M(f'<a name="{C.esc(_fkey(ctx, f))}"/>'
-                   + _broken(C.val(f.get('finding_type')) or 'Unnamed finding', lw, _CODE), _CODE)
+                   + _broken(_name(f), lw, _CODE), _CODE)
         left = _atomic([
             code, Spacer(0, 3),
             C.P(f'Breach likelihood {C.fmt_value(lik)}', 'dense_muted'),
             C.P(f'ID {C.val(f.get("finding_id")) or "not recorded"}', 'dense_muted')], T.COL3 - 2 * T.CELL_PAD_H)
-        left._v04_code = C.val(f.get('finding_type')) or C.val(f.get('finding_id')) or 'Unnamed finding'
+        left._v04_code = _name(f)
         hosts, n = f.get('affected_assets'), _count(f)
         right = [C.P(f['rationale_source'], 'cell') if f.get('rationale_source') else
                  C.P(f'Rationale: {C.missing_text({"reason_code": "not_printed_in_source"})}', 'cell_muted')]
@@ -288,8 +293,16 @@ def _detail_table(findings, ctx):
             right.append(C.P('No affected domain recorded' + (f' (count reported: {C.fmt_number(n)})' if n else '')
                              + '.', 'dense_muted', spaceBefore=5))
         else:
-            label = (f'Affected domains (showing {len(hosts)} of {C.fmt_number(n)})' if n and len(hosts) < n else
-                     f'Affected domains ({n if n is not None else "count not recorded"})')
+            rep = C.val(f.get('affected_assets_count'))
+            if rep is not None and len(hosts) > rep:      # more listed than counted: print both
+                qa.add('data_mismatch', 'warn', f's04: finding {C.val(f.get("finding_id"))} lists {len(hosts)} '
+                       f'affected domains but affected_assets_count={rep}', once=True)
+                label = f'Affected domains ({len(hosts)} listed; count reported: {C.fmt_number(rep)})'
+            elif rep:
+                label = (f'Affected domains (showing {len(hosts)} of {C.fmt_number(rep)})' if len(hosts) < rep
+                         else f'Affected domains ({C.fmt_number(rep)})')
+            else:
+                label = f'Affected domains ({len(hosts)})'
             right.append(_hosts(label, hosts))
         rows.append([C.P(str(i), 'cell_muted'), siren, [left], right])   # list cell: RL's in-row split skips bare Flowables
     num_w = _num_w(range(1, len(findings) + 1))
@@ -300,15 +313,11 @@ def _detail_table(findings, ctx):
 
 
 def _register_pointer(data, ctx):
-    ref = data.get('assets_register_ref')
-    if not isinstance(ref, str):
+    """Pointer to D.1, only when D.1 prints (same rows, title and tier rule as the register)."""
+    key, _, rows, title = D.d1_register(ctx.report)
+    if not rows or D.tier(len(rows), len(rows)) == 'T1':
         return []
-    reg = ctx.report
-    for part in ref.split('.'):
-        reg = (reg or {}).get(part)
-    rid = ref.rsplit('.', 1)[-1]
-    return [C.register_pointer(rid, ((reg or {}).get('counts') or {}).get('rows'),
-                               title='Affected assets by finding')]
+    return [C.register_pointer(key, {'value': len(rows), 'unit': 'rows'}, title=title)]
 
 
 def _findings_body(data, ctx):
@@ -381,10 +390,14 @@ def _other_row(title, obj):
     return [C.P(title, 'cell'), C.state_chip(state), C.P(' '.join(p for p in parts if p), 'cell')]
 
 
-def _linked_actions(ctx, finding_id=None):
+_ANY = object()
+
+
+def _linked_actions(ctx, finding_id=_ANY):
+    """Actions linked to section 04; with finding_id, only those citing it (None cites nothing)."""
     acts = ((ctx.report.get('sections') or {}).get('priority_actions') or {}).get('actions') or []
     return [a for a in acts if ctx.spec.key in (a.get('linked_sections') or [])
-            and (finding_id is None or finding_id in (a.get('linked_finding_ids') or []))]
+            and (finding_id is _ANY or finding_id is not None and finding_id in (a.get('linked_finding_ids') or []))]
 
 
 def _dmarc_mode(k):
@@ -458,11 +471,28 @@ def _controls_body(obj, ctx):
     return out
 
 
+def ip_order(rows):
+    """IP rows by abuse score, highest first; held (-1) and blank scores last (policy lists.ip_reputation.sort)."""
+    def key(r):
+        n = C.val(r.get('abuse_score'))
+        ok = isinstance(n, (int, float)) and not isinstance(n, bool) and not _is_sentinel(r.get('abuse_score'))
+        return (0, -n) if ok else (1, 0)
+    return sorted([r for r in rows if isinstance(r, dict)], key=key)
+
+
 def _ip_body(obj, ctx):
-    rows = obj.get('rows') or []
+    rows = [r for r in obj.get('rows') or [] if isinstance(r, dict)]
     if not rows:      # the state card carries the summary; add the count only when recorded
         n = obj.get('ips_checked')
         return [C.P(f'IP addresses checked: {C.fmt_value(n)}', 'body')] if n is not None else []
+    total, head, tail = len(rows), [], []
+    if D.tier(total, total) != 'T1':      # long list: top rows here, every row in D.1.2 (same order)
+        rid = f'{D.RID["s04"]}.2'
+        rows = ip_order(rows)[:D.pol('lists.ip_reputation.top_n', 10)]
+        head = [C.P(f'Showing the {len(rows)} highest abuse scores of {total} IP addresses; {rid} lists every row.',
+                    'body')]
+        tail = [C.register_pointer(rid, {'value': total, 'unit': 'rows'},
+                                   title=D.pol('lists.ip_reputation.register_title', 'IP reputation'))]
     cols = ['ip_address', 'isp', 'country', 'abuse_score', 'reports']
     table, notes = _footnoted([[r.get(c, {'value': None, 'reason_code': 'not_printed_in_source'}) for c in cols]
                                for r in rows], numeric=(3, 4))
@@ -477,7 +507,7 @@ def _ip_body(obj, ctx):
     if notes:
         t.setStyle([('SPAN', (0, -1), (-1, -1)), ('NOSPLIT', (0, -3), (-1, -1)),
                     ('TOPPADDING', (0, -1), (-1, -1), 5), ('LINEBELOW', (0, -1), (-1, -1), T.HAIRLINE, T.WHITE)])
-    return [t]
+    return head + [t] + tail
 
 
 def _https_body(obj, ctx):
@@ -485,7 +515,10 @@ def _https_body(obj, ctx):
     pairs = [('Result', _human(obj['result']) if obj.get('result') else
               {'value': None, 'reason_code': 'not_printed_in_source'})] + ([('Source', f'“{said}”')] if said else [])
     out = [C.key_value_list(pairs, width=T.COL2)]
-    return out + ([C.P(obj['narrative_source'], 'body', spaceBefore=6)] if obj.get('narrative_source') else [])
+    st, told = obj.get('state') or 'findings', obj.get('narrative_source')
+    if told and st != 'findings' and told in _card_kw(obj, st).values():      # the card above already prints it
+        told = None
+    return out + ([C.P(told, 'body', spaceBefore=6)] if told else [])
 
 
 SUBCHECKS = (('Email and DNS security controls', 'email_dns_controls', _controls_body),
@@ -521,8 +554,10 @@ def _actions(ctx):
              a.get('estimated_time_reported') or {'value': None, 'reason_code': 'not_printed_in_source'}]
             for i, a in enumerate(acts, 1)]
     num_w = _num_w(r[0] for r in rows)
-    return [C.heading('Related priority actions', 2),
-            _no_orphans(C.compact_table(['#', 'Priority', 'Action', 'Required role', 'Time (reported)'], rows,
+    prio = [str(C.val(a.get('priority')) or '').lower() for a in acts]
+    return [C.heading_legend(C.heading('Related priority actions', 2),
+                             C.severity_legend([(k, prio.count(k)) for k in SEVERITIES])),
+            _no_orphans(C.compact_table(['#', 'Priority', 'Action', 'Required role', 'Time'], rows,
                                         widths=[num_w, C.head_width('Priority'),
                                                 T.CW - 210 - num_w - C.head_width('Priority'), 120, 90],
                                         numeric_cols=(0,))),
@@ -540,16 +575,20 @@ def adjust(data, report):
     """IP reputation rows carrying the '-1' sentinel: the meaning is unconfirmed, so the check is
     held for review (never 'No findings' / 'Clean') and the source label is printed."""
     ip = data.get('ip_reputation')
-    rows = (ip or {}).get('rows') or []
-    if not rows or not any(_is_sentinel(v) for r in rows if isinstance(r, dict) for v in r.values()):
+    rows = [r for r in (ip or {}).get('rows') or [] if isinstance(r, dict)]
+    cols = list(dict.fromkeys(k for r in rows for k, v in r.items() if _is_sentinel(v)))
+    if not cols:
         return data
-    if ip.get('state') == 'pending_review' and ip.get('state_reason'):
-        return data
-    fixed = [{k: ({'value': None, 'state': 'pending_review', 'reason_code': 'sentinel_meaning_unconfirmed',
-                   'source_label': '-1'} if _is_sentinel(v) and not isinstance(v, dict) else v)
+    held = {'value': None, 'state': 'pending_review', 'reason_code': 'sentinel_meaning_unconfirmed',
+            'source_label': '-1'}
+    fixed = [{k: (held if _is_sentinel(v) and C.val(v) is not None else v)    # scalar or {value: -1}; nulls stay
               for k, v in r.items()} for r in rows]
+    if ip.get('state') == 'pending_review' and ip.get('state_reason'):      # the source's own reason stays
+        return {**data, 'ip_reputation': {**ip, 'rows': fixed}}
     label = ip.get('state_label_source')
-    why = ('The source printed “-1” for the abuse score' + (f' and labelled this check “{label}”' if label else '')
+    names = [k.replace('_', ' ') for k in cols]
+    names = ' and '.join(filter(None, [', '.join(names[:-1]), names[-1]]))
+    why = (f'The source printed “-1” for the {names}' + (f' and labelled this check “{label}”' if label else '')
            + '. What -1 means is not confirmed, so the result is held for review, not read as clean.')
     if ip.get('state') != 'pending_review':
         qa.add('state_adjusted', 'info', f's04 IP reputation: {ip.get("state")} -> pending_review '
@@ -579,9 +618,9 @@ def _scanned_assets(data):
                            ('TOPPADDING', (0, 0), (-1, -1), 1), ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
                            ('VALIGN', (0, 0), (-1, -1), 'TOP')]))
     plural = lambda n, w: f'{n} {w}{"" if n == 1 else "s"}'
+    order = '; domains are listed before subdomains' if doms and subs else ''      # true by construction
     return [C.heading('Scanned assets', 2),
-            C.P(f'{plural(len(doms), "domain")} and {plural(len(subs), "subdomain")} were scanned; the apex '
-                'domain is listed first.', 'body'), t]
+            C.P(f'{plural(len(doms), "domain")} and {plural(len(subs), "subdomain")} were scanned{order}.', 'body'), t]
 
 
 SCAN_STATUS = {'clean': ('clear', 'Clean'), 'scanned': ('findings', 'Scanned')}
@@ -596,10 +635,20 @@ def _active_scan(data, ctx):
         return []
     res = [r for r in sc.get('results') or [] if isinstance(r, dict)]
     out = [C.heading('Vulnerability scan results', 2)]
-    if sc.get('state') in NO_RESULT or not res:
-        return out + [C.state_card(sc.get('state') or 'unavailable', **_card_kw(sc, sc.get('state') or 'unavailable'))]
-    clean = sum(1 for r in res if str(r.get('status')).lower() == 'clean')
-    out.append(C.P(f'{len(res)} hosts scanned: {clean} clean, {len(res) - clean} with findings reported.', 'body'))
+    state = sc.get('state') or ('findings' if res else 'unavailable')
+    if state in NO_RESULT:
+        return out + [C.state_card(state, **_card_kw(sc, state))]
+    if not res:      # a result state without host rows: a card only with a reason the payload gives
+        kw = _card_kw(sc, state)
+        if state == 'clear':
+            return out + [C.state_card(state, **kw)]
+        none = C.P(f'Host results: {C.missing_text({"reason_code": "not_printed_in_source"})}', 'body')
+        return out + ([C.state_card(state, **kw)] if kw['reason'] and state != 'findings' else []) + [none]
+    status = [str(C.val(r.get('status'))).lower() for r in res]
+    clean, found = status.count('clean'), status.count('scanned')
+    other = len(res) - clean - found
+    out.append(C.P(f'{len(res)} host{"s" if len(res) != 1 else ""} scanned: {clean} clean, {found} with findings '
+                   'reported' + (f', {other} with no recognised status' if other else '') + '.', 'body'))
     rows, mismatch = [], []
     for r in res:
         st = C.val(r.get('status'))
@@ -610,7 +659,7 @@ def _active_scan(data, ctx):
             cnt = str(listed) if listed else '0'
         elif rep != listed:
             cnt = f'{rep} reported, {listed} listed'
-            mismatch.append(r.get('target'))
+            mismatch.append((r.get('target'), rep > listed))
         else:
             cnt = str(rep)
         rows.append([C.tech(str(C.val(r.get('target')) or 'Host not recorded'), 'cell_tech'), I.state_label(key, label=word, style=T.STYLES['cell']),
@@ -620,9 +669,13 @@ def _active_scan(data, ctx):
                                            widths=[T.CW - 340, 110, 110, 120])))
     if mismatch:
         qa.add('data_mismatch', 'warn', f's04: active scan finding counts differ from the listed findings for '
-               f'{", ".join(map(str, mismatch))}', once=True)
-        out.append(C.note('Where the reported count differs from the findings listed, the source lists fewer '
-                          'findings than it counts; the difference is not explained by the source data.'))
+               f'{", ".join(str(t) for t, _ in mismatch)}', once=True)
+        fewer = {d for _, d in mismatch}
+        how = ('lists fewer findings than it counts' if fewer == {True} else
+               'lists more findings than it counts' if fewer == {False} else
+               'lists fewer findings than it counts for some hosts and more for others')
+        out.append(C.note(f'Where the reported count differs from the findings listed, the source {how}; '
+                          'the difference is not explained by the source data.'))
     for r in res:
         fs = [f for f in r.get('findings') or [] if isinstance(f, dict)]
         recs = [C.val(x) for x in r.get('recommendations_source') or [] if C.val(x)]
@@ -649,7 +702,7 @@ def _active_scan(data, ctx):
             if C.val(r.get('summary_label_source')):
                 head.append(C.P(word('summary_label_source', ''), 'card_label', keepWithNext=1))
             head.append(C.P(C.val(r['summary_source']), 'body'))
-        tail = ([C.P(word('recommendations_label_source', 'Recommendations (as reported)'), 'card_label',
+        tail = ([C.P(word('recommendations_label_source', 'Recommendations'), 'card_label',
                      spaceBefore=4, keepWithNext=1), *C.bullets(recs)] if recs else [])
         num_w = _num_w(range(1, len(frows) + 1))
         body = [_no_orphans(C.compact_table(['#', 'Severity', 'Finding', 'Detail'], frows, numeric_cols=(0,),

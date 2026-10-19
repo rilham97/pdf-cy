@@ -60,6 +60,8 @@ SEVERITY = {
 SEVERITY_TEXT = {
     'critical': 'Exploitable weakness with direct impact; act immediately.',
     'high': 'Serious weakness; fix as a priority.',
+    'medium': 'Weakness that adds risk; fix in planned work.',
+    'low': 'Minor weakness; fix when convenient.',
 }
 IMPACT = {                               # risk bands / impact tiers
     'critical': HexColor('#6E1F2E'),

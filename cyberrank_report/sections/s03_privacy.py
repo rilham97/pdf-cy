@@ -13,6 +13,7 @@ Synthetic state variants:  python -m cyberrank_report.sections.s03_privacy data.
 from reportlab.platypus import Table, TableStyle
 
 from .. import components as C
+from .. import qa
 from .. import theme as T
 
 AREAS = [('A', 'Individual rights'), ('B', 'Consent'), ('C', 'Changes to privacy policy'),
@@ -67,6 +68,12 @@ def card(data, ctx):
 
 
 # --- building blocks ----------------------------------------------------------
+def _own_reason(sub):
+    """Card reason the payload gives for a sub-object (None when it gives none)."""
+    return (sub.get('state_reason') or (C.reason_text(sub) if sub.get('reason_code') else None)
+            or sub.get('reason') or sub.get('narrative_source'))
+
+
 def _meta(state, subtitle):
     """Module sub-line: state chip | subtitle; the subtitle lines up with key/value values."""
     t = Table([[C.state_chip(state, dense=True), C.P(subtitle or '', 'note_flush')]],
@@ -86,8 +93,7 @@ def _module(title, sub, content, default_sub=None, why=None):
         return C.keep(C.heading(title, 2), C.state_card('unavailable', 'Not provided in the assessment data.'))
     state = sub.get('state') or 'unavailable'
     if state in NO_RESULT:   # H2 + card (no chip row), same as a missing sub-object
-        reason = (sub.get('state_reason') or (C.reason_text(sub) if sub.get('reason_code') else None)
-                  or sub.get('reason') or sub.get('narrative_source') or why)
+        reason = _own_reason(sub) or why
         return C.keep(C.heading(title, 2),
                       C.state_card(state, reason, sub.get('what_checked'), next_step=sub.get('next_step')),
                       *content)
@@ -121,6 +127,9 @@ def _metrics(data):
 def _areas(areas):
     """16-area A-P matrix (two columns of 8). Scores print as n / max; missing prints its reason."""
     by_code = {str(a.get('code')).upper(): a for a in areas if isinstance(a, dict)}
+    unknown = sorted(set(by_code) - {c for c, _ in AREAS})
+    if unknown:      # not one of the 16 criteria: not placed in the matrix
+        qa.add('unknown_term', 'warn', f's03: area codes outside A–P not shown: {", ".join(unknown)}', once=True)
     rows, missing = [], {}
     for code, name in AREAS:
         a = by_code.get(code) or {'score': None, 'score_reason_code': 'not_printed_in_source'}
@@ -130,7 +139,10 @@ def _areas(areas):
             missing.setdefault(why, []).append(code)
             cell = C.P('Not available', 'cell_muted', alignment=2)
         else:
-            cell = f'{C.fmt_number(score)} / {C.fmt_number(a.get("max_score") or 10)}'
+            top = a.get('max_score')
+            if top is not None and not top > 0:      # printed as sent, never replaced by 10
+                qa.add('data_mismatch', 'warn', f's03: area {code} max_score is {top}', once=True)
+            cell = f'{C.fmt_number(score)} / {C.fmt_number(10 if top is None else top)}'
         rows.append([code, a.get('name') or name, cell])
     cols = ['', 'Area', 'Score']
     widths = [22, T.COL2 - 22 - 72, 72]
@@ -161,13 +173,13 @@ def _policy(data, ctx):
         pairs.append(('Policy version', policy['policy_version']))
     if not isinstance(areas, list) and _val(ps) not in ('claimed_missing', 'excluded_no_policy'):
         pairs.append(('Per-area results (A–P)', areas or {'value': None, 'reason_code': 'not_printed_in_source'}))
-    out = [_module('Privacy policy', policy, [C.key_value_list(pairs)],
+    out = [_module('Privacy policy', policy, [C.key_value_list(pairs), *C.flag_notes(policy, ctx.report)],
                    'Published privacy policy: state, source, assessed areas and issues',
                    why=POLICY_STATE.get(_val(ps), (None, None))[1])]
     if isinstance(areas, list):
         out.append(C.keep(C.heading('Assessed areas (A–P)', 3), *_areas(areas)))
     issues = [i for i in policy.get('issues') or [] if isinstance(i, dict)]
-    count = next((m.get('value') for m in policy.get('metrics') or [] if m.get('id') == 'active_issues'), None)
+    count = C.val(next((m.get('value') for m in _metrics(data) if m.get('id') == 'active_issues'), None))
     if issues:
         rows = [[i.get('label') or i.get('title') or C.missing_text(),
                  str(C.val(i.get('category')) or 'privacy').capitalize(),
@@ -188,8 +200,10 @@ def build(data, ctx):
     metrics = _metrics(data)
     if metrics:
         out.append(C.kpi_strip(metrics))
-    explain = POLICY_STATE.get(_val((data.get('policy') or {}).get('policy_state')), (None, None))[1]
-    if explain:
+    out += C.flag_notes(data, ctx.report)
+    policy = data.get('policy') or {}
+    explain = POLICY_STATE.get(_val(policy.get('policy_state')), (None, None))[1]
+    if explain and not (policy.get('state') in NO_RESULT and not _own_reason(policy)):   # else the card says it
         out.append(C.note(explain))
     out += _policy(data, ctx)
     return out
