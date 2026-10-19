@@ -77,8 +77,8 @@ Section layout v15 (user decision 2026-10-15): assessment sections follow the de
 | 02 | `priority_actions` | `intro_source`, `actions[] {action_id, rank, priority (high/medium/low), priority_label_source, title, estimated_time_reported, required_role, owner, due_at, status (NullReason), action_required_source, why_this_matters_source, linked_sections[], linked_finding_ids[], review_flags[]}` (R18), `note` |
 | 03 | `privacy` | Demerit rule B. `policy {state, state_label_source, policy_state, policy_source (NullReason, R10), metrics[], areas (NullReason; 16 criteria A–P, criterion H 'Data residency' = policy text), issues[], review_flags[]}` |
 | 04 | `vulnerabilities` | Demerit rule A. `severity_legend_source[] {severity, label, text}`, `breach_likelihood_legend_source`; `findings[] {finding_id, finding_type, severity, severity_label_source, rationale_source, affected_assets_count, affected_assets[], breach_likelihood {value, unit, likelihood_type, source_label}}` (R07, R09); `assets_register_ref`, `coverage_note_source`; `email_dns_controls {state, state_label_source, controls[] {finding_id, control, result, state, status_label_source, line_source, key_strength_bits? / dmarc_policy? (NullReason), review_flags[]?}, guidance_source}`; `ip_reputation {state, state_label_source, reason_code, summary_source, ips_checked, rows[] {ip_address, isp, country, abuse_score (NullReason with source_label "-1"), reports {value, source_label, state (pending_review), reason_code}}, review_flags[]}`; `https_redirect {state, state_label_source, result, narrative_source, review_flags[]}` |
-| 05 | `credential_exposure` | Demerit rule C. `attention_source`, `exposure_years_source`, `rows_by_exposure_year[] {year, rows}`, `rows_by_field_category[] {field_category, rows}`, `aggregation_note`, `breach_source_name` (NullReason), `register_ref`, `mitigations_source[]` (R13) |
-| 06 | `data_leak_history` | Demerit rule D. `last_valid_event` (NullReason; state `not_applicable` when there are no events, never `unavailable`), `events[]` (R12 event objects; empty here), `empty_state_source {title, text, coverage}` |
+| 05 | `credential_exposure` | Demerit rule C. `attention_source`, `rows_by_field_category[] {field_category, rows}`, `exposure_years_source` / `rows_by_exposure_year[] {year, rows}` / `aggregation_note` (not printed, kept for reconciliation), `breach_source_name` (NullReason), `register_ref`, `mitigations_source[]` (R13) |
+| 06 | `data_leak_history` | Demerit rule D. `last_valid_event` (NullReason; state `not_applicable` when there are no events, never `unavailable`; may name any record of a `canonical_event_id` group), `events[]` (R12 event objects; empty here; `validity_state` `reported_inaccurate` / `resolved` / `unknown`, absent = valid), `empty_state_source {title, text, coverage}` |
 | 07 | `data_sovereignty` | Demerit rule E. `state, state_label_source, intro_source, enabled, observed_jurisdiction (NullReason), allowed_set[], match_state (match/mismatch/unknown), rows[], narrative_source` (R14); optional `verdict_source`, `verdict_source_page`, `quote_source`, `metrics[]` |
 | 08 | `data_residency` | Demerit rule F (hosting by IP location vs the owner/requestor preference; not privacy criterion H). Same as 07 plus `observed_hosting[] {country, hosts, evidence_kind (NullReason: method not printed) / state, reason_code, source_label, match_state?}`, `note`. KPI strip derived from the rows (hosts observed, countries identified) unless `metrics[]` is given |
 
@@ -223,7 +223,8 @@ None of these is in the Claude fixture; synthetic examples are in `tests/gap_fix
 | 13 | `credit_applied`, `eligibility`, `credit_summary` | Internal weighting (pending 1, approved 2, rejected 0): never printed; QA warns only when a rejected certificate carries credit |
 | 06 | `events[].canonical_event_id` | Records sharing it are one event (one row, sources merged) |
 | 06 | `events[].records_unit`, `events[].records_scope` (`organisation` / `aggregate_multi_service` / `customer_tenant`) | Under the records count |
-| 06 | `events[].date_basis`, `age_days_at_assessment`, `demerit_applied` | Under the date ("406 days before assessment, 0 demerit"); never computed by the renderer |
+| 06 | `events[].date_basis`, `age_days_at_assessment` | Under the date ("Dated by disclosure date", "406 days before assessment"); never computed by the renderer |
+| 06 | `events[].demerit_applied` | Not printed (hidden scoring) |
 | 11 | `snapshot.toggles_at_assessment.pqc_scan` | `false` without results -> section `not_assessed` (`pqc_scan_disabled`); `false` with quantum results is rejected at load (data error); `true` or a non-empty `pqc_detected` allows "No PQC detected", otherwise "PQC not reported" |
 
 Dates (`*_at`, `valid_from`, `valid_until`, `last_scanned`) must be ISO 8601; a date shorter than YYYY-MM-DD needs `precision`.
@@ -234,7 +235,7 @@ Business answers applied: (1) detected certificates can be rejected; (2) certifi
 approved 2, rejected 0) is internal, the PDF shows status only; (3) `expired` is the system's flag, dates are shown,
 never compared; (4) `enabled` false -> "Not compared: no preference set"; enabled -> compared with the preference set
 by the report owner/requestor; (5) a breach event without a flag is valid; `validity_state: resolved` (user or admin)
-prints "Resolved" (icon, muted), is listed but not counted as open ("Open events (excludes resolved)" tile + note);
+prints "Resolved" (icon, green as `theme.TONE` resolved), is listed but not counted as open ("Open events (excludes resolved)" tile + note);
 (6) quantum KPI = source headline (apex aggregate, as scored in the product), apex row labelled "apex aggregate", the
 subdomain-row sum printed in a note; (7) `pqc_scan` false + quantum results = load error; (8) cloud: scan date only,
 no staleness note; (9) Critical/High tier copy and T&C rule-G copy approved.
@@ -278,7 +279,7 @@ Rule: the source's own wording, verdict or headline is quoted; our interpretatio
 | 04 | `breach_likelihood_note_source` | Printed after the likelihood legend only when present (no kit sentence) |
 | 04 | `active_scan.results[] {summary_label_source, recommendations_label_source}`; `scanned_at.precision: minute` | Source labels ("Executive Summary", "Top Recommendations"); time printed "12 Oct 2026 18:29" |
 | 06 | `last_reported_source` or `last_valid_event.source_label` | "Source: “Last data leak has been reported on …”" |
-| 05 | `exposure_years_source`; metrics without `source_label` | Year list quoted; payload-derived counts labelled "Payload count (… not printed by the source)", their `note` printed |
+| 05 | `exposure_years_source`; metrics without `source_label` | `exposure_years_source` not printed (kept for reconciliation; years print in fixed buckets from the rows); payload-derived counts labelled "Payload count (… not printed by the source)", their `note` printed only on a mismatch |
 | 10 | `narrative_observation.text_source` | Always printed in full |
 | 11 | `findings_by_category[].domains_source_label`; scope register | "· 2 domains" under the category; headline relation stated from the data (rows by level vs apex row); every scope × algorithm row printed in D.4.2 |
 | 11 | metric `partly_quantum_safe` null + `placeholder_in_source` (source "#") | "Not available (the source printed a placeholder)" |
