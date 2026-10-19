@@ -245,6 +245,14 @@ def test_s04_scanned_assets_x_of_y():                                  # owner d
                       {'severity': 'high', 'affected_assets': ['A.example.com', 'z.example.org']}]},
         ['a.example.com', 'b.example.com'])
     assert hits == {'a.example.com': 1} and partial and outside == ['z.example.org']
+    import copy                                                          # all good: a known 0, positive line
+    r = copy.deepcopy(json.loads((FIXTURE.parent / 'demo-preview.json').read_text(encoding='utf-8')))
+    v = r['sections']['vulnerabilities']
+    v.update(findings=[], state='clear', metrics=[{'id': 'finding_types', 'label': 'Finding types', 'value': 0,
+                                                  'unit': 'finding_types'}])
+    t, _ = _payload_text(r, ['s04'])
+    assert '0 of 12 scanned domains have at least one finding No finding on any scanned domain' in t, t[:1500]
+    assert 'Scanned: 1 domain and 11 subdomains.' in t and 'the rest are grey' not in t
 
 
 def test_s03_review_fixes():                                          # code review 2026-10-19, items 1-4

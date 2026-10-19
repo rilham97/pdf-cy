@@ -656,8 +656,10 @@ def _scanned_assets(data):
         return []
     names = list(dict.fromkeys(_host(n) for n in doms + subs if _host(n)))
     plural = lambda n, w: f'{C.fmt_number(n)} {w}{"" if n == 1 else "s"}'
-    scope = f'Scanned: {plural(len(doms), "domain")} and {plural(len(subs), "subdomain")}.'
-    listed = any(f.get('affected_assets') for f in data.get('findings') or [] if isinstance(f, dict))
+    scope = 'Scanned: ' + ' and '.join(plural(len(x), w) for x, w in ((doms, 'domain'), (subs, 'subdomain')) if x) + '.'
+    finds = [f for f in data.get('findings') or [] if isinstance(f, dict)]
+    # no finding at all is a known 0 (all good); findings without any host list are an unknown X
+    listed = not finds or any(f.get('affected_assets') for f in finds)
     hits, partial, outside = _scan_hits(data, names) if listed else ({}, False, [])
     out = [C.heading('Scanned assets', 2)]
     if listed:
@@ -672,7 +674,10 @@ def _scanned_assets(data):
         legend = [I.severity_label(s, dense=True, label=f'{C.fmt_number(by[i])} {s.capitalize()}')
                   for i, s in enumerate(SEVERITIES) if by[i]]
         legend += [C.P(f'{C.fmt_number(by[len(SEVERITIES)])} severity not recorded', 'dense_muted')] * bool(by[len(SEVERITIES)])
-        legend += [C.P(f'{C.fmt_number(total - n)} no finding reported', 'dense_muted')] * bool(total - n)
+        legend += [C.P(f'{C.fmt_number(total - n)} no finding reported', 'dense_muted')] * bool(total - n and n)
+        if not n:      # all good: a full green bar and one positive line, not an empty-looking grey track
+            parts = [(total, T.STATUS['good'])]
+            legend = [I.status_label('clear', 'No finding on any scanned domain', 'clear', dense=True)]
         dn = T.STYLES['dense']        # items packed left: each column fits its text (+ siren) and a gap
         lw = [stringWidth(getattr(x, 'text', '') or x.getPlainText(), dn.fontName, dn.fontSize) + 30 for x in legend]
         lw[-1] = max(lw[-1], T.CW - T.COL3 - T.GUTTER - sum(lw[:-1]))
@@ -693,15 +698,16 @@ def _scanned_assets(data):
     widest = max(stringWidth(h, st.fontName, st.fontSize) for h in order) + 8 + siren_w
     k = max(1, min(4, int(T.CW // widest)))
     cells = [I.severity_label(SEVERITIES[hits[h]], dense=True, label=h, style=st)
-             if h in hits and hits[h] < len(SEVERITIES) else C.P(C.esc(h), st if h in hits else muted)
+             if h in hits and hits[h] < len(SEVERITIES) else C.P(C.esc(h), st if h in hits or not hits else muted)
              for h in order]
     grid = [cells[i:i + k] + [''] * (k - len(cells[i:i + k])) for i in range(0, len(cells), k)]
     t = Table(grid, colWidths=[T.CW / k] * k, hAlign='LEFT', spaceAfter=4)
     t.setStyle(TableStyle([('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 2),
                            ('TOPPADDING', (0, 0), (-1, -1), 1), ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
                            ('VALIGN', (0, 0), (-1, -1), 'TOP')]))
+    clean = len(names) - len(hits)
     note = scope + (' Domains with a finding come first, marked by their highest severity; the rest are grey.'
-                    if hits else '')
+                    if hits and clean else ' Each domain is marked by its highest severity.' if hits else '')
     if outside:
         note += (f' {plural(len(outside), "host")} named in the findings {"is" if len(outside) == 1 else "are"} '
                  'not in the scanned list.')
