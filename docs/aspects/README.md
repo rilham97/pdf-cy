@@ -134,7 +134,8 @@ an error.
 | Item | Purpose |
 |---|---|
 | `CYBERRANK_LONG_LIST_POLICY` | Path to the long-list policy JSON (optional). |
-| `CYBERRANK_SUPPLY_CHAIN_PDF`, `CYBERRANK_SUPPLY_CHAIN_INDEX` | The locked production page inserted into Appendix C. If it is missing, QA raises `locked_page_missing` (error). |
+| `CYBERRANK_SUPPLY_CHAIN_PDF`, `CYBERRANK_SUPPLY_CHAIN_INDEX` | The locked production page inserted into Appendix C. If the file is missing or unreadable, or the index is not a whole number inside it, QA raises `locked_page_missing` (error) and a card replaces the page. |
+| `identity.logo.value` | Cover logo: a PNG/JPG path relative to the JSON, inside its folder (same rule as certificate documents). |
 | `certificates[].document` | Path to an uploaded certificate file (PNG, JPG or PDF), relative to the JSON. It must stay inside the JSON's folder. If it is missing, QA raises `missing_document`. |
 | Fonts | Poppins for body text, Inter for the title, JetBrains Mono for technical tokens. If no font has a character, it falls back to Noto Math → Noto Symbols2 → Noto SC (CJK). A character still missing raises QA `missing_glyph` (warn). Arabic and other scripts that need shaping are not supported. |
 

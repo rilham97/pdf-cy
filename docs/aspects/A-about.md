@@ -14,6 +14,7 @@ payload's static text, the report details, and the legend of state chips.
 4. H3 "Data sources" + one bullet per `data_sources_source[]` item.
 5. H3 "Report details" + a key/value list (6 rows).
 6. H3 "Reading the result states" + one sentence + a State | Meaning table (9 rows).
+7. `closing_source` verbatim as a note line, when sent.
 
 ## From the system (payload)
 
@@ -60,6 +61,7 @@ under the list (`tables.py` `key_value_list`).
 
 | Condition | What prints | Code |
 |---|---|---|
+| `closing_source` set | Printed verbatim (note style) after the states table | `app_a` `build` |
 | `about_source` set and `intro_source` set | `about_source` in body style | `app_a:41-42` |
 | `about_source` set, no `intro_source` | `about_source` in intro style (it plays the opener intro) | `app_a:43` |
 | `data_sources_source` empty / absent | No "Data sources" block | `app_a:44-46` |
@@ -77,7 +79,7 @@ under the list (`tables.py` `key_value_list`).
 
 | Field | Why it is read |
 |---|---|
-| Not read at all | `a_about.letter`, `source_pages[]`, `closing_source` |
+| Not read at all | `a_about.letter`, `source_pages[]` |
 
 ## States
 

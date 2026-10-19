@@ -26,10 +26,10 @@ shown without any staleness flag (business answer 8, `s15:91`).
 | `intro_source` | Intro under H1 | Omitted |
 | `state` | Chip / card / body (see States) | Validation error (exit 1) |
 | `summary` | Verdict, verbatim | No verdict text (chip alone) |
-| `state_reason` | Card reason. For `clear`: used before the hardcoded text. | `clear`: `CLEAR_REASON`. Other states: `reason_code` text, then `STATE_REASON_FALLBACK`. |
-| `reason_code` | Card reason (non-`clear` states) | — |
+| `state_reason` | Card reason (all card states) | `clear`: `reason_code` text, then `empty_state_source.text`, then `CLEAR_REASON`. Other states: `reason_code` text, then `STATE_REASON_FALLBACK`. |
+| `reason_code` | Card reason when there is no `state_reason` | — |
 | `what_checked` / `empty_state_source.coverage` | Card "What was checked" | `clear`: generated list (see below). Other states: omitted. |
-| `empty_state_source.text` | — (the `clear` reason is overridden by `s15:31`) | — |
+| `empty_state_source.text` | `clear` card reason when there is no `state_reason` / `reason_code` | `CLEAR_REASON` |
 | `next_step` | Card "What happens next" / "How it becomes assessed" | `not_assessed`: hardcoded next step (`s15:36-38`) |
 | `metrics[]` (each needs `unit`) | One KPI tile each: value + unit + `label`. A chip is added when the metric `state` ≠ `findings`. | No metric tiles. A null value prints "Not available" + its reason. |
 | `last_scanned` (Date) | Last tile: DD Mon YYYY. Also used in the `clear` "What was checked" list. | Tile "Not available" + "Scan date not recorded." (null record: its reason; its `state` adds a chip) |
@@ -64,7 +64,7 @@ Method codes → labels (`METHODS`, `s15:7-8`): `dns_records` "DNS records", `ip
 | Condition | What prints | Code |
 |---|---|---|
 | `state == clear` and no providers | Card only (reason + "What was checked"). No KPI strip, no table. | `s15:89-90` |
-| `state == clear` | Card reason = `state_reason` or `CLEAR_REASON` (`reason_code` / `empty_state_source.text` are ignored) | `s15:30-31` |
+| `state == clear` | Card reason = `state_reason`, else the `reason_code` text, else `empty_state_source.text` (shared `default_card`), else `CLEAR_REASON` | `s15` `card` |
 | `clear` and no `what_checked` and no `empty_state_source.coverage` | Generated "What was checked": the methods line (only if `detection_methods` is set) + the "Last scanned" line | `s15:32-35` |
 | `state == not_assessed` and no `next_step` | Hardcoded next step | `s15:36-38` |
 | Any other state that has a body | KPI strip + H2 + table or empty sentence | `s15:91-97` |

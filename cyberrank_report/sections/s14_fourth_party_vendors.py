@@ -1,15 +1,18 @@
 """14 Fourth-party vendors: a RESUME of the connected organisations reported for the assessed
 organisation (fourth-party redesign, phase 0: flat list, no relationship data, no per-organisation dates).
 
-State (adjust): a reported list is `partial` with the data-limits banner (never 'Findings'); an empty list
-is the neutral `none_identified` (never 'clear'). Metric states are stripped (a resume has no findings).
+State (adjust): the payload state stands ('findings' shows as 'Identified', theme.INVENTORY); a 'clear'
+list is 'findings' (an inventory with rows is never 'No findings'); an empty list is the neutral
+`none_identified` (never 'clear'). Metric states are stripped. The payload summary / state_reason are
+never overwritten: the generated summary is the verdict only when the payload has none, and the
+data-limits banner is a note of its own at the top of the body.
 
 Layout: summary (verdict row; one counting rule: organisations) -> tiles (reported, rated / not rated,
 lowest grade + count, the assessed organisation's own grade for reference) -> grade distribution bar
 (grade colours only) -> "Needs a look" (lowest grades cut where the band changes + not rated + self-
 reference, with reason chips) -> T1 (<= 30): every organisation inline; T2: pointer to Appendix <D.n>.1 (id RID['s14']).
-Grade chips appear on the section page only; the risk band is printed as plain text "as sent" in the
-register, never derived from the grade and never with severity styling.
+Grade chips appear on the section page only; the risk band prints as plain text exactly as sent,
+never derived from the grade and never with severity styling.
 
 Organisation fields read (R17 + old-report card): name, domain, category, grade (+ grade_reason[_code]),
 risk_band (+ risk_band_label_source), assessed_membership, assessed_at (phase 1, printed when present);
@@ -22,7 +25,9 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.platypus import Flowable, Table, TableStyle
 
 from .. import components as C
+from .. import qa
 from .. import theme as T
+from ..page import org_name as _org_name
 from ..text import esc, hexstr, is_missing, plain
 from . import BY_ID, hold
 from .s13_certifications import field, label, stack, widths
@@ -45,7 +50,7 @@ def _v(x):
 
 
 def org_name(report):
-    return ((report.get('identity') or {}).get('organisation_name')) or 'the assessed organisation'
+    return _org_name(report)
 
 
 def grade(v):
@@ -55,18 +60,19 @@ def grade(v):
 
 
 def band_text(v):
-    """Risk band as sent (plain text), never derived from the grade."""
-    if not grade(v):
-        return 'Not sent'
+    """Risk band exactly as sent (plain text), never derived from the grade. No band: 'Not sent' for an
+    unrated organisation, the null record's reason for a rated one."""
     b = C.val(v.get('risk_band_label_source')) or _v(v.get('risk_band'))
-    return str(b).strip().capitalize() if b and str(b).strip() not in ('—', '-') else field(v, 'risk_band')
+    if b and str(b).strip() not in ('—', '-'):
+        return str(b).strip()
+    return field(v, 'risk_band') if grade(v) else 'Not sent'
 
 
 def not_rated(v):
     """'Not rated', or 'Not rated (<reason>)' when the payload gives a real one."""
     rec = field(v, 'grade')
     rec = rec if isinstance(rec, dict) else {}
-    if rec.get('reason_code') in NO_REASON:
+    if rec.get('reason_code') in NO_REASON and not (rec.get('reason') or rec.get('state_reason')):
         return 'Not rated'
     return f'Not rated ({plain(C.reason_text(rec)).rstrip(".")})'
 
@@ -81,11 +87,12 @@ def _host(d):
 
 
 def is_self(v, report):
-    """Name or domain matches the assessed organisation (e.g. detik.net.id in Detik's list)."""
+    """Name equals the assessed organisation's, or the domain is its domain or a subdomain of it
+    (example.com vs example.org is no match: the full host counts, never the first label)."""
     ident = report.get('identity') or {}
     org, dom = str(ident.get('organisation_name') or '').casefold(), _host(ident.get('domain'))
     name, vd = str(v.get('name') or '').casefold(), _host(v.get('domain'))
-    return bool(org and name == org or dom and vd and (vd == dom or vd.split('.')[0] == dom.split('.')[0]))
+    return bool(org and name == org or dom and vd and (vd == dom or vd.endswith('.' + dom)))
 
 
 def alias_groups(vendors):
@@ -107,24 +114,43 @@ def _n(n, unit=UNIT):
 
 
 # --- state ---------------------------------------------------------------------------------
+def _vendors(data):
+    return [v for v in data.get('vendors') or [] if isinstance(v, dict)]
+
+
 def adjust(data, report):
-    """Resume, not findings: list -> partial + data-limits banner; empty -> none_identified."""
+    """Empty list -> none_identified (never 'clear'); a 'clear' list -> findings ('Identified'). Other
+    states stand (payload 'partial' = genuinely partial coverage). The payload summary and state_reason
+    are kept: the generator's text is the verdict() fallback and the banner note in the body."""
     if data.get('state') not in ('findings', 'clear', 'partial', 'none_identified'):
         return data
-    vendors = [v for v in data.get('vendors') or [] if isinstance(v, dict)]
-    org = org_name(report)
+    vendors = _vendors(data)
     metrics = [{**{k: x for k, x in m.items() if k != 'state'},
                 **({'label': 'Connected organisations reported'} if m.get('id') == 'fourth_parties' else {})}
                for m in data.get('metrics') or [] if isinstance(m, dict)]
+    out = data
+    if not vendors and data['state'] != 'none_identified':
+        out = hold(data, 'none_identified', None, 'none_identified')
+    elif vendors and data['state'] in ('clear', 'none_identified'):
+        out = hold(data, 'connected_organisations_listed', None, 'findings')
+    keep = {k: data[k] for k in ('reason_code', 'state_reason') if data.get(k)}   # never overwrite the payload's
+    return {**out, **keep, 'metrics': metrics}
+
+
+def verdict(data, ctx):
+    """Generated summary: the verdict only when the payload sends no summary."""
+    vendors = _vendors(data)
     if not vendors:
-        out = hold(data, 'none_identified', f'No connected organisations reported for {org}', 'none_identified')
-        return {**out, 'metrics': metrics, 'summary': f'No connected organisations reported for {org}.'}
+        return f'No connected organisations reported for {org_name(ctx.report)}.'
+    return summary(vendors, ctx.report)
+
+
+def banner(vendors, report):
+    """Data-limits note: connections (and per-organisation dates, unless all are sent) are not in the data."""
     dated = all(v.get('assessed_at') is not None and not is_missing(v.get('assessed_at')) for v in vendors)
-    banner = BANNER.format(org=org, dates='' if dated else " and the date of each organisation's own assessment")
-    if dated:
-        banner = banner.replace(' are not reported', ' is not reported')
-    out = hold(data, 'connections_not_reported', banner, 'partial')
-    return {**out, 'metrics': metrics, 'summary': summary(vendors, report)}
+    text = BANNER.format(org=org_name(report),
+                         dates='' if dated else " and the date of each organisation's own assessment")
+    return text.replace(' are not reported', ' is not reported') if dated else text
 
 
 def summary(vendors, report):
@@ -148,11 +174,11 @@ def summary(vendors, report):
 def card(data, ctx):
     if ctx.state != 'none_identified':
         return {}
-    org = org_name(ctx.report)
-    empty = data.get('empty_state_source') or {}
-    return {'title': 'No connected organisations identified',
-            'reason': f'None were found with the methods used. This does not show that {org} has no suppliers.',
-            'what_checked': empty.get('coverage')}
+    out = {'title': 'No connected organisations identified'}      # what_checked: the shared default
+    if not (data.get('state_reason') or data.get('reason_code') not in (None, 'none_identified')):
+        out['reason'] = (f'None were found with the methods used. This does not show that '
+                         f'{org_name(ctx.report)} has no suppliers.')
+    return out
 
 
 # --- cells ---------------------------------------------------------------------------------
@@ -312,9 +338,14 @@ def look_table(c, rows, vendors, dense=False):
     dated = has_dates(vendors)
     cols = ['Organisation', 'Sector', 'Grade', 'Why listed'] + (['Assessed on'] if dated else [])
     w = widths(cols, WIDTHS, 'Organisation')
-    data = [[org_cell(c, v, w[0], dense, profile=False), label(field(v, 'category')), grade_cell(c, v, dense),
+    data = [[org_cell(c, v, w[0], dense, profile=False), sector(v), grade_cell(c, v, dense),
              reason_chips(c, why, dense)] + ([assessed_on(v)] if dated else []) for v, why in rows]
     return c.compact_table(cols, data, widths=w, dense=dense)
+
+
+def sector(v):
+    """Sector as sent (humanised); missing prints 'Unknown' in every table (owner decision)."""
+    return 'Unknown' if C.is_missing(field(v, 'category')) else label(field(v, 'category'))
 
 
 def register_columns(vendors):
@@ -324,7 +355,7 @@ def register_columns(vendors):
 
 def register_cells(c, v, cols, w, dense, report, chip=True):
     cells = {'Organisation': org_cell(c, v, w[cols.index('Organisation')], dense, report),
-             'Sector': 'Unknown' if C.is_missing(field(v, 'category')) else label(field(v, 'category')),
+             'Sector': sector(v),
              'Grade': (grade_cell(c, v, dense) if chip else grade(v) or c.P(not_rated(v), 'dense_muted')),
              'Risk band': band_text(v), 'Assessed on': assessed_on(v) if has_dates([v]) else
              field(v, 'assessed_at')}
@@ -343,17 +374,20 @@ def notes(vendors):
 
 def tier(vendors):
     from .app_d_evidence_registers import pol, tier as t
-    return t(len(vendors), len(vendors)), pol('lists.fourth_party_vendors.top_n', 10)
+    return (t(len(vendors), len(vendors), list_key='fourth_party_vendors'),
+            pol('lists.fourth_party_vendors.top_n', 10))
 
 
 def build(data, ctx):
     c, rep = ctx.c, ctx.report
-    vendors = sorted((v for v in data.get('vendors') or [] if isinstance(v, dict)), key=order)
-    out = []
+    vendors = sorted(_vendors(data), key=order)
     if not vendors:
-        return [pointer()]
-    out += [tiles(c, vendors, rep), *grade_bar(c, vendors)]
+        return pointer(rep)
+    out = [C.note(banner(vendors, rep)), tiles(c, vendors, rep), *grade_bar(c, vendors)]
     tr, top_n = tier(vendors)
+    if tr == 'T3':      # policy max_tier_T2_overflow: render as T2 and warn
+        qa.add('max_tier_exceeded', 'warn', f'{len(vendors)} connected organisations exceed the register '
+               'maximum; rendered as a full register (T2)', once=True)
     look = needs_a_look(vendors, rep, top_n)
     if look:
         out += [c.heading(f'Needs a look ({len(look)} of {len(vendors)})', 3),
@@ -371,11 +405,11 @@ def build(data, ctx):
         from .app_d_evidence_registers import RID      # lazy: app_d imports this module
         out.append(c.register_pointer(RID['s14'], {'value': len(vendors), 'unit': UNIT},
                                       title=f'{RID["s14"]}.1 Connected organisations'))
-    return out + [c.keep(notes(vendors), pointer())]
+    return out + [c.keep(notes(vendors), *pointer(rep))]
 
 
 def build_context(data, ctx):
-    return [pointer()]
+    return pointer(ctx.report)
 
 
 # --- Appendix <D.n>.1 (T2) ---------------------------------------------------------------------
@@ -429,6 +463,10 @@ class SectionPointer(Flowable):
         return T.SP_MD
 
 
-def pointer():
-    return SectionPointer(BY_ID['appC'], 'Supply-chain aggregation',
-                          'How fourth-party ratings feed combined supply-chain risk')
+def pointer(report):
+    """Pointer to Appendix C's supply-chain page: only when that page is in the report."""
+    from .app_c_methodology import supply_chain_present
+    if not supply_chain_present(report):
+        return []
+    return [SectionPointer(BY_ID['appC'], 'Supply-chain aggregation',
+                           'How fourth-party ratings feed combined supply-chain risk')]

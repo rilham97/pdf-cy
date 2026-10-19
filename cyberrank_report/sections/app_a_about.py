@@ -50,4 +50,6 @@ def build(data, ctx):
             c.compact_table(['State', 'Meaning'],
                             [[c.state_chip(s, dense=True), m] for s, m in STATE_MEANING.items()],
                             widths=[104, ctx.t.CW - 104], dense=True, header_fill=False)]
+    if data.get('closing_source'):     # verbatim closing line of the source page
+        out.append(c.P(data['closing_source'], 'note'))
     return out

@@ -28,7 +28,9 @@ def _scan_date(data, c):
 def card(data, ctx):
     c, kw = ctx.c, {}
     if ctx.state == 'clear':           # other states show methods and scan date in the body, or ran no check
-        kw['reason'] = data.get('state_reason') or CLEAR_REASON
+        if not (data.get('state_reason') or data.get('reason_code') or
+                (data.get('empty_state_source') or {}).get('text')):
+            kw['reason'] = CLEAR_REASON      # otherwise the shared default_card reason (payload first)
         if not (data.get('what_checked') or (data.get('empty_state_source') or {}).get('coverage')):
             methods = _methods(data)
             kw['what_checked'] = ([f'Detection methods: {", ".join(methods)}.'] if methods else []) + [

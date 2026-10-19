@@ -12,7 +12,7 @@ from an external PDF (a locked page). Its contents never come from the payload.
 2. Verdict row only if `summary` is sent (no chip).
 3. `headline_source` (H2 style, no outline entry), then `lead_source` (intro style).
 4. Columns grid: one column per `columns_source[]` item (title + text), with a rule above each.
-5. "How a rating becomes a risk   four steps, one pipeline" + a steps grid. Each step has a navy numbered badge, a title, text and a signals line, with an optional callout row underneath.
+5. "How a rating becomes a risk   {n} steps, one pipeline" (n = number of steps, in words up to ten) + a steps grid. Each step has a navy numbered badge, a title, text and a signals line, with an optional callout row underneath.
 6. "The IISRI rating scale   {scale_caption_source}" + a 10-segment bar D → AAA, the letters and marks below, and the end labels.
 7. Note: generic-material sentence + `copyright_source`.
 8. The locked supply-chain page (new page). If its source file is missing, an "Unavailable" card prints instead.
@@ -33,18 +33,18 @@ from an external PDF (a locked page). Its contents never come from the payload.
 | `is_generic_material` (true) | Adds the generic-material note sentence | Sentence omitted |
 | `copyright_source` | Appended to the note | Omitted |
 | `supply_chain` (any truthy value) | **Only a switch:** inserts the locked page | No locked page |
-| `identity.organisation_name` (via `ctx.identity['org']`) | `{org}` in the note | "Organisation name not available" (page.py fallback; the module's own "this organisation" is never reached) |
+| `identity.organisation_name` (via `page.org_name`) | `{org}` in the note | "this organisation" (the shared inline fallback; the cover and header say "Organisation name not available") |
 
 ## Hardcoded in the generator
 
 | Text or label (exact) | Where it prints | Notes |
 |---|---|---|
-| "How a rating becomes a risk" + "four steps, one pipeline" | Steps sub-heading + muted tail | `app_c:16`. The tail is fixed whatever the number of steps. |
+| "How a rating becomes a risk" + "{n} steps, one pipeline" | Steps sub-heading + muted tail | `PIPELINE_TITLE`; n = `len(steps_source)` in words (one … ten, digits above), "step" when 1. |
 | "The IISRI rating scale" | Scale sub-heading | `app_c:17`. Always printed, even with no payload copy. |
 | D, C, CC, CCC, B, BB, BBB, A, AA, AAA + marks (Very poor … Excellent) | Under the scale segments | `theme.GRADE_BAR` / `GRADE_MARK`, `app_c:106-109` |
 | "General methodology, the same in every report; figures on the supply-chain page are illustrative and are not results for {org}." | Note | Only when `is_generic_material` (`app_c:173-174`) |
-| "Supply-chain aggregation page missing" | Card title | Source PDF not found (`app_c:134-136`) |
-| "The supply-chain aggregation page could not be inserted: its source file was not found when this report was built." | Card reason | Same |
+| "Supply-chain aggregation page missing" | Card title | `locked_source()` failed (`_supply_chain_page`) |
+| "The supply-chain aggregation page could not be inserted: its source page was not available when this report was built." | Card reason | Same (missing file, bad index or unreadable file) |
 | "Supply-chain aggregation" | PDF outline entry, nested under Appendix C | `app_c:138-141` |
 | Locked page content (incl. its own "2 / 2" folio) | Inserted page | Taken 1:1 from the source PDF. No header, footer, watermark, motif or kit folio. |
 
@@ -56,18 +56,18 @@ from an external PDF (a locked page). Its contents never come from the payload.
 | Any step has a `callout` | Second grid row with the callouts aligned (empty cells for steps without one) | `app_c:99-100` |
 | `is_generic_material` truthy | Generic-material sentence | `app_c:173-174` |
 | Note list empty | No note | `app_c:176-177` |
-| `supply_chain` falsy | No locked page. Appendix D then continues **on the same page** (`appD.new_page=False`). | `app_c:129-130`, `__init__.py:83-84` |
+| `supply_chain` falsy | No locked page. Appendix D still starts on a new page (it has `new_page` like every section; after the locked page its `PageBreakIfNotEmpty` adds no blank page). Section 14 prints no "Supply-chain aggregation" pointer. | `_supply_chain_page`, `supply_chain_present` |
 | `supply_chain` truthy and the source file exists | `NextPageTemplate('locked')` + page break + anchor + a reserved blank page. After the build, that page is stamped with page `INDEX` of the source PDF (vector, 1:1, mediabox = source page size; URI links copied). | `app_c:137-142`, `page.py:377-384,513-531` |
-| `supply_chain` truthy and the file is missing | QA `locked_page_missing` (**error → exit 2**) + "Unavailable" card | `app_c:132-136` |
+| `supply_chain` truthy and the file is missing, unreadable, or `CYBERRANK_SUPPLY_CHAIN_INDEX` is not a whole number / outside the file | QA `locked_page_missing` (**error → exit 2**, detail names the cause) + "Unavailable" card; no section 14 pointer | `locked_source`, `_supply_chain_page` |
 | `c_methodology` missing | "Unavailable" card "Section missing from the report data." | `__init__.py:182-184` |
 | `c_methodology.state` in no-result states | Card replaces the body (no locked page) | `__init__.py:205-209` |
 
-Environment (read once at import, `app_c:20-23`):
+Environment (read once at import, parsed when the page is built):
 
 | Variable | Meaning | Default |
 |---|---|---|
 | `CYBERRANK_SUPPLY_CHAIN_PDF` | Path to the source production PDF | A report PDF in the reference pack (`_PACK/02_PDF_Assessment_Valid/…`). It is not shipped in the repo. |
-| `CYBERRANK_SUPPLY_CHAIN_INDEX` | 0-based page index in that PDF | `44` (page 45). Must be an int. |
+| `CYBERRANK_SUPPLY_CHAIN_INDEX` | 0-based page index in that PDF | `44` (page 45). A non-integer or out-of-range value fails softly: QA `locked_page_missing`. |
 
 ## Computed by the generator
 
@@ -94,7 +94,7 @@ Environment (read once at import, `app_c:20-23`):
 
 | check id | severity | when |
 |---|---|---|
-| `locked_page_missing` | error | `supply_chain` is set but `CYBERRANK_SUPPLY_CHAIN_PDF` does not point to a file (`app_c:133`) |
+| `locked_page_missing` | error | `supply_chain` is set but the page cannot be inserted: `CYBERRANK_SUPPLY_CHAIN_PDF` is not a readable file, or `CYBERRANK_SUPPLY_CHAIN_INDEX` is not a whole number inside it (`locked_source`) |
 | `folio`, `page_size`, layout checks | — | **Skipped** on the locked page (`qa.py:111,118`) |
 | `unresolved_reference` | warn | Section 14's Appendix C pointer when C is not built |
 
@@ -104,4 +104,4 @@ Environment (read once at import, `app_c:20-23`):
 - Send `supply_chain` as a non-empty object (any content). It only switches the locked page on.
 - Deploy the production PDF and set `CYBERRANK_SUPPLY_CHAIN_PDF` (+ `CYBERRANK_SUPPLY_CHAIN_INDEX`). Otherwise the build exits 2.
 - Send `is_generic_material: true` so the "illustrative, not your results" note prints.
-- Keep `steps_source` at four steps, or the fixed "four steps, one pipeline" tail will be wrong.
+- Any number of `steps_source` items works: the tail counts them.

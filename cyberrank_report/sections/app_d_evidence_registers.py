@@ -76,11 +76,18 @@ def pol(path, default=None):
     return v
 
 
-def tier(visual_rows, data_rows, identity=False):
-    """'T1' inline / 'T2' overview + register / 'T3' overview + data file."""
-    if identity or data_rows > pol('tiers.T2_overview_register.max_rows', 1000):
+def t1_max(list_key=None):
+    """Inline maximum: lists.<list_key>.tier_thresholds.T1_max_visual_rows, else the global tier."""
+    return pol(f'lists.{list_key}.tier_thresholds.T1_max_visual_rows') or pol('tiers.T1_inline.max_visual_rows', 30)
+
+
+def tier(visual_rows, data_rows, identity=False, list_key=None):
+    """'T1' inline / 'T2' overview + register / 'T3' overview + data file. list_key: the list's own
+    tier_thresholds in the policy win over the global tiers."""
+    t2 = pol(f'lists.{list_key}.tier_thresholds.T2_max_rows') or pol('tiers.T2_overview_register.max_rows', 1000)
+    if identity or data_rows > t2:
         return 'T3'
-    return 'T1' if visual_rows <= pol('tiers.T1_inline.max_visual_rows', 30) else 'T2'
+    return 'T1' if visual_rows <= t1_max(list_key) else 'T2'
 
 
 def fill(tpl, **kw):
@@ -167,9 +174,14 @@ def pages_link(prev, rid, fallback):
     return f'<a href="#reg:{C.esc(rid)}:start" color="{C.hexstr(T.NAVY)}">{label}</a>'
 
 
+# ponytail: payload section titles of the report being built (set by build()); opening() has no report
+TITLES = {}
+
+
 def backlink(sec_id):
     spec = BY_ID.get(sec_id)
-    return Lazy(lambda prev: C.M('Back to ' + page_link(prev, spec.anchor, f'Section {spec.number} {spec.title}'),
+    title = TITLES.get(sec_id) or spec.title
+    return Lazy(lambda prev: C.M('Back to ' + page_link(prev, spec.anchor, f'Section {spec.number} {title}'),
                                  'note_flush', keepWithNext=1))
 
 
@@ -501,7 +513,7 @@ def d5_quantum(report, as_of):
     return info
 
 
-def d3_vendors(report, sec, as_of):
+def d6_vendors(report, sec, as_of):
     """<D.n>.1: flat register of every connected organisation (T2 only; T1 prints them in Section 14)."""
     from . import s14_fourth_party_vendors as s14
     vendors = [v for v in sec.get('vendors') or [] if isinstance(v, dict)]
@@ -509,7 +521,8 @@ def d3_vendors(report, sec, as_of):
     rid = RID['s14']
     info = {'rid': rid, 'state': sec.get('state'), 'sec': 's14', 'title': title}
     if not vendors or s14.tier(vendors)[0] == 'T1' or sec.get('state') not in ('findings', 'partial', 'pending_review'):
-        return {**info, 'content': state_message(sec, SEC_NUM['s14'], 'connected organisations', len(vendors))}
+        return {**info, 'content': state_message(sec, SEC_NUM['s14'], 'connected organisations', len(vendors),
+                                                 list_key='fourth_party_vendors')}
     org, n = s14.org_name(report), len(vendors)
     flow = opening(rid, title, 's14', [
         f'{rid}.1 lists all {n} connected organisations reported for {org}, sorted by grade, worst first; '
@@ -519,7 +532,7 @@ def d3_vendors(report, sec, as_of):
         f'Snapshot {as_of}.'], ['fourth_party_register'])
     cols, w, entries = s14.register_entries(C, vendors, report)
     t = register_table(cols, entries, title=f'{rid}.1 Connected organisations', sec_id='s14', numeric_cols=(0,),
-                       widths=w, ident='regD31')
+                       widths=w, ident='regD61')
     rated = sum(1 for v in vendors if s14.grade(v))
     flow += [C.heading(f'{rid}.1  Connected organisations', 3, style=H3T), *const_line(t), t,
              s14.notes(vendors)]
@@ -596,7 +609,7 @@ def cert_documents(report, sec):
     return info
 
 
-def state_message(sec, nn, unit, count=None):
+def state_message(sec, nn, unit, count=None, list_key=None):
     """Index text for a register that is not printed (policy states.register_messages)."""
     st, msgs = sec.get('state'), pol('states.register_messages', {}) or {}
     if st == 'clear':
@@ -605,7 +618,7 @@ def state_message(sec, nn, unit, count=None):
         return fill(msgs.get(st, 'Not produced.'), nn=nn, reason=C.reason_text(sec))
     if st == 'none_identified':
         return f'Not required — no {unit} identified.'
-    if count is not None and count <= pol('tiers.T1_inline.max_visual_rows', 30):
+    if count is not None and count <= t1_max(list_key):
         return f'Not required — all {count} {unit} shown in Section {nn}.'
     if count is None:
         return 'Not produced — no register data in the payload.'
@@ -645,7 +658,11 @@ def _index(regs):
 
 
 def build(data, ctx):
+    """Index + every register, built from the section data (the appendix payload only sets the frame)."""
     c, rep = ctx.c, ctx.report
+    TITLES.clear()
+    TITLES.update({s.id: (rep.get(s.source) or {}).get(s.key, {}).get('title') for s in REGISTRY
+                   if isinstance((rep.get(s.source) or {}).get(s.key), dict)})
     as_of = c.fmt_date((rep.get('snapshot') or {}).get('assessed_at'))
     secs = rep.get('sections') or {}
     vul = secs.get('vulnerabilities') or {}
@@ -655,7 +672,7 @@ def build(data, ctx):
             _absent(f'{RID["s04"]}.2', 'IP reputation', ipr, 's04', 'ip_reputation', len(ipr.get('rows') or []),
                     'IP addresses', anchor='s04-ip-reputation'),
             d3_leaks(dl),
-            d3_vendors(rep, fp, as_of),
+            d6_vendors(rep, fp, as_of),
             d4_credentials(rep, ctx.identity, as_of), d5_quantum(rep, as_of),
             cert_documents(rep, secs.get('certifications') or {})]
     regs.sort(key=lambda r: [int(x) for x in r['rid'][2:].split('.')])     # D.1, D.1.2, D.2, ...
@@ -666,3 +683,6 @@ def build(data, ctx):
     for r in regs:
         out += r.get('flow') or []
     return out
+
+
+build_context = build      # no-result appendix state: the card, then the registers all the same

@@ -11,16 +11,17 @@ from reportlab.lib.colors import white
 from reportlab.platypus import Flowable, Table, TableStyle
 
 from .. import qa, theme as T
-from ..page import locked_page
+from ..page import locked_page, org_name
 
-PIPELINE_TITLE, PIPELINE_SUB = 'How a rating becomes a risk', 'four steps, one pipeline'
+PIPELINE_TITLE = 'How a rating becomes a risk'
+NUMBERS = 'zero one two three four five six seven eight nine ten'.split()
 SCALE_TITLE = 'The IISRI rating scale'
 # ponytail: the supply-chain page is read from the production PDF in the reference pack.
 # Ship it as a package asset (and point this at it) before running outside the pack.
 _PACK = Path(__file__).resolve().parents[4]
 SUPPLY_CHAIN_PDF = Path(os.environ.get('CYBERRANK_SUPPLY_CHAIN_PDF') or
                         _PACK / '02_PDF_Assessment_Valid/Claude/2026-10-02/Claude - Cyber Risk Report.pdf')
-SUPPLY_CHAIN_INDEX = int(os.environ.get('CYBERRANK_SUPPLY_CHAIN_INDEX', 44))     # 0-based: page 45
+SUPPLY_CHAIN_INDEX = os.environ.get('CYBERRANK_SUPPLY_CHAIN_INDEX', '44')     # 0-based: page 45; parsed softly
 
 
 class Badge(Flowable):
@@ -124,18 +125,45 @@ def _scale(data, ctx):
     return tbl
 
 
+def locked_source():
+    """(path, 0-based page index) of the supply-chain page, or (None, why it cannot be inserted)."""
+    src, raw = SUPPLY_CHAIN_PDF, str(SUPPLY_CHAIN_INDEX).strip()
+    if not src.is_file():
+        return None, f'supply-chain page source not found: {src}'
+    if not raw.isdigit():
+        return None, f'CYBERRANK_SUPPLY_CHAIN_INDEX must be a whole number (0-based page), got {raw!r}'
+    import pymupdf
+    try:
+        with pymupdf.open(src) as d:
+            pages = d.page_count
+    except Exception as e:      # noqa: BLE001 - any unreadable file is the same QA error
+        return None, f'supply-chain page source could not be read: {src} ({e})'
+    if int(raw) >= pages:
+        return None, (f'CYBERRANK_SUPPLY_CHAIN_INDEX {raw} is outside {src.name} '
+                      f'({pages} pages, 0-based index 0-{pages - 1})')
+    return (src, int(raw)), None
+
+
+def supply_chain_present(report):
+    """True when Appendix C carries the supply-chain page (pointer target for section 14)."""
+    from . import NO_RESULT
+    data = (report.get('appendices') or {}).get('c_methodology')
+    return (isinstance(data, dict) and bool(data.get('supply_chain')) and data.get('state') not in NO_RESULT
+            and locked_source()[0] is not None)
+
+
 def _supply_chain_page(data, ctx):
     """Production page 45, inserted 1:1 as a locked page (counted in 'Page x of y')."""
     if not data.get('supply_chain'):
         return []
-    src = SUPPLY_CHAIN_PDF
-    if not src.is_file():
-        qa.add('locked_page_missing', 'error', f'supply-chain page source not found: {src}')
+    found, why = locked_source()
+    if not found:
+        qa.add('locked_page_missing', 'error', why, once=True)
         return [ctx.c.state_card('unavailable', 'The supply-chain aggregation page could not be inserted: '
-                                 'its source file was not found when this report was built.',
+                                 'its source page was not available when this report was built.',
                                  title='Supply-chain aggregation page missing')]
     # inserted fully unchanged: no mask, no kit folio; its own '2 / 2' folio stays
-    flow = locked_page(src, SUPPLY_CHAIN_INDEX, outline='Supply-chain aggregation')
+    flow = locked_page(*found, outline='Supply-chain aggregation')
     for f in flow:                       # nest the outline entry under Appendix C
         if getattr(f, '_toc', None):
             f._toc = (1,) + tuple(f._toc[1:])
@@ -152,7 +180,7 @@ def _subhead(title, sub, ctx):
 
 def build(data, ctx):
     c, t = ctx.c, ctx.t
-    org = ctx.identity.get('org') or 'this organisation'
+    org = org_name(ctx.report)
     out = []
     if data.get('headline_source'):
         out.append(c.P(data['headline_source'], 'h2', spaceBefore=0))
@@ -167,7 +195,8 @@ def build(data, ctx):
 
     steps = [s for s in data.get('steps_source') or [] if isinstance(s, dict)]
     if steps:
-        out.append(_subhead(PIPELINE_TITLE, PIPELINE_SUB, ctx))
+        n = NUMBERS[len(steps)] if len(steps) < len(NUMBERS) else str(len(steps))
+        out.append(_subhead(PIPELINE_TITLE, f'{n} step{"s" if len(steps) != 1 else ""}, one pipeline', ctx))
         out.append(_steps(steps, ctx))
     out.append(c.keep(_subhead(SCALE_TITLE, data.get('scale_caption_source'), ctx), _scale(data, ctx)))
     notes = [f'General methodology, the same in every report; figures on the supply-chain page are illustrative '
