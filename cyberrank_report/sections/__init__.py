@@ -81,7 +81,7 @@ REGISTRY = [
     SectionSpec('appC', 'c_methodology', 'C', 'Methodology and supply-chain aggregation',
                 'appendices_and_references', 'app_c_methodology', _A),   # one page, pairs with its locked page
     SectionSpec('appD', 'd_evidence_registers', 'D', 'Detailed evidence registers', 'appendices_and_references',
-                'app_d_evidence_registers', _A, new_page=False),
+                'app_d_evidence_registers', _A),
 ]
 BY_ID = {s.id: s for s in REGISTRY}
 # demerit ledger rule -> section key (Aturan_Scoring_Teramati_Lengkap: ledger v2 A-J, one cap each)
@@ -180,6 +180,8 @@ def hold(data, reason_code, reason, state='pending_review'):
 
 def render_section(spec, report, identity, blueprint=False):
     data = (report.get(spec.source) or {}).get(spec.key)
+    if spec.id == 'appD' and not data:      # registers come from section data; only the frame reads this payload
+        data = {'state': None}
     missing = data is None
     data = data or {'state': 'unavailable', 'state_reason': 'Section missing from the report data.'}
     if not blueprint and not missing:

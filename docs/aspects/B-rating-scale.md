@@ -14,7 +14,7 @@ highlighted** (`rating.grade`).
 4. Spectrum: 10 colour segments D (left) → AAA (right), with the grade letters and end labels below. When graded, the selected segment is raised with a ring, and a pin above reads "Your rating: BB · Sufficient".
 5. Table Grade | Meaning, AAA first → D. Each row has a colour spine, the letter over its mark, and the meaning (an assurance sentence plus a navy work sentence). The selected row gets a light fill, a box and a "Your rating" pill.
 
-The component's own H1 and intro sentence are dropped (`story[4:]`, `app_b:21-23`).
+The component's own H1 and its official intro sentence (`rating_scale.INTRO`) are dropped (`story[4:]`): only the payload `intro_source` prints.
 
 ## From the system (payload)
 
@@ -24,9 +24,9 @@ The component's own H1 and intro sentence are dropped (`story[4:]`, `app_b:21-23
 | `b_rating_scale.intro_source` | Intro under H1 | No intro at all (the component's own intro is dropped) |
 | `b_rating_scale.summary` | Verdict (no chip) | Omitted |
 | `b_rating_scale.state` | Only no-result states matter: the card replaces the body | — |
-| `rating.grade` | Must be **exactly** `AAA`…`D`, a plain uppercase string (`app_b:14`). It selects the pin, the ring and the row. | No selection. State panel shown. |
-| `rating.state` | Used only when the grade is not valid: `not_assessed` → "Your rating: not assessed". **Any other value** → "Your rating: not available". | "not available" |
-| `rating.state_reason` (string) | Reason in the state panel | "The rating was not provided in the assessment data." (`app_b:18`) |
+| `rating.grade` | `AAA`…`D` as a string or `{value}`, any case, surrounding spaces ignored (`app_b` `rating`). It selects the pin, the ring and the row. | No selection. State panel shown. |
+| `rating.state` | Used only when the grade is not valid: `not_assessed` → "Your rating: not assessed". **Any other value** (incl. `assessed` without a valid grade) → "Your rating: not available". | "not available" |
+| `rating.state_reason` (string) | Reason in the state panel | "The rating was not provided in the assessment data." (`NO_GRADE_REASON`; also for a non-string or blank value) |
 
 ## Hardcoded in the generator
 
@@ -34,7 +34,7 @@ The component's own H1 and intro sentence are dropped (`story[4:]`, `app_b:21-23
 |---|---|---|
 | "Your rating: not available." / "Your rating: not assessed." | Panel title (bold) | `rating_scale.py:100-105,288` |
 | "No grade is highlighted on the scale below." | End of the panel | `rating_scale.py:289` |
-| "The rating was not provided in the assessment data." | Default panel reason | `app_b:18`. The component defaults (`STATE_TEXT[…][1]`) are never used. |
+| "The rating was not provided in the assessment data." | Default panel reason | `NO_GRADE_REASON`. The component's own default reasons (`STATE_TEXT[…][1]`) are never reached from the report; its titles are. |
 | "Your rating: {grade} · {mark}" | Pin above the spectrum | `rating_scale.py:297` |
 | "Your rating" | Pill in the selected table row | `rating_scale.py:302-303` |
 | "Controls provide no assurance" / "All controls adequate, appropriate and effective" | Left / right end labels of the spectrum | `END_LABELS`, `rating_scale.py:99` |
@@ -47,11 +47,11 @@ The component's own H1 and intro sentence are dropped (`story[4:]`, `app_b:21-23
 
 | Condition | What prints | Code |
 |---|---|---|
-| `rating.grade` in AAA–D (exact string) | Assessed: pin + ring + highlighted row. No panel. | `app_b:14-16`, `rating_scale.py:297-303,324-326` |
-| Grade missing / lowercase / `{value: …}` / anything else | Panel + no selection | `app_b:17-18` |
-| `rating.state == not_assessed` | Panel "Your rating: not assessed." | `app_b:9,18` |
-| `rating.state` anything else (incl. `findings`, `partial`, absent) | Panel "Your rating: not available." | `app_b:18` |
-| `rating.state_reason` is not a string (e.g. a dict) | **ValueError: the build crashes** | `rating_scale.py:261-262` |
+| `rating.grade` in AAA–D (string or `{value}`, any case) | Assessed: pin + ring + highlighted row. No panel. | `app_b` `rating`, `rating_scale.py:297-303,324-326` |
+| Grade missing / anything outside AAA–D | Panel + no selection | `app_b` `rating` |
+| `rating.state == not_assessed` | Panel "Your rating: not assessed." | `app_b` `rating` |
+| `rating.state` anything else (incl. `assessed`, `findings`, `partial`, absent) | Panel "Your rating: not available." | `app_b` `rating` |
+| `rating.state_reason` is not a string (e.g. a dict) or blank | Default panel reason (never a crash) | `app_b` `rating` |
 | `b_rating_scale` missing | "Unavailable" card "Section missing from the report data.", no scale | `__init__.py:182-184` |
 | A reason longer than ~250 characters | Pushes the last rows to a second page (the header repeats) | `rating_scale.py:22-25` |
 
@@ -83,7 +83,7 @@ The component's own H1 and intro sentence are dropped (`story[4:]`, `app_b:21-23
 
 ## Backend checklist
 
-- Send `rating.grade` as a plain uppercase string `"BB"` (not `{value}`, not lowercase).
+- Send `rating.grade` as `"BB"` (a `{value}` record or lowercase is accepted too).
 - For no grade, send `grade: null` + `reason_code`, `rating.state: not_assessed | unavailable`, and a one-sentence string `state_reason`.
 - Send `b_rating_scale.intro_source`. Without it the appendix has no intro.
 - The scale text is fixed. Changing the wording needs a code change and owner approval.

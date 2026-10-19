@@ -513,12 +513,12 @@ def vendors_t2():
 
 
 def vendors_self12():
-    """12 organisations: a self-reference (example.net.id for Example Org), an alias pair (Amazon / Aws),
+    """12 organisations: a self-reference (app.example.com, under Example Org's example.com), an alias pair (Amazon / Aws),
     an unrated one without a reason, a rating with assessed_membership false, per-organisation assessed_at."""
     day = lambda d: {'value': d, 'precision': 'day'}
     orgs = [_org(i, f'Org{i:02d}', *GRADE_BANDS[i % len(GRADE_BANDS)], assessed_at=day(f'2026-09-{i:02d}'))
             for i in range(1, 9)]
-    orgs += [_org(9, 'Example', 'BBB', 'medium', domain='example.net.id', assessed_at=day('2026-09-20')),
+    orgs += [_org(9, 'Example', 'BBB', 'medium', domain='app.example.com', assessed_at=day('2026-09-20')),
              _org(10, 'Amazon', 'B', 'high', domain='amazon.com', assessed_at=day('2026-09-21')),
              _org(11, 'Aws', 'BBB', 'medium', domain='aws.com', assessed_membership=False,
                   assessed_at={'value': None, 'state': 'unavailable', 'reason_code': 'not_printed_in_source'}),

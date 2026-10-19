@@ -1,21 +1,25 @@
 """Appendix B IISRI rating scale: the one-page ladder component (rating_scale.py).
 
-render_section() already draws the eyebrow, H1 and intro, so the component's own
-H1 + intro are dropped; its official intro sentence replaces the payload intro.
+render_section() already draws the eyebrow, H1 and the payload intro (intro_source), so the
+component's own H1 and its official intro sentence (RS.INTRO) are dropped: only intro_source prints.
 """
 from .. import rating_scale as RS
 from ..theme import STYLES
 
-STATE = {'assessed': 'assessed', 'unavailable': 'unavailable', 'not_assessed': 'not_assessed'}
+NO_GRADE_REASON = 'The rating was not provided in the assessment data.'
 
 
 def rating(report):
+    """rating.grade as text or {value}, any case; no valid grade -> the payload state when the component
+    knows it (unavailable / not_assessed), else unavailable. A non-text state_reason is not printed."""
     r = report.get('rating') or {}
-    grade = r.get('grade') if r.get('grade') in RS.GRADES else None
-    if grade:
-        return {'grade': grade, 'state': 'assessed', 'state_reason': None}
-    return {'grade': None, 'state': STATE.get(r.get('state'), 'unavailable'),
-            'state_reason': r.get('state_reason') or 'The rating was not provided in the assessment data.'}
+    g = r.get('grade')
+    g = str((g.get('value') if isinstance(g, dict) else g) or '').strip().upper()
+    if g in RS.GRADES:
+        return {'grade': g, 'state': 'assessed', 'state_reason': None}
+    reason = r.get('state_reason')
+    return {'grade': None, 'state': r.get('state') if r.get('state') in RS.STATE_TEXT else 'unavailable',
+            'state_reason': reason.strip() if isinstance(reason, str) and reason.strip() else NO_GRADE_REASON}
 
 
 def build(data, ctx):

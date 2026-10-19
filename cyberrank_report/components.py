@@ -429,7 +429,8 @@ class RegisterPointer(Flowable):
 
     def _table(self, aw):
         start, end = f'reg:{self.rid}:start', f'reg:{self.rid}:end'
-        rows = (fmt_value(self.rows, 'rows') if not is_missing(self.rows) else missing_text(self.rows)
+        unit = (self.rows.get('unit') if isinstance(self.rows, dict) else None) or 'rows'   # the sender's unit
+        rows = (fmt_value(self.rows, unit) if not is_missing(self.rows) else missing_text(self.rows)
                 ) if self.rows is not None else 'row count not recorded'
         label, ok = _pages_label(_doc(self), start, end)
         where = f'{esc(self.where)}, {esc(label)}'

@@ -16,9 +16,10 @@ their sections:
 | D.6 (D.6.1) | Fourth-party vendors and technologies | this file + [14-fourth-party-vendors.md](14-fourth-party-vendors.md) |
 
 **Not a reference appendix:** `appD` is not in `REFERENCE` (`__init__.py:33`). It shows a state chip from
-`d_evidence_registers.state`, and that state can replace the whole appendix with a card (see States). It also
-has `new_page=False` (`__init__.py:83-84`): it starts on a new page only because Appendix C's locked page
-ends with a page break.
+`d_evidence_registers.state`; a no-result state adds a card, and the index and registers still follow (they
+are built from the section data; only the frame text — title, intro, chip, summary, card — reads the appendix
+payload). Like every section it starts on a new page (`new_page`); after Appendix C's locked page, which ends
+with a page break, its `PageBreakIfNotEmpty` adds no blank page.
 
 ## Layout (top to bottom)
 
@@ -45,7 +46,7 @@ ends with a page break.
 | `sections.<key>.state` | Index "State" chip (`shown_state` with the section key) | "State not recorded" chip |
 | `snapshot.assessed_at` | "Snapshot {date}" in each opening | "Not available" |
 | **D.6:** `sections.fourth_party_vendors.vendors[]` | D.6.1 rows (same cells as the Section 14 T1 table, see the 14 file) | Index row only |
-| **D.6:** `identity.organisation_name` | `{org}` in the D.6 lead | "the assessed organisation" |
+| **D.6:** `identity.organisation_name` | `{org}` in the D.6 lead | "this organisation" (`page.org_name`) |
 
 ## Hardcoded in the generator
 
@@ -58,7 +59,7 @@ ends with a page break.
 | "p. a" / "pp. a–b" (linked) | Location of a printed register | `pages_link`, `app_d:162-167`. Before it resolves: "page reference pending". |
 | "Section NN, p. N" (linked) | Location of an index-only register | `page_link`, `app_d:154-159`. Before it resolves: "Section NN". |
 | "Not available (not provided in the assessment data)" | Index Content when empty | `app_d:628` |
-| "Back to Section NN {registry title}, p. N" | Under each opening | `backlink`, `app_d:170-173`. Uses the registry title, not the payload `title`. |
+| "Back to Section NN {title}, p. N" | Under each opening | `backlink`. The section's payload `title`, else the registry title (`TITLES`, filled by `build`). |
 | "{Title} · continued" / "Rows a–b of N" | Continuation caption | `C.numbered` / `CompactTable` |
 | "{Col}: {value} (all rows)." | Constant-column note | `app_d:208,289` |
 | "End of register · N {unit}. " | Closing prefix | `app_d:318` |
@@ -68,10 +69,10 @@ ends with a page break.
 | — `not_applicable` | Policy: "Not applicable: {reason}." | Default "Not produced." |
 | — `unavailable` | Policy: "Not produced — data unavailable." | Default "Not produced." |
 | — `none_identified` | "Not required — no {unit} identified." | Hardcoded |
-| — count ≤ T1 limit (30) | "Not required — all {count} {unit} shown in Section {nn}." | Hardcoded |
+| — count ≤ T1 limit (30; the list's own `tier_thresholds.T1_max_visual_rows` when given) | "Not required — all {count} {unit} shown in Section {nn}." | Hardcoded |
 | — no count | "Not produced — no register data in the payload." | Hardcoded |
 | — count > limit | "Not produced — no register data in the payload ({count} {unit} in Section {nn})." | Hardcoded |
-| **D.6** "Fourth-party vendors and technologies" | Register title (H2 + index) | `pol('lists.fourth_party_vendors.register_title')`, `app_d:507` |
+| **D.6** "Fourth-party vendors and technologies" | Register title (H2 + index) | `pol('lists.fourth_party_vendors.register_title')`, `d6_vendors` |
 | **D.6** "D.6.1 lists all {n} connected organisations reported for {org}, sorted by grade, worst first; organisations without a rating last. Showing {n} of {n} organisations." | Lead | `app_d:514-515` |
 | **D.6** "Unit: organisations (each listed name counts once; names are not merged). Grade and risk band as sent; the band is not derived from the grade. State: {chip label}. Snapshot {date}." | Second line | `app_d:516-518` |
 | **D.6** "D.6.1  Connected organisations" | H3 + table caption title | `app_d:520-523` |
@@ -89,18 +90,19 @@ ends with a page break.
 | D.1.2 IP reputation, D.3 data leak events | Always index rows only (`_absent`) | `app_d:643-646` |
 | A register has a `flow` | Printed after the index. Location = page range. | `app_d:623,655-656` |
 | A register has no `flow` | Index row only. Content = `state_message`. Location = the section (or the `s04-ip-reputation` anchor). | `app_d:614-616,624-625` |
-| `d_evidence_registers` **missing** | "Unavailable" card "Section missing from the report data." and **no index, no registers**. Section pointers to D then read "page reference pending". | `__init__.py:182-184,205-209` |
-| `d_evidence_registers.state` in `not_assessed`/`not_applicable`/`unavailable` | Same: card only, no registers | `__init__.py:205-209` |
+| `d_evidence_registers` **missing** or `{}` | No chip, no card; index + registers as usual (H1 = registry title) | `render_section` (`appD` stub `{'state': None}`) |
+| `d_evidence_registers.state` in `not_assessed`/`not_applicable`/`unavailable` | Card, then the index + registers (`build_context = build`) | `__init__.py` `render_section` |
 | `d_evidence_registers.state` in `clear`/`partial`/`pending_review`/`none_identified` | Card above the index | `__init__.py:200-204` |
-| **D.6 printed** only if vendors are non-empty **and** tier ≠ T1 (N > 30) **and** `state` ∈ `findings`/`partial`/`pending_review` | Full D.6.1 register | `app_d:510` |
-| D.6 not printed | Index Content via `state_message(sec, '14', 'connected organisations', N)`. After `adjust`: empty list → `none_identified` → "Not required — no connected organisations identified."; N ≤ 30 → "Not required — all N connected organisations shown in Section 14." | `app_d:510-511` |
+| **D.6 printed** only if vendors are non-empty **and** tier ≠ T1 (N > `lists.fourth_party_vendors.tier_thresholds.T1_max_visual_rows`, else the global 30) **and** `state` ∈ `findings`/`partial`/`pending_review` | Full D.6.1 register (table ident `regD61`) | `d6_vendors` |
+| D.6 not printed | Index Content via `state_message(sec, '14', 'connected organisations', N, list_key='fourth_party_vendors')`. After `adjust`: empty list → `none_identified` → "Not required — no connected organisations identified."; N ≤ T1 → "Not required — all N connected organisations shown in Section 14." | `d6_vendors` |
 | D.6 grade cell | Plain letter (no chip). Unrated: "Not rated[ (<reason>)]" (muted). | `s14:328,388` |
 | D.6 sector missing | "Unknown" | `s14:327` |
 | D.6 "Assessed on" | The column is present when any vendor has `assessed_at` | `s14:320-322` |
 
 Policy file (optional, `app_d:29-34,61-76`): the path in `CYBERRANK_LONG_LIST_POLICY`, else
 `../long-list-rules/long_list_policy.json`, else the built-in `_DEFAULTS`. The frame and D.6 read these keys:
-`naming.appendix_d.note`, `tiers.T1_inline.max_visual_rows` (30), `tiers.T2_overview_register.max_rows` (1000),
+`naming.appendix_d.note`, `lists.<list>.tier_thresholds.T1_max_visual_rows` / `.T2_max_rows` (per list, read first by
+`tier(..., list_key=...)` / `t1_max`), else `tiers.T1_inline.max_visual_rows` (30), `tiers.T2_overview_register.max_rows` (1000),
 `states.register_messages.*`, `lists.fourth_party_vendors.register_title`, `lists.fourth_party_vendors.top_n` (10).
 Templates use `{key}` and `{key|'default'}` placeholders (`fill`, `app_d:86-91`).
 
@@ -127,11 +129,11 @@ Templates use `{key}` and `{key|'default'}` placeholders (`fill`, `app_d:86-91`)
 |---|---|---|
 | `findings` | **Identified** (blue). `d_evidence_registers` is in `theme.INVENTORY`. | Index + registers |
 | `clear` / `partial` / `pending_review` / `none_identified` | No findings / Partial coverage / Pending review / None identified | Card + index + registers |
-| `not_assessed` / `not_applicable` / `unavailable` / object missing | Not assessed / Not applicable / Unavailable | Card only |
-| absent `state` key | — (no chip) | Index + registers |
+| `not_assessed` / `not_applicable` / `unavailable` | Not assessed / Not applicable / Unavailable | Card + index + registers |
+| object missing / `{}` / absent `state` key | — (no chip) | Index + registers |
 
 Index rows show each **section's** state through `shown_state`. For example, 13 `findings` → Identified, and
-14 after `adjust` → Partial coverage / None identified.
+14 `findings` → Identified (an empty list → None identified after `adjust`).
 
 ## QA checks raised
 
@@ -145,7 +147,7 @@ Index rows show each **section's** state through `shown_state`. For example, 13 
 
 ## Backend checklist
 
-- Always send `appendices.d_evidence_registers` as an object. If it is missing, or carries a no-result state, **every** register is dropped.
+- `appendices.d_evidence_registers` only sets the frame (title, intro, chip, summary). The registers are built from the sections whether it is sent or not.
 - Leave `d_evidence_registers.state` out, or know that it prints a chip ("Identified" for `findings`) on the appendix opener.
 - Register ids are fixed (D.1–D.6). Do not number registers in the payload.
 - D.6 needs no payload register. It is built from `sections.fourth_party_vendors.vendors[]` when there are more than 30 vendors.

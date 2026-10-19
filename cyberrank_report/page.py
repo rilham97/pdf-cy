@@ -34,24 +34,48 @@ CONTACTS = [  # verified against cyberrank.ai footer, 02 Oct 2026 (template)
 ELLIPSIS = '…'
 HEADER_PREFIX = 'Cyber Risk Report for '
 TITLE_X = 196.0
+HEADER_DOMAIN_MIN = 6.0      # pt: the header domain shrinks to fit, never below this (QA min_width beyond)
 
 
 # --- identity -----------------------------------------------------------------
+ORG_MISSING = 'Organisation name not available'      # cover, header, contents line
+
+
+def org_name(report, fallback='this organisation'):
+    """identity.organisation_name for inline sentences ('… for this organisation' when missing); the cover
+    and header use ORG_MISSING instead."""
+    return ((report.get('identity') or {}).get('organisation_name')) or fallback
+
+
+LOGO_TYPES = {'.png', '.jpg', '.jpeg'}
+
+
+def _logo(report):
+    """identity.logo.value: an image path relative to the JSON's folder that must stay inside it (the
+    payload is input), as for certificate documents. None when absent, outside, or not a file."""
+    raw = ((report.get('identity') or {}).get('logo') or {}).get('value')
+    if not raw:
+        return None
+    base = Path(report.get('_source_dir') or '.').resolve()
+    p = (base / str(raw)).resolve()
+    return str(p) if base in p.parents and p.suffix.lower() in LOGO_TYPES and p.is_file() else None
+
+
 def identity_from_report(report):
-    """Display identity for cover/header. Reads only identity + snapshot."""
+    """Display identity for cover/header. Reads only identity + snapshot. `title` (identity.report_title)
+    goes into the PDF metadata only: the cover and running header print the approved fixed title."""
     ident = report.get('identity') or {}
     snap = report.get('snapshot') or {}
     issuer = ident.get('issuer') or {}
-    logo = (ident.get('logo') or {}).get('value')
     return {
-        'org': ident.get('organisation_name') or 'Organisation name not available',
+        'org': org_name(report, ORG_MISSING),
         'domain': ident.get('domain') or '',
         'title': ident.get('report_title') or 'Cyber Risk Report',
         'assessment_date': C.fmt_date(snap.get('assessed_at')),
         'generated_date': C.fmt_date(snap.get('generated_at')),
         'issuer': issuer.get('organisation_name'),
         'issuer_reason': C.reason_text(issuer) if not issuer.get('organisation_name') else None,
-        'logo': logo if logo and Path(str(logo)).is_file() else None,
+        'logo': _logo(report),
     }
 
 
@@ -236,8 +260,11 @@ def draw_header(c, ident):
     org_w = title_w - stringWidth(HEADER_PREFIX, T.BRAND_MEDIUM, 10)
     _txt(c, HEADER_PREFIX + ellipsize(ident['org'], org_w, T.BRAND_MEDIUM), TITLE_X, 11, 10, T.BRAND_MEDIUM, T.NAVY)
     dom, dsize = ident['domain'], 7.8
-    while dom and stringWidth(dom, T.REGULAR, dsize) > title_w:   # never truncate the domain
+    while dom and stringWidth(dom, T.REGULAR, dsize) > title_w and dsize > HEADER_DOMAIN_MIN:   # never truncated
         dsize -= 0.1
+    if dom and stringWidth(dom, T.REGULAR, dsize) > title_w:
+        qa.add('min_width', 'warn', f'header domain: needs {stringWidth(dom, T.REGULAR, dsize):.1f} pt at '
+               f'{HEADER_DOMAIN_MIN} pt, has {title_w:.1f} pt; it runs into the dates', once=True)
     if dom:
         _txt(c, dom, TITLE_X, 29 + (7.8 - dsize) * 0.82, dsize, T.REGULAR, T.MUTED)
     _txt(c, a_txt, T.R, 13, 7.6, T.MEDIUM, T.NAVY, 'right')
@@ -307,7 +334,7 @@ def draw_cover(c, ident):
     _txt(c, 'ISSUED BY', ix, 580, 8.2, T.BRAND_MEDIUM, T.MUTED)
     if ident.get('issuer'):
         parts = [C.P(ident['issuer'], 'h1', fontName=T.BRAND_MEDIUM, fontSize=24, leading=27.6, spaceAfter=6),
-                 C.P('Assessment organization\nvia Cyberrank', 'note_flush', fontName=T.BRAND_LIGHT, fontSize=8.5, leading=14)]
+                 C.P('Assessment organisation\nvia Cyberrank', 'note_flush', fontName=T.BRAND_LIGHT, fontSize=8.5, leading=14)]
         _box(c, parts, ix, 612 + 24 * 0.82 - 24, T.R - ix, 130, 'cover issuer')
     else:
         parts = [C.P('Not available', 'h1', fontName=T.BRAND_MEDIUM, fontSize=16, leading=19, textColor=T.MUTED, spaceAfter=5),

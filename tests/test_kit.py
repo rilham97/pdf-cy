@@ -320,12 +320,11 @@ def test_vendor_technology_display_cap():
 
 def test_s07_resume_states_and_rows():                                  # fourth-party redesign, phase 0
     text, issues = _gap('vendors_self12')
-    assert 'Partial coverage' in text and 'Findings' not in text
+    assert 'Identified' in text and 'Partial coverage' not in text and 'Findings' not in text   # owner: inventory
     assert ('Ratings are as shown on the report date. How each organisation is connected to Example Org is not '
             'reported.') not in text                                       # 2 dates missing: date clause stays
     assert "the date of each organisation's own assessment are not reported" in text
-    assert '12 connected organisations reported for Example Org: 11 rated, 1 not rated.' in text
-    assert 'carries the name of Example Org itself (example.net.id) and is counted' in text
+    assert 'Synthetic: 12 organisations.' in text                          # payload summary is never overwritten
     assert text.count('Same name as Example Org') >= 2                     # register row + Needs a look chip
     assert '(Amazon and Aws)' in text and 'not merged' in text            # alias note, no merge
     assert 'Assessed on' in text and '20 Sep 2026' in text                 # phase 1 ready
@@ -337,6 +336,7 @@ def test_s07_resume_states_and_rows():                                  # fourth
     text, _ = _gap('vendors_empty')
     assert 'None identified' in text and 'No connected organisations identified' in text
     assert 'No findings' not in text and 'Findings' not in text
+    assert 'No fourth-party vendors were discovered.' in text and 'Automated technology discovery.' in text
     text, _ = _gap('vendors_nullreason')
     assert not [m for m in RAW if m in text], text
     assert 'Not rated (the organisation has not been scanned yet)' in text
@@ -355,7 +355,8 @@ def test_s07_t2_register():
     text = ' '.join(' '.join(pages).split())
     sec = ' '.join(' '.join(p for p in pages if 'Needs a look' in p).split())
     assert 'Needs a look' in sec and 'All connected organisations' not in text           # T2: no inline list
-    assert 'D.6.1 Connected organisations' in sec and 'Full register' in sec
+    assert 'D.6.1 Connected organisations · 35 organisations' in sec and 'Full register' in sec   # sender's unit
+    assert 'Supply-chain aggregation' not in text            # no c_methodology.supply_chain: no pointer to it
     assert 'Not rated (outside the scope of the rating service)' in text
     assert 'End of register · 35 rows' in text and '33 rated + 2 not rated = 35' in text
     assert 'continued' in text and 'Rows ' in text and 'of 35' in text
@@ -366,10 +367,82 @@ def test_s07_t2_register():
     assert 'Org' in look and 'Excellent' not in look and 'Good' not in look   # never the Low band
 
 
+def test_s14_state_payload_text_and_cells():                            # code review fixes, 2026-10-19
+    from cyberrank_report.sections import s14_fourth_party_vendors as s14
+    rep = {'identity': {'organisation_name': 'Example Org', 'domain': 'example.com'}}
+    v = [{'name': 'A', 'grade': 'BB'}]
+    d = s14.adjust({'state': 'findings', 'summary': 'S.', 'state_reason': 'R.', 'vendors': v}, rep)
+    assert (d['state'], d['summary'], d['state_reason']) == ('findings', 'S.', 'R.')     # shows 'Identified'
+    assert s14.adjust({'state': 'partial', 'vendors': v}, rep)['state'] == 'partial'      # payload partial stands
+    assert s14.adjust({'state': 'clear', 'vendors': v}, rep)['state'] == 'findings'
+    e = s14.adjust({'state': 'clear', 'summary': 'None.', 'vendors': []}, rep)
+    assert e['state'] == 'none_identified' and e['summary'] == 'None.'
+    is_self = lambda dom: s14.is_self({'name': 'X', 'domain': dom}, rep)
+    assert is_self('example.com') and is_self('www.example.com') and is_self('app.example.com')
+    assert not is_self('example.org') and not is_self('notexample.com')
+    assert s14.band_text({'grade': None, 'risk_band': 'high'}) == 'high'                  # as sent, even unrated
+    assert s14.band_text({'grade': None}) == 'Not sent'
+    assert s14.band_text({'grade': 'B', 'risk_band_label_source': 'medium HIGH'}) == 'medium HIGH'
+    assert s14.not_rated({'grade': None, 'grade_reason': 'outside scope'}) == 'Not rated (outside scope)'
+    assert s14.not_rated({'grade': None}) == 'Not rated' and s14.sector({'category': None}) == 'Unknown'
+    assert s14.pointer(rep) == []                                   # no Appendix C supply-chain page
+
+
+def test_appendices_frame_fixes():                                        # code review fixes, 2026-10-19
+    """D without its appendix payload still prints the registers on a page of its own; backlink uses the
+    payload title; C counts its steps and names a missing organisation 'this organisation'."""
+    import gap_fixtures as G
+    import pymupdf
+    from cyberrank_report.build import validate
+    r = G.vendors_t2()
+    del r['appendices']['d_evidence_registers'], r['identity']['organisation_name']
+    r['appendices']['c_methodology'] = {'title': 'Methodology', 'is_generic_material': True, 'steps_source': [
+        {'n': i, 'title': f'Step {i}', 'text': 'Text.'} for i in (1, 2, 3)]}
+    qa.ISSUES.clear()
+    out = Path(tempfile.mkdtemp()) / 'frame.pdf'
+    total, counts = build(validate(r), out, only=['s14', 'appC', 'appD'])
+    assert counts['error'] == 0, json.loads(out.with_suffix('.qa.json').read_text())['issues']
+    pages = [' '.join(p.get_text().split()) for p in pymupdf.open(out)]
+    text = ' '.join(pages)
+    assert 'End of register · 35 rows' in text and 'Section missing' not in text
+    assert 'Back to Section 14 Fourth-party vendors (T2, 35 rows)' in text
+    assert 'three steps, one pipeline' in text and 'not results for this organisation' in text.replace('- ', '')
+    assert 'Grade of this organisation (for reference)' in text and 'Organisation name not available' in text
+    c_page = next(i for i, p in enumerate(pages) if 'C · APPENDICES' in p)
+    d_page = next(i for i, p in enumerate(pages) if 'D · APPENDICES' in p)
+    assert d_page > c_page, (c_page, d_page)                        # D starts on a new page without the locked one
+
+
 def test_app_d_t1_threshold():
     from cyberrank_report.sections import app_d_evidence_registers as D
     assert D._DEFAULTS['tiers']['T1_inline']['max_visual_rows'] == 30
     assert D.tier(30, 30) == 'T1' and D.tier(31, 31) == 'T2'
+    orig = D.pol
+    own = {'lists.x.tier_thresholds.T1_max_visual_rows': 5, 'lists.x.tier_thresholds.T2_max_rows': 8}
+    D.pol = lambda path, default=None: own.get(path, orig(path, default))
+    try:                                                            # a list's own thresholds win
+        assert D.tier(6, 6, list_key='x') == 'T2' and D.tier(9, 9, list_key='x') == 'T3' and D.tier(6, 6) == 'T1'
+    finally:
+        D.pol = orig
+
+
+def test_rating_scale_and_locked_page_inputs_fail_softly():
+    from cyberrank_report import rating_scale as RS
+    from cyberrank_report.sections import app_b_rating_scale as B, app_c_methodology as AC
+    for rating, grade in (({'grade': {'value': 'bb'}}, 'BB'), ({'grade': ' aa '}, 'AA'),
+                          ({'state': 'assessed'}, None), ({'state_reason': 42}, None), ({'grade': 'X'}, None)):
+        got = B.rating({'rating': rating})
+        assert got['grade'] == grade, (rating, got)
+        RS.build_rating_scale(got, T.STYLES)                         # never raises
+    assert B.rating({'rating': {'state_reason': 42}})['state_reason'] == B.NO_GRADE_REASON
+    orig = AC.SUPPLY_CHAIN_INDEX
+    try:
+        for bad, why in (('x', 'whole number'), ('-1', 'whole number'), ('99999', 'outside')):
+            AC.SUPPLY_CHAIN_INDEX = bad
+            found, detail = AC.locked_source()
+            assert found is None and (why in detail or 'not found' in detail), detail
+    finally:
+        AC.SUPPLY_CHAIN_INDEX = orig
 
 
 def test_breach_label_normalisation():
@@ -429,6 +502,16 @@ def test_cloud_scan_date_only():                                        # busine
     assert '5 Jan 2023' in text, text
     for word in ('stale', 'Stale', 'older than', 'out of date', 'outdated'):
         assert word not in text, word
+
+
+def test_cloud_clear_card_reason_payload_first():                       # code review fix, 2026-10-19
+    from types import SimpleNamespace
+
+    from cyberrank_report.sections import s15_cloud_infrastructure as s15
+    ctx = SimpleNamespace(state='clear', c=C, identity={'assessment_date': '02 Oct 2026'})
+    assert s15.card({}, ctx)['reason'] == s15.CLEAR_REASON
+    for data in ({'reason_code': 'no_cloud_records'}, {'empty_state_source': {'text': 'Nothing seen.'}}):
+        assert 'reason' not in s15.card(data, ctx), data              # the shared default_card reason stands
 
 
 def test_mock_fixture():
@@ -526,6 +609,7 @@ def test_s01_rating_overview_concept_a():                         # user-approve
 def test_about_and_fourth_party_trimmed():                             # owner, 2026-10-19
     t = _fixture_text('demo-preview', ['appA'])
     assert 'Assessment ID' in t and 'Time zone' not in t and 'Methodology version' not in t
+    assert 'Report generated on 02.10.2026' in t                          # a_about.closing_source
     t = _fixture_text('instagram-2026-10-02', ['s14', 'appD'])
     assert 'Sector (as reported)' not in t and 'Risk band (as sent)' not in t and 'Sector' in t
     assert 'reason not recorded' not in t and 'Not rated (reason not reported)' not in t
@@ -939,8 +1023,7 @@ def test_every_numbered_section_starts_on_a_new_page():               # user dec
 
     import pymupdf
     from cyberrank_report.sections import REGISTRY
-    # appD follows the locked page, which ends with its own page break
-    assert all(s.new_page for s in REGISTRY if s.id != 'appD'), [s.id for s in REGISTRY if not s.new_page]
+    assert all(s.new_page for s in REGISTRY), [s.id for s in REGISTRY if not s.new_page]
     for name in ('claude-2026-10-02', 'mock-cyberrank-2026-10-13'):
         doc = pymupdf.open(_full_pdf(name))
         seen, tops = [], set()
