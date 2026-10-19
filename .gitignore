@@ -1,0 +1,12 @@
+# environment / build
+.venv/
+__pycache__/
+*.pyc
+output/
+*.qa.json
+*.stamp.pdf
+# fixtures built from real assessment reports: never published
+data/claude-*.json
+data/instagram-*.json
+data/gmail-*.json
+data/mock-cyberrank-*.json

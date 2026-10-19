@@ -1,0 +1,4 @@
+reportlab>=5.0.1,<6
+pyphen>=0.17
+pymupdf>=1.26
+fonttools>=4.67
