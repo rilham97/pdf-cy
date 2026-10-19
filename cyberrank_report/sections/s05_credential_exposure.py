@@ -39,6 +39,10 @@ CLASS_LABEL = {'password': 'Password category listed',
                'sensitive_personal': 'Sensitive personal data, no password',
                'other_identity': 'Other identity fields only', 'service_recorded_only': 'Service/URL recorded only',
                'none_provided': 'Fields not reported by source'}
+CLASS_RANK_TEXT = {'password': 'password', 'unclassified': 'a category not in the data class map',       # <D.n>.2 intro
+                   'sensitive_personal': 'sensitive personal data', 'other_identity': 'other identity fields',
+                   'service_recorded_only': 'a recorded service or URL only'}
+REGISTER_STATES = ('findings', 'partial', 'pending_review')      # <D.n> prints only in these states
 _MAP = {'password': ['password'], 'sensitive_personal': ['ssn', 'dob', 'address', 'phone', 'ip', 'ip1', 'ip2'],
         'other_identity': ['email', 'username', 'name', 'first_name', 'last_name', 'profile_name', 'gender', 'title',
                            'city', 'country', 'district', 'province', 'state', 'zip'],
@@ -138,11 +142,18 @@ def affected(row):
 
 def derive(data, report, identity):
     """All overview numbers from the register rows. Rows whose domain looks like an
-    address ('@' or '*') are withheld, never printed (mask_policy_violation)."""
+    address ('@' or '*') are withheld, never printed (QA mask_policy_violation, counts only)."""
     reg = lookup(report, data.get('register_ref')) or {}
     rows, counts = reg.get('rows') or [], reg.get('counts') or {}
     A, assessed = assessment_year(report), str(identity.get('domain') or '').lower()
     ok = [r for r in rows if not any(ch in str(r.get('email_domain') or '') for ch in '@*')]
+    if len(ok) < len(rows):
+        qa.add('mask_policy_violation', 'warn', f's05: {len(rows) - len(ok)} credential register rows withheld '
+               '(email_domain contains "@" or "*")', once=True)
+    bad_dom = sum(1 for r in ok if str(r.get('affected_domain') or '').strip() and affected(r) is None)
+    if bad_dom:
+        qa.add('invalid_affected_domain', 'warn', f's05: {bad_dom} credential register rows carry an affected_domain '
+               'that is not a host name; listed under "Domain not given"', once=True)
     origin_fields = set(_map().get('service_recorded', ()))
     cross = {k: [0, 0, 0] for k in DOMAIN_CLASSES}
     by_class, by_field, years, enriched, unmapped = Counter(), Counter(), Counter(), [], Counter()
@@ -204,7 +215,7 @@ def domain_order(d):
 
 def status_line(d):
     """Row status as recorded (column 'Status' in the 2026-10 samples, e.g. 'Open'): counts only."""
-    st = Counter(str(r.get('status')).strip().capitalize() for r in d['rows'] if r.get('status'))
+    st = Counter(str(r['status']).strip() for r in d['rows'] if str(r.get('status') or '').strip())  # as received
     if not st:
         return []
     parts = ', '.join(f'{k} {C.fmt_number(n)}' for k, n in st.most_common())
@@ -236,7 +247,9 @@ def lead_label(d, recency=True):
     """KPI / tile label for the lead count: rows, never accounts; recency as a range."""
     dom = d['assessed'] or 'the assessed domain'
     if none_on_assessed(d):      # a bare 0 would read as good news
-        return f'of {C.fmt_number(d["analysed"])} listed rows are on {dom}; all are on other email domains'
+        where = ' or '.join(w for k, w in (('other_domain', 'on other email domains'),
+                                           ('unknown_email', 'Unknown Email')) if sum(d['cross'][k]))
+        return f'of {C.fmt_number(d["analysed"])} listed rows are on {dom}; all are {where}'
     sub = ' or its subdomains' if d['cross']['assessed_subdomain'][0] else ''
     label = f'rows on {dom}{sub} with a password'
     rec = lead_recency(d) if recency else ''
@@ -263,10 +276,22 @@ def kpis(d, ctx):
     if d['domains']:
         items.append({'label': 'affected domains', 'value': sum(1 for k in d['domains'] if k), 'unit': None})
     items.append({'label': 'latest exposure year', 'value': str(d['latest']) if d['latest'] else None,
-                  'reason': UNKNOWN})
+                  'reason': latest_reason(d)})
     if unique:      # printed only when the source confirms an account grain
         items.append({**ua, 'label': 'unique accounts', 'unit': None, 'state': None})
     return C.kpi_strip(items, per_row=len(items) if len(items) <= 4 else 3)
+
+
+def latest_reason(d):
+    """Why no row has a year: every yearless row says 'Unknown', none does, or a mix."""
+    u, n = d['years']['unknown'], d['years'][None]
+    return UNKNOWN if not n else 'Exposure year not given by the source' if not u else \
+        'Period “Unknown” or not given in source'
+
+
+def register_printed(state, d):
+    """<D.n> is printed (and Section 05 points to it) only for these states with analysed rows."""
+    return state in REGISTER_STATES and d['analysed'] > 0
 
 
 def reconciliation(d, ctx):
@@ -485,18 +510,18 @@ def mitigations(data, d):
     if sum(d['cross']['other_domain']):
         extra.append('Rows on other email domains are not accounts the organisation manages; tell the affected '
                      'users rather than resetting them centrally.')
+    attention = [C.P(data['attention_source'], 'body')] if data.get('attention_source') else []
     if not (steps or extra):
-        return []
-    return [C.keep(C.heading('Recommended mitigation measures', 2),
-                   *([C.P(data['attention_source'], 'body')] if data.get('attention_source') else []),
-                   *C.bullets(steps + extra))]
+        return attention      # the source's attention line still prints, without an empty heading
+    return [C.keep(C.heading('Recommended mitigation measures', 2), *attention, *C.bullets(steps + extra))]
 
 
 # --- section contract ------------------------------------------------------------
 def card(data, ctx):
-    return long_list_card(data, ctx, pol('states.overview_messages.clear_credential_exposure',
-                                         'No exposed credentials were identified within the scope and period of '
-                                         'this assessment.'))
+    empty = (data.get('empty_state_source') or {}).get('text')      # clear: the source's text wins, as default_card
+    return long_list_card(data, ctx, empty or pol('states.overview_messages.clear_credential_exposure',
+                                                  'No exposed credentials were identified within the scope and '
+                                                  'period of this assessment.'))
 
 
 def build(data, ctx):
@@ -514,6 +539,7 @@ def build(data, ctx):
         return [C.P(f'Register rows: {C.missing_text({"reason_code": "not_printed_in_source"})}.', 'body')]
     out = [kpis(d, ctx)] + reconciliation(d, ctx) + domains_block(d) + crosstab(d)
     out += by_year(d) + status_line(d)
-    out += [C.register_pointer(RID['s05'], {'value': d['analysed'], 'unit': 'rows'},
-                               title=f'{RID["s05"]} {pol(f"{LIST}.register_title", "Credential exposure — supporting tables")}')]
+    if register_printed(ctx.state, d):      # same rule as d4_credentials: never a pointer without a target
+        out += [C.register_pointer(RID['s05'], {'value': d['analysed'], 'unit': 'rows'},
+                                   title=f'{RID["s05"]} {pol(f"{LIST}.register_title", "Credential exposure — supporting tables")}')]
     return out + mitigations(data, d)

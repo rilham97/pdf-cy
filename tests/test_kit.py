@@ -246,6 +246,83 @@ def test_gap_credentials_and_ai():
     assert ('data_mismatch', 's10') in _checks(issues)
 
 
+def _demo():
+    return json.loads((FIXTURE.parent / 'demo-preview.json').read_text(encoding='utf-8'))
+
+
+def _built_text(rep, only):
+    import pymupdf
+    qa.ISSUES.clear()
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / 'r.pdf'
+        build(rep, out, only=only)
+        text = ' '.join(' '.join(p.get_text() for p in pymupdf.open(out)).split())
+    return text, list(qa.ISSUES)
+
+
+def test_credential_review_fixes():                                      # code review 2026-10-19 (05 / D.2)
+    from collections import Counter
+    from cyberrank_report.page import identity_from_report
+    from cyberrank_report.sections import Ctx, BY_ID, s05_credential_exposure as s05
+    rep = _demo()
+    sec, ident = rep['sections']['credential_exposure'], identity_from_report(rep)
+    rows = rep['appendices']['d_evidence_registers']['credential_register']['rows']
+    # D.2 end line: headline equals the rows -> no '±0' difference; D.2.2 precedence follows s05.CLASSES
+    rows[0]['exposed_field_categories'] = ['email', 'shoe_size']          # unclassified, ranks second
+    text, _ = _built_text(rep, ['s05', 'appD'])
+    assert 'source headline 40 (unit not defined by the source)' in text and '±0' not in text, text[-600:]
+    assert ('highest class (password, then a category not in the data class map, then sensitive personal data, '
+            'then other identity fields)') in text
+    # withheld rows and invalid affected domains raise QA with counts only
+    rows[1]['email_domain'], rows[2]['affected_domain'] = 'x*@example.com', 'not a host!'
+    qa.ISSUES.clear()
+    d = s05.derive(sec, rep, ident)
+    warn = {i['check']: i['detail'] for i in qa.ISSUES}
+    assert d['suppressed'] == 1 and 'x*@' not in warn['mask_policy_violation'], warn
+    assert '1 credential register rows' in warn['invalid_affected_domain'] and 'not a host!' not in str(warn)
+    # status as received (the D.2.4 column prints it raw too); pointer only where D.2 renders
+    assert 'OPEN 1' in s05.status_line({**d, 'rows': [{'status': 'OPEN'}], 'analysed': 1})[0].getPlainText()
+    assert s05.register_printed('findings', d) and not s05.register_printed('none_identified', d)
+    ctx = Ctx(BY_ID['s05'], rep, ident, 'none_identified', False)
+    assert not [f for f in s05.build(sec, ctx) if type(f).__name__ == 'RegisterPointer']
+    # latest-year reason follows the rows; lead label names Unknown Email rows
+    assert s05.latest_reason({'years': Counter({None: 2})}) == 'Exposure year not given by the source'
+    assert s05.latest_reason({'years': Counter({'unknown': 2})}) == s05.UNKNOWN
+    cross = {'assessed': [0, 0, 0], 'assessed_subdomain': [0, 0, 0], 'other_domain': [2, 0, 0],
+             'unknown_email': [1, 0, 0]}
+    assert s05.lead_label({'analysed': 3, 'assessed': 'example.com', 'cross': cross}).endswith(
+        'all are on other email domains or Unknown Email')
+    # clear card keeps empty_state_source.text; attention prints without mitigations
+    ctx = Ctx(BY_ID['s05'], rep, ident, 'clear', False)
+    assert s05.card({'empty_state_source': {'text': 'Source says none.'}}, ctx)['reason'] == 'Source says none.'
+    alone = s05.mitigations({'attention_source': 'Attention: reset.'}, {'origin': 0, 'cross': cross | {'other_domain': [0, 0, 0]}})
+    assert [f.getPlainText() for f in alone] == ['Attention: reset.']
+
+
+def test_leak_review_fixes():                                            # code review 2026-10-19 (06 / D.3)
+    from cyberrank_report.sections import s06_data_leak_history as s06
+    rep = _demo()
+    sec = rep['sections']['data_leak_history']
+    ev = {e['event_id']: e for e in sec['events']}
+    # resolved / unknown lead -> held; a merged-away record id resolves through canonical_event_id
+    for state, code in (('resolved', 'lead_event_resolved'), ('unknown', 'lead_event_unconfirmed')):
+        e = {**ev['leak-01'], 'validity_state': state}
+        held = s06.adjust({**sec, 'events': [e]}, rep)
+        assert (held['state'], held['reason_code']) == ('pending_review', code), held['state']
+        assert s06._kind(e, e) == ('resolved' if state == 'resolved' else 'unknown')
+    merged = [{**ev['leak-01'], 'canonical_event_id': 'c1'}, {**ev['leak-03'], 'canonical_event_id': 'c1'}]
+    lead = s06._lead({'last_valid_event': {'event_id': 'leak-03'}}, s06.merge_events(merged))
+    assert lead is not None and lead['event_id'] == 'leak-01'
+    # events_reported matching neither count -> data_mismatch; unknown validity has its own status;
+    # D.3 index says every distinct event is in Section 06
+    sec['metrics'][1]['value'] = 7
+    sec['events'][1]['validity_state'] = 'unknown'
+    text, issues = _built_text(rep, ['s06', 'appD'])
+    assert any(i['check'] == 'data_mismatch' and 'matches neither' in i['detail'] for i in issues), issues
+    assert 'Validity not confirmed' in text and 'Not required — all 3 events shown in Section 06' in text
+    assert 'no register data' not in text
+
+
 def test_gap_quantum():
     text, issues = _gap('quantum_q1')
     assert 'No PQC detected' not in text and 'PQC not reported' in text                         # Q1

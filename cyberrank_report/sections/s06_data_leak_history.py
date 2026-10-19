@@ -10,13 +10,16 @@ occurred_at, disclosed_at, validity_state, scoring_eligible, scoring_reason,
 records_affected, records_unit, records_scope, date_basis, age_days_at_assessment, demerit_applied,
 description / description_source, source_url.
 
-Rules: an event without a validity flag is valid (business answer 2026-10-15). An event marked
-reported inaccurate or not scoring eligible is never 'Used in rating' (Q16); when the payload names
-such an event as the last valid event the section is held for review (adjust()). An event resolved
-by the user or an admin (validity_state 'resolved') is listed with a muted 'Resolved' status, distinct
-from 'Reported inaccurate', and is not counted as open: the 'Open events' tile (shown when an event is
-resolved) counts every listed event except the resolved ones, and a note states the rule. Events
-sharing a canonical_event_id are one event (one row, sources merged).
+Rules: an event without a validity flag is valid (business answer 2026-10-15); validity_state
+'unknown' (policy validity_values) is its own neutral status 'Validity not confirmed', never counted
+as valid. An event marked reported inaccurate or not scoring eligible is never 'Used in rating' (Q16).
+When the payload names an event that is reported inaccurate, not scoring eligible, resolved or of
+unconfirmed validity as the last valid event, the section is held for review (adjust()). An event
+resolved by the user or an admin (validity_state 'resolved') is listed with a 'Resolved' status (icon,
+green as theme.TONE 'resolved'), distinct from 'Reported inaccurate', and is not counted as open: the
+'Open events' tile (shown when an event is resolved) counts every listed event except the resolved
+ones, and a note states the rule. Events sharing a canonical_event_id are one event (one row, sources
+merged); last_valid_event may name any of the merged records.
 """
 from datetime import date
 
@@ -38,8 +41,9 @@ KINDS = {   # status text / timeline marker colour (theme.status_color)
     'valid': ('Valid', T.status_color('recorded')),       # a recorded event, not a verdict
     'inaccurate': ('Reported inaccurate · not scored', T.status_color('inaccurate')),
     'resolved': ('Resolved', T.status_color('resolved')),
+    'unknown': ('Validity not confirmed', T.status_color('unknown')),
 }
-HOLLOW = ('inaccurate', 'resolved')       # timeline markers drawn as rings
+HOLLOW = ('inaccurate', 'resolved', 'unknown')       # timeline markers drawn as rings: not counted as valid
 
 
 def _val(v):
@@ -64,9 +68,24 @@ def _resolved(ev):
     return str(_val(ev.get('validity_state')) or '').lower() == 'resolved'
 
 
+def _unconfirmed(ev):
+    return str(_val(ev.get('validity_state')) or '').lower() == 'unknown'
+
+
 def _eligible(ev):
     """False when the event is marked inaccurate or not scoring eligible (never scored)."""
     return not (_inaccurate(ev) or _val(ev.get('scoring_eligible')) is False)
+
+
+def _not_scored(ev):
+    """Why a named last valid event cannot be shown as used in the rating, or None."""
+    if not _eligible(ev):
+        return 'reported inaccurate' if _inaccurate(ev) else 'not scoring eligible'
+    if _resolved(ev):
+        return 'resolved'
+    if _unconfirmed(ev):
+        return 'of unconfirmed validity'
+    return None
 
 
 def _kind(ev, lead):
@@ -74,6 +93,8 @@ def _kind(ev, lead):
         return 'inaccurate'
     if _resolved(ev):
         return 'resolved'
+    if _unconfirmed(ev):
+        return 'unknown'
     if lead is not None and ev is lead and _eligible(ev):
         return 'rating'
     elig = _val(ev.get('scoring_eligible'))
@@ -86,7 +107,8 @@ def _lead(data, events):
     if is_missing(lve) or not isinstance(lve, (dict, str)):
         return None
     ref = (lve.get('event_id') or lve.get('value')) if isinstance(lve, dict) else lve
-    hit = next((e for e in events if ref and e.get('event_id') == ref), None)
+    hit = next((e for e in events if ref and any(x.get('event_id') == ref for x in [e, *e.get('_also', [])])),
+               None)      # a record merged away by canonical_event_id resolves to its kept event
     return hit or (lve if isinstance(lve, dict) and lve.get('occurred_at') else None)
 
 
@@ -105,16 +127,27 @@ def merge_events(events):
     return out
 
 
+HOLD = {   # reason why -> (reason_code, card text)
+    'resolved': ('lead_event_resolved', 'The event named as the last valid event is marked resolved, so it is not '
+                 'shown as the event used in the rating. Which event, if any, is scored is held for review.'),
+    'of unconfirmed validity': ('lead_event_unconfirmed', 'The event named as the last valid event has validity '
+                                '“unknown”, so it is not shown as the event used in the rating. Which event, if '
+                                'any, is scored is held for review.'),
+}
+NOT_ELIGIBLE = ('lead_event_not_eligible', 'The event named as the last valid event is marked reported inaccurate '
+                'or not scoring eligible, so it cannot be the event used in the rating. Which event, if any, is '
+                'scored is held for review.')
+
+
 def adjust(data, report):
-    """Last valid event that is inaccurate / not scoring eligible -> pending_review."""
+    """Last valid event that is inaccurate / not scoring eligible / resolved / unconfirmed -> pending_review."""
     from . import hold
     events = merge_events([e for e in data.get('events') or [] if isinstance(e, dict)])
     lead = _lead(data, events)
-    if lead is None or _eligible(lead):
+    why = None if lead is None else _not_scored(lead)
+    if why is None:
         return data
-    return hold(data, 'lead_event_not_eligible',
-                'The event named as the last valid event is marked reported inaccurate or not scoring eligible, '
-                'so it cannot be the event used in the rating. Which event, if any, is scored is held for review.')
+    return hold(data, *HOLD.get(why, NOT_ELIGIBLE))
 
 
 def _details(ev):
@@ -259,11 +292,11 @@ def _lead_note(c, data, lead, events):
     where = f' on {_val(lead["entity_link"])}' if _val(lead.get('entity_link')) else ''
     row = next((i for i, e in enumerate(events, 1) if e is lead), None)
     tail = f' (row {row})' if row else '; it is not in the event list below'
-    if not _eligible(lead):
-        why = 'reported inaccurate' if _inaccurate(lead) else 'not scoring eligible'
+    why = _not_scored(lead)
+    if why:
+        scored = ' and is not scored' if not _eligible(lead) else ''
         return c.note(f'The assessment data names the {when}{what}{where}{tail} as the last valid event, but that '
-                      f'event is {why} and is not scored. No event is shown as used in the rating until this is '
-                      'reviewed.')
+                      f'event is {why}{scored}. No event is shown as used in the rating until this is reviewed.')
     return c.P(f'The rating uses the {when}{what}{where}{tail}.')
 
 
@@ -277,8 +310,10 @@ def build(data, ctx):
     lead = _lead(data, events)
     if lve is not None:
         tile = {'label': 'Last valid event', 'value': None, 'state': None}
-        if lead is not None and not _eligible(lead):      # never a date for an event that is not scored
-            tile.update(reason='named event is not scoring eligible; held for review', state='pending_review')
+        why = None if lead is None else _not_scored(lead)
+        if why:      # never a date for an event that cannot be shown as scored
+            tile.update(reason=f'named event is {"not scoring eligible" if not _eligible(lead) else why}; held for '
+                               'review', state='pending_review')
         elif lead is not None and not is_missing(lead.get('occurred_at')):
             tile['value'] = fmt_date(lead['occurred_at'])
         else:
@@ -304,11 +339,12 @@ def build(data, ctx):
     if len(raw) != len(events):
         out.append(c.note(f'{len(raw)} source records describe {len(events)} distinct events: records that share an '
                           'event ID are one event, counted once.'))
-        rep_n = next((m.get('value') for m in metrics if m.get('id') == 'events_reported'), None)
-        if rep_n == len(raw):
-            from .. import qa
-            qa.add('data_mismatch', 'warn', f's06: events_reported={rep_n} counts {len(raw)} source records; '
-                   f'{len(events)} distinct events', once=True)
+    rep_n = next((m.get('value') for m in metrics if m.get('id') == 'events_reported'), None)
+    if isinstance(rep_n, (int, float)) and rep_n != len(events):      # both counts print: tile and heading
+        from .. import qa
+        what = (f'counts {len(raw)} source records; {len(events)} distinct events' if rep_n == len(raw) else
+                f'matches neither the {len(raw)} source records nor the {len(events)} distinct events')
+        qa.add('data_mismatch', 'warn', f's06: events_reported={rep_n} {what}', once=True)
     if any(d for d, _ in dated):
         out.append(Timeline([(d, k) for d, k in dated if d], end))
     undated = sum(1 for d, _ in dated if not d)

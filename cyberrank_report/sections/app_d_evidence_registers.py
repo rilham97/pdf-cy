@@ -405,7 +405,7 @@ def d4_credentials(report, identity, as_of):
     rid = RID['s05']
     info = {'rid': rid, 'state': sec.get('state'), 'sec': 's05', 'title': title}
     d = s05.derive(sec, report, identity)
-    if sec.get('state') not in ('findings', 'partial', 'pending_review') or not d['analysed']:
+    if not s05.register_printed(sec.get('state'), d):      # same rule as the Section 05 pointer
         return {**info, 'content': state_message(sec, SEC_NUM['s05'], 'exposed credentials')}
     key = str(sec.get('register_ref') or '').rsplit('.', 1)[-1] or 'credential_register'
     showing = (f'Showing {C.fmt_number(d["analysed"])} of {C.fmt_number(d["received"])} register rows'
@@ -434,9 +434,9 @@ def d4_credentials(report, identity, as_of):
     if diff:
         flow.append(C.note('Source field-category counts differ from the register rows: ' + '; '.join(diff) + '.'))
     flow += [C.heading(f'{rid}.2  Rows by data class', 3, style=H3T),
-             intro('Exclusive: each row counts once, in its highest class (password, then sensitive personal '
-                   'data, then other identity fields' + (', then a recorded service or URL only'
-                                                         if d['by_class']['service_recorded_only'] else '')
+             intro('Exclusive: each row counts once, in its highest class ('      # order = s05.CLASSES
+                   + ', then '.join(s05.CLASS_RANK_TEXT[k] for k in s05.CLASSES if k in s05.CLASS_RANK_TEXT
+                                    and (k not in s05.OPTIONAL_CLASSES or d['by_class'][k]))
                    + '). The origin flag is counted apart, below.', 'note_flush'),
              s05.by_data_class(d),
              C.note(f'Service/URL recorded (origin), counted apart from the classes: {C.fmt_number(d["origin"])} '
@@ -459,8 +459,9 @@ def d4_credentials(report, identity, as_of):
                + (f'; {C.fmt_number(flagged)} label{"s" if flagged != 1 else ""} without a mask character '
                   'printed as received' if flagged else '')
                + '; source headline '
-               + (f'{C.fmt_number(d["headline"])} (unit not defined by the source; difference '
-                  f'{signed(printed - d["headline"])}, not explained by the source data)'
+               + (f'{C.fmt_number(d["headline"])} (unit not defined by the source'
+                  + (f'; difference {signed(printed - d["headline"])}, not explained by the source data'
+                     if printed != d['headline'] else '') + ')'
                   if d['headline'] is not None else 'not provided')), rows=printed)
     info.update(flow=flow, content=f'Aggregates and all {C.fmt_number(printed)} of {C.fmt_number(d["received"])} '
                                    'register rows (masked account as delivered)')
@@ -611,6 +612,17 @@ def state_message(sec, nn, unit, count=None):
     return f'Not produced — no register data in the payload ({count} {unit} in Section {nn}).'
 
 
+def d3_leaks(sec):
+    """<D.n> data leak events: index row only. Section 06 lists every distinct event inline (merged by
+    canonical_event_id), so the row never claims register data is missing."""
+    from .s06_data_leak_history import merge_events
+    n = len(merge_events([e for e in sec.get('events') or [] if isinstance(e, dict)]))
+    info = _absent(RID['s06'], 'Data leak event details', sec, 's06', 'data_leak_events', n, 'events')
+    if n and sec.get('state') not in ('not_assessed', 'not_applicable', 'unavailable', 'failed'):
+        info['content'] = f'Not required — all {n} event{"s" if n != 1 else ""} shown in Section {SEC_NUM["s06"]}.'
+    return info
+
+
 def _absent(rid, title, sec, sid, list_key, count, unit, anchor=None):
     return {'rid': rid, 'title': pol(f'lists.{list_key}.register_title', title), 'state': sec.get('state'),
             'content': state_message(sec, SEC_NUM[sid], unit, count), 'sec': sid, 'anchor': anchor}
@@ -642,8 +654,7 @@ def build(data, ctx):
     regs = [d1_assets(rep, as_of),
             _absent(f'{RID["s04"]}.2', 'IP reputation', ipr, 's04', 'ip_reputation', len(ipr.get('rows') or []),
                     'IP addresses', anchor='s04-ip-reputation'),
-            _absent(RID['s06'], 'Data leak event details', dl, 's06', 'data_leak_events', len(dl.get('events') or []),
-                    'events'),
+            d3_leaks(dl),
             d3_vendors(rep, fp, as_of),
             d4_credentials(rep, ctx.identity, as_of), d5_quantum(rep, as_of),
             cert_documents(rep, secs.get('certifications') or {})]
