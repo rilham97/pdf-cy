@@ -262,6 +262,9 @@ def test_s04_scanned_assets_x_of_y():                                  # owner d
     assert 'Scanned assets 12 of 12 scanned domains have at least one finding' in t, t[:2000]
     assert '2 Critical 3 High 4 Medium 3 Low' in t and 'no finding reported' not in t   # zero bucket hidden
     assert 'Expired TLS certificate appears under more than one severity' in t          # vuln-03 + vuln-13
+    assert 'Breach likelihood by domain' in t and 'legacy.example.com / 192.0.2.80 4 44%' in t   # per domain, top first
+    assert 'Indicates the estimated probability' not in t and 'Breach likelihood 38%' not in t        # no per-finding
+    assert 'memberships' not in t and 'asset labels' not in t                                   # KPI tiles hidden
     assert '13 Finding types' in t and '13 finding types Finding types' not in t       # no repeated unit
     from cyberrank_report.sections import s04_vulnerabilities as s04
     hits, partial, outside = s04._scan_hits(

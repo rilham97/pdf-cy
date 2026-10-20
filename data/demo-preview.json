@@ -663,7 +663,6 @@
      "text": "Minor security concerns with limited impact"
     }
    ],
-   "breach_likelihood_legend_source": "Indicates the estimated probability that this vulnerability could lead to a security breach. >=30% represents high risk, 15-29% represents moderate risk, <15% represents lower risk.",
    "findings": [
     {
      "finding_id": "vuln-01",
@@ -674,13 +673,7 @@
      "affected_assets_count": 1,
      "affected_assets": [
       "legacy.example.com / 192.0.2.80"
-     ],
-     "breach_likelihood": {
-      "value": 38,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 38%"
-     }
+     ]
     },
     {
      "finding_id": "vuln-02",
@@ -693,13 +686,7 @@
       "legacy.example.com / 192.0.2.80",
       "vpn.example.com / 192.0.2.15",
       "files.example.com"
-     ],
-     "breach_likelihood": {
-      "value": 22,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 22%"
-     }
+     ]
     },
     {
      "finding_id": "vuln-03",
@@ -710,13 +697,7 @@
      "affected_assets_count": 1,
      "affected_assets": [
       "status.example.com"
-     ],
-     "breach_likelihood": {
-      "value": 18,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 18%"
-     }
+     ]
     },
     {
      "finding_id": "vuln-04",
@@ -731,13 +712,7 @@
       "portal.example.com / 203.0.113.24",
       "files.example.com",
       "status.example.com"
-     ],
-     "breach_likelihood": {
-      "value": 12,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 12%"
-     }
+     ]
     },
     {
      "finding_id": "vuln-05",
@@ -749,13 +724,7 @@
      "affected_assets": [
       "www.example.com",
       "portal.example.com / 203.0.113.24"
-     ],
-     "breach_likelihood": {
-      "value": 11,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 11%"
-     }
+     ]
     },
     {
      "finding_id": "vuln-06",
@@ -769,13 +738,7 @@
       "www.example.com",
       "portal.example.com / 203.0.113.24",
       "auth.example.com"
-     ],
-     "breach_likelihood": {
-      "value": 9,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 9%"
-     }
+     ]
     },
     {
      "finding_id": "vuln-07",
@@ -788,13 +751,7 @@
       "mail.example.com / 198.51.100.7",
       "vpn.example.com / 192.0.2.15",
       "legacy.example.com / 192.0.2.80"
-     ],
-     "breach_likelihood": {
-      "value": 8,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 8%"
-     }
+     ]
     },
     {
      "finding_id": "vuln-08",
@@ -805,13 +762,7 @@
      "affected_assets_count": 1,
      "affected_assets": [
       "example.com / 203.0.113.10"
-     ],
-     "breach_likelihood": {
-      "value": 10,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 10%"
-     }
+     ]
     },
     {
      "finding_id": "vuln-09",
@@ -826,13 +777,7 @@
       "dev.example.com",
       "status.example.com",
       "legacy.example.com / 192.0.2.80"
-     ],
-     "breach_likelihood": {
-      "value": 4,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 4%"
-     }
+     ]
     },
     {
      "finding_id": "vuln-10",
@@ -845,13 +790,7 @@
       "portal.example.com / 203.0.113.24",
       "files.example.com",
       "cdn.example.com"
-     ],
-     "breach_likelihood": {
-      "value": 3,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 3%"
-     }
+     ]
     },
     {
      "finding_id": "vuln-11",
@@ -862,13 +801,7 @@
      "affected_assets_count": 1,
      "affected_assets": [
       "portal.example.com / 203.0.113.24"
-     ],
-     "breach_likelihood": {
-      "value": 5,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 5%"
-     }
+     ]
     },
     {
      "finding_id": "vuln-12",
@@ -879,13 +812,7 @@
      "affected_assets_count": 1,
      "affected_assets": [
       "example.com / 203.0.113.10"
-     ],
-     "breach_likelihood": {
-      "value": 4,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 4%"
-     }
+     ]
     },
     {
      "finding_id": "vuln-13",
@@ -896,13 +823,7 @@
      "affected_assets_count": 1,
      "affected_assets": [
       "auth.example.com"
-     ],
-     "breach_likelihood": {
-      "value": 31,
-      "unit": "percent",
-      "likelihood_type": "ai_derived_per_finding",
-      "source_label": "Breach Likelihood: 31%"
-     }
+     ]
     }
    ],
    "assets_register_ref": "appendices.d_evidence_registers.vulnerability_asset_register",
@@ -4970,7 +4891,11 @@
        "vuln-09"
       ],
       "finding_count": 4,
-      "max_severity": "critical"
+      "max_severity": "critical",
+      "breach_likelihood": {
+       "value": 44,
+       "unit": "percent"
+      }
      },
      {
       "asset_label_source": "vpn.example.com / 192.0.2.15",
@@ -4979,7 +4904,11 @@
        "vuln-07"
       ],
       "finding_count": 2,
-      "max_severity": "high"
+      "max_severity": "high",
+      "breach_likelihood": {
+       "value": 24,
+       "unit": "percent"
+      }
      },
      {
       "asset_label_source": "files.example.com",
@@ -4989,7 +4918,11 @@
        "vuln-10"
       ],
       "finding_count": 3,
-      "max_severity": "high"
+      "max_severity": "high",
+      "breach_likelihood": {
+       "value": 26,
+       "unit": "percent"
+      }
      },
      {
       "asset_label_source": "status.example.com",
@@ -4999,7 +4932,11 @@
        "vuln-09"
       ],
       "finding_count": 3,
-      "max_severity": "high"
+      "max_severity": "high",
+      "breach_likelihood": {
+       "value": 22,
+       "unit": "percent"
+      }
      },
      {
       "asset_label_source": "example.com / 203.0.113.10",
@@ -5010,7 +4947,11 @@
        "vuln-12"
       ],
       "finding_count": 4,
-      "max_severity": "medium"
+      "max_severity": "medium",
+      "breach_likelihood": {
+       "value": 18,
+       "unit": "percent"
+      }
      },
      {
       "asset_label_source": "www.example.com",
@@ -5021,7 +4962,11 @@
        "vuln-09"
       ],
       "finding_count": 4,
-      "max_severity": "medium"
+      "max_severity": "medium",
+      "breach_likelihood": {
+       "value": 18,
+       "unit": "percent"
+      }
      },
      {
       "asset_label_source": "portal.example.com / 203.0.113.24",
@@ -5033,7 +4978,11 @@
        "vuln-11"
       ],
       "finding_count": 5,
-      "max_severity": "medium"
+      "max_severity": "medium",
+      "breach_likelihood": {
+       "value": 20,
+       "unit": "percent"
+      }
      },
      {
       "asset_label_source": "auth.example.com",
@@ -5042,7 +4991,11 @@
        "vuln-13"
       ],
       "finding_count": 2,
-      "max_severity": "critical"
+      "max_severity": "critical",
+      "breach_likelihood": {
+       "value": 33,
+       "unit": "percent"
+      }
      },
      {
       "asset_label_source": "mail.example.com / 198.51.100.7",
@@ -5050,7 +5003,11 @@
        "vuln-07"
       ],
       "finding_count": 1,
-      "max_severity": "medium"
+      "max_severity": "medium",
+      "breach_likelihood": {
+       "value": 8,
+       "unit": "percent"
+      }
      },
      {
       "asset_label_source": "api.example.com / 198.51.100.40",
@@ -5058,7 +5015,11 @@
        "vuln-09"
       ],
       "finding_count": 1,
-      "max_severity": "low"
+      "max_severity": "low",
+      "breach_likelihood": {
+       "value": 4,
+       "unit": "percent"
+      }
      },
      {
       "asset_label_source": "dev.example.com",
@@ -5066,7 +5027,11 @@
        "vuln-09"
       ],
       "finding_count": 1,
-      "max_severity": "low"
+      "max_severity": "low",
+      "breach_likelihood": {
+       "value": 4,
+       "unit": "percent"
+      }
      },
      {
       "asset_label_source": "cdn.example.com",
@@ -5074,7 +5039,11 @@
        "vuln-10"
       ],
       "finding_count": 1,
-      "max_severity": "low"
+      "max_severity": "low",
+      "breach_likelihood": {
+       "value": 3,
+       "unit": "percent"
+      }
      }
     ]
    },

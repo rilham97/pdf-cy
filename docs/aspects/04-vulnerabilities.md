@@ -9,25 +9,26 @@ scan. Its Appendix registers D.1 and D.1.2 are built in [app_d_evidence_register
 
 1. Opener (shared, [README §3](README.md#3-how-every-section-renders)): eyebrow "04 · ASSESSMENT DETAILS", H1 `title` (else "Vulnerabilities"), `intro_source`, state chip + `summary`. There is no `verdict()`.
 2. Section state card, for card states and no-result states. With a no-result state, only the sub-checks print after the card (`build_context`, `s04:726-728`).
-3. KPI strip (`metrics[]` without the per-tier ids).
+3. KPI strip (`metrics[]` without the per-tier ids and without `asset_memberships` / `distinct_asset_labels`, which are read for QA only).
 4. Review-flag notes: "Review flag RF-xx: …".
 5. H2 "Scanned assets": headline "X of Y scanned domains have at least one finding" + a bar split by each domain's worst severity with a legend, then the host grid (affected hosts first with their worst-severity siren, the rest grey), then a scope note.
-6. H2 "Finding types by severity" with a severity legend on the heading line, then 4 tier lines (Critical, High, Medium, Low), then an informational/unknown note.
-7. Findings summary table (no heading of its own; continuation caption "Finding types"), then a breach-likelihood note.
-8. H2 "Finding details" with a severity legend, then the detail table, a coverage note and a bare-label note.
-9. Register pointer: "Full register  Affected assets by finding · N rows · Appendix D, pages x–y". Only when D.1 prints (more than 30 register rows).
-10. H2 "Vulnerability scan results": a sentence, a host table, then per host "Findings on <target>" + summary + findings table + "Recommendations".
-11. Sub-check blocks in this order: H2 "Email and DNS security controls", H2 "IP reputation", H2 "HTTPS redirect". Only sub-checks in the states `findings`, `partial` or `pending_review` get a block. An IP list over 30 rows shows its 10 highest abuse scores and a pointer to D.1.2.
-12. H2 "Other checks": one row per remaining sub-check (`clear`, a no-result state, or missing).
-13. H2 "Related priority actions" with a severity legend on the heading line (action counts per priority) + table + note.
-14. Appendix D: index rows D.1 and D.1.2, then the D.1 / D.1.2 register blocks when their lists are over 30 rows (see the Appendix D section below).
+6. H2 "Breach likelihood by domain" with a severity legend: one row per affected domain (#, worst-severity siren, domain, findings, breach likelihood), highest likelihood first. Up to 30 rows inline; a longer list shows the top 10 and a note pointing to D.1. No row carries a likelihood → "Not available (not provided in the assessment data)."
+7. H2 "Finding types by severity" with a severity legend on the heading line, then 4 tier lines (Critical, High, Medium, Low), then an informational/unknown note.
+8. Findings summary table (no heading of its own; continuation caption "Finding types"). No breach likelihood here: it is per domain (step 6).
+9. H2 "Finding details" with a severity legend, then the detail table, a coverage note and a bare-label note.
+10. Register pointer: "Full register  Affected assets by finding · N rows · Appendix D, pages x–y". Only when D.1 prints (more than 30 register rows).
+11. H2 "Vulnerability scan results": a sentence, a host table, then per host "Findings on <target>" + summary + findings table + "Recommendations".
+12. Sub-check blocks in this order: H2 "Email and DNS security controls", H2 "IP reputation", H2 "HTTPS redirect". Only sub-checks in the states `findings`, `partial` or `pending_review` get a block. An IP list over 30 rows shows its 10 highest abuse scores and a pointer to D.1.2.
+13. H2 "Other checks": one row per remaining sub-check (`clear`, a no-result state, or missing).
+14. H2 "Related priority actions" with a severity legend on the heading line (action counts per priority) + table + note.
+15. Appendix D: index rows D.1 and D.1.2, then the D.1 / D.1.2 register blocks when their lists are over 30 rows (see the Appendix D section below).
 
 ## From the system (payload)
 
 | Field path | Printed as / used for | If missing or null |
 |---|---|---|
 | `title`, `intro_source`, `summary`, `state`, `state_reason`, `reason_code`, `what_checked`, `next_step`, `empty_state_source` | Opener + section card (shared `default_card`) | Shared fallbacks |
-| `metrics[]` (Metric) except ids `finding_types_{critical,high,medium,low,critical_high}` | KPI tiles in payload order, e.g. `vulnerability_score` "38%", `finding_types`, `asset_memberships`, `distinct_asset_labels` (`s04:715-717`) | No strip. A null value prints "Not available" + reason. |
+| `metrics[]` (Metric) except ids `finding_types_{critical,high,medium,low,critical_high}`, `asset_memberships`, `distinct_asset_labels` (`HIDDEN_KPIS`, QA only) | KPI tiles in payload order, e.g. `vulnerability_score` "38%", `finding_types` (`build`) | No strip. A null value prints "Not available" + reason. |
 | `metrics[id=finding_types_<tier>]` | Tier count when `findings[]` is empty. A null record → "Not available". Also used for QA. (`s04:190-201`) | With no findings: "Not available" + " Count not available (not provided in the assessment data)." |
 | `metrics[id=finding_types]` | "Finding types in total: N." in the info note, and QA (`s04:211-227`) | No total sentence |
 | `review_flags[]` (ids) + top-level `review_flags[] {id, text}` | Note "Review flag <id>: <text>" (`s04:718`, `text.py:271`) | Nothing. An id with no text is skipped. |
@@ -40,10 +41,9 @@ scan. Its Appendix registers D.1 and D.1.2 are built in [app_d_evidence_register
 | `findings[].severity` | Siren icon only. The word is invisible text (`s04:255`, `s04:280`). | Unknown term: printed as text + QA |
 | `findings[].affected_assets_count` | Summary "Affected domains". Detail label count; when fewer than the hosts listed, both numbers print and QA `data_mismatch` (`s04:296-305`). | `len(affected_assets)` (`_count`, `s04:63-65`), else "Not available" + footnote |
 | `findings[].affected_assets[]` | Detail host list, monospace, wrapping only between hosts (`s04:265-272`) | "No affected domain recorded (count reported: N)." |
-| `findings[].breach_likelihood {value, unit}` | Summary "Breach likelihood" (e.g. "38%"). Detail "Breach likelihood 38%". | NullReason `not_printed_in_source` → "Not available" |
+| `<D.1 register>.rows[].breach_likelihood {value, unit: "percent"}` | "Breach likelihood by domain" table and the D.1 column; sorts both, highest first (`_by_domain`) | Row: "Not available" + footnote. No row has the field: one "Not available (…)" line under the heading |
+| `<D.1 register>.rows[] {asset_label_source, max_severity, finding_count}` | Domain, siren and Findings columns of the same table | "Not available" |
 | `findings[].rationale_source` | Detail right column, verbatim | "Rationale: Not available (not provided in the assessment data)" |
-| `breach_likelihood_legend_source` | Note "Breach likelihood. <legend>" (`s04:331-335`) | Omitted |
-| `breach_likelihood_note_source` | Appended to the same note | Omitted |
 | `coverage_note_source` | Note under the details. A leading "Note:" is removed. (`s04:338-340`) | Omitted |
 | `assets_register_ref` (dotted path, e.g. `appendices.d_evidence_registers.vulnerability_asset_register`) | D.1 source, read through `app_d.d1_register` by both the pointer and D.1 (`s04:315-320`, `app_d:341-348`) | No pointer. D.1 is not printed (index row only). |
 | `<register>.rows[]` | Pointer row count = `len(rows)`, the number D.1 prints (`s04:320`) | No pointer |
@@ -87,10 +87,11 @@ scan. Its Appendix registers D.1 and D.1.2 are built in [app_d_evidence_register
 | `N finding type(s) have/has no recognised severity and are/is not counted in the tiers.` | Info note (`s04:222-223`) | |
 | `Finding types in total: N.` | Info note (`s04:227`) | Only with another note sentence |
 | `Finding list: Not available (not provided in the assessment data)` | Body (`s04:329`) | |
-| Columns "ID", "Severity", "Finding", "Affected domains", "Breach likelihood"; caption "Finding types" | Summary table (`s04:260-262`) | |
-| "Breach likelihood. " | Note prefix (`s04:334`) | |
+| Columns "ID", "Severity", "Finding", "Affected domains"; caption "Finding types" | Summary table (`s04:260-262`) | |
+| "Breach likelihood by domain"; columns "#", "Severity", "Domain", "Findings", "Breach likelihood" | H2 + table (`_by_domain`) | |
+| "Showing the 10 domains with the highest breach likelihood of N; every domain is listed in Appendix D.1." | Note | Only when the register has more than 30 rows |
 | "Finding details"; columns "#", "Severity", "Finding", "Rationale and affected domains" | H2 + detail table (`s04:312`, `s04:337`) | |
-| "Breach likelihood <v>", "ID <id>", "ID not recorded", "Unnamed finding", "<code> (cont.)" | Detail left cell (`s04:118`, `s04:283-287`) | |
+| "ID <id>", "ID not recorded", "Unnamed finding", "<code> (cont.)" | Detail left cell (`s04:118`, `s04:283-287`) | |
 | "Rationale: Not available (not provided in the assessment data)" | Detail right cell (`s04:291`) | |
 | `Affected domains (showing X of N)` / `Affected domains (N)` / `Affected domains (L listed; count reported: N)` | Host-list label (`s04:296-305`) | |
 | `No affected domain recorded` + ` (count reported: N)` + "." | Detail (`s04:293`) | |
@@ -225,16 +226,16 @@ scan. Its Appendix registers D.1 and D.1.2 are built in [app_d_evidence_register
 
 | Item | Rule | Code |
 |---|---|---|
-| Source | `d1_register(report)`: `lookup(report, sections.vulnerabilities.assets_register_ref)` → `{state, counts.{rows, memberships}, rows[] {asset_label_source, finding_ids[], finding_count, max_severity}}`. The Section 04 pointer reads the same function. | `app_d:341-348` |
+| Source | `d1_register(report)`: `lookup(report, sections.vulnerabilities.assets_register_ref)` → `{state, counts.{rows, memberships}, rows[] {asset_label_source, finding_ids[], finding_count, max_severity, breach_likelihood {value, unit: "percent"}}}`. Breach likelihood is **one value per domain**, on these rows; `findings[].breach_likelihood`, `breach_likelihood_legend_source` and `breach_likelihood_note_source` are no longer printed. The Section 04 pointer reads the same function. | `app_d:341-348` |
 | Register id | `D.1` (first section in `REG_SECS` order). The IP register is `D.1.2`. | `app_d:37-42`, `app_d:697` |
 | Title | `pol('lists.vuln_affected_assets.register_title', 'Affected assets by finding')` | `app_d:348` |
 | Long-list rule | `tier(rows, rows)`: ≤ 30 rows (`tiers.T1_inline.max_visual_rows`) → no register, index row only, because Section 04 lists every affected domain in its finding details. More → full register. | `app_d:357-358`, `app_d:80-84` |
 | No register | The index "Content" reads `state_message(sec, '04', 'affected assets', rows or None)`: for `clear`, `states.register_messages.clear` ("Not required — no affected assets identified."); for a no-result state, `states.register_messages.<state>` (built-in "Not produced."); ≤ 30 rows → "Not required — all N affected assets shown in Section 04."; no rows → "Not produced — no register data in the payload." | `app_d:357-358`, `app_d:655-668` |
 | Row sort | `max_severity` (critical → low → other), then `finding_count` descending, then label | `app_d:359-360` |
-| Columns | "#", "Highest severity" (siren), "Affected asset" (monospace), "Finding IDs" (comma-joined), "Findings" | `app_d:391-394` |
+| Columns | "#", "Highest severity" (siren), "Affected asset" (monospace), "Finding IDs" (comma-joined), "Findings", plus "Breach likelihood" when any row carries `breach_likelihood` (then rows sort by likelihood first) | `app_d:391-394` |
 | Missing cells | Label → "Not available (asset not available)". IDs → "Not available (not provided in the assessment data)". Count → "Not available (reason not recorded)". | `app_d:368-371` |
 | Non-host label | Not a host name, `host / ip`, or bare IPv4 / IPv6 address (`_hostlike`) → label + " †". Note "† <pol('register_defaults.invalid_value_marker.note', 'value as provided by source')> (N labels are not complete host names)." | `app_d:329-338`, `app_d:364-366`, `app_d:396-398` |
-| Opening lines | H2 "D.1  <title>" + severity legend (counts by `max_severity`). "One row per affected asset, sorted by highest severity, then number of findings, then name. Showing N of N assets." "Unit: affected assets; Findings counts finding types per asset. State: <label of register.state or section state>. Snapshot <assessed_at>." "Back to Section 04 Vulnerabilities, p. n" | `app_d:380-386`, `app_d:171-174` |
+| Opening lines | H2 "D.1  <title>" + severity legend (counts by `max_severity`). "One row per affected asset, sorted by [breach likelihood, then] highest severity, then number of findings, then name. Showing N of N assets." "Unit: affected assets; Findings counts finding types per asset. State: <label of register.state or section state>. Snapshot <assessed_at>." "Back to Section 04 Vulnerabilities, p. n" | `app_d:380-386`, `app_d:171-174` |
 | Constant columns | A text column with the same value in every row is dropped and printed as a note "<Column>: <value> (all rows)." | `app_d:185-191`, `app_d:288-290` |
 | Closing | "End of register · N rows. N of N affected assets shown; 0 not shown. Totals: M finding memberships; source register memberships X (matches / difference ±d); Section 04 affected-asset counts Y (matches / difference ±d)." | `app_d:372-379`, `app_d:399-401` |
 | Computed | M = Σ `finding_count`. X = `counts.memberships`. Y = Σ `_count(finding)` (`affected_assets_count`, else `len(affected_assets)`: the Section 04 number). | `app_d:372-377` |
@@ -245,9 +246,9 @@ scan. Its Appendix registers D.1 and D.1.2 are built in [app_d_evidence_register
 
 ## Backend checklist
 
-- MUST: `state`, `summary`, `metrics[]` (`vulnerability_score` unit `percent`, `finding_types`, `finding_types_{critical,high,medium,low}`), `findings[] {finding_id, finding_type, severity (critical/high/medium/low/info), rationale_source, affected_assets_count, affected_assets[], breach_likelihood {value, unit}}`.
-- MUST for D.1: `assets_register_ref` → `appendices.d_evidence_registers.<key> {state, counts {rows, memberships}, rows[] {asset_label_source, finding_ids[], finding_count, max_severity}}`.
+- MUST: `state`, `summary`, `metrics[]` (`vulnerability_score` unit `percent`, `finding_types`, `finding_types_{critical,high,medium,low}`), `findings[] {finding_id, finding_type, severity (critical/high/medium/low/info), rationale_source, affected_assets_count, affected_assets[]}`.
+- MUST for D.1: `assets_register_ref` → `appendices.d_evidence_registers.<key> {state, counts {rows, memberships}, rows[] {asset_label_source, finding_ids[], finding_count, max_severity, breach_likelihood {value, unit: "percent"}}}`. Breach likelihood is **one value per domain**, on these rows; `findings[].breach_likelihood`, `breach_likelihood_legend_source` and `breach_likelihood_note_source` are no longer printed.
 - MUST sub-checks (send a state + reason even when not run; a missing one prints "Unavailable"): `email_dns_controls {state, controls[] {finding_id, control, result, line_source, dmarc_policy?, key_strength_bits?}, guidance_source}` with all of SPF/DKIM/DMARC/DNSSEC; `ip_reputation {state, ips_checked, rows[] {ip_address, isp, country, abuse_score, reports}}`; `https_redirect {state, result, narrative_source, state_label_source}`.
 - One `findings[]` record per (finding_type, severity); a type found at Critical on one domain and High on others is two records, each with its own unique `finding_id` and its own `affected_assets`.
 - Use NullReasons, never `-1`, for unknown abuse scores. A raw `-1` holds the check for review.
-- Optional: `severity_legend_source[]` (gives Medium/Low their tier text), `breach_likelihood_legend_source`, `breach_likelihood_note_source`, `coverage_note_source`, `scanned_assets {domains[], subdomains[]}`, `active_scan {state, results[]}`, `review_flags[]`, `what_checked`/`next_step` on sub-checks, priority actions with `linked_sections: ["vulnerabilities"]` + `linked_finding_ids`.
+- Optional: `severity_legend_source[]` (gives Medium/Low their tier text), `coverage_note_source`, `scanned_assets {domains[], subdomains[]}`, `active_scan {state, results[]}`, `review_flags[]`, `what_checked`/`next_step` on sub-checks, priority actions with `linked_sections: ["vulnerabilities"]` + `linked_finding_ids`.

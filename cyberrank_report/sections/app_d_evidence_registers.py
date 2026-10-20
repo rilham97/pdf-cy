@@ -368,8 +368,14 @@ def d1_assets(report, as_of):
     info = {'rid': rid, 'state': reg.get('state') or sec.get('state'), 'sec': 's04', 'title': title}
     if not rows or tier(len(rows), len(rows)) == 'T1':      # <= 30 rows: Section 04 lists every asset
         return {**info, 'content': state_message(sec, SEC_NUM['s04'], 'affected assets', len(rows) or None)}
-    rows = sorted(rows, key=lambda r: (SEV_ORDER.get(str(r.get('max_severity')).lower(), 9),
-                                       -(r.get('finding_count') or 0), str(r.get('asset_label_source'))))
+    lik = any('breach_likelihood' in r for r in rows)      # one likelihood per domain (Section 04 table)
+
+    def pct(r):
+        v = C.val(r.get('breach_likelihood'))
+        return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+    rows = sorted(rows, key=lambda r: ((pct(r) is None, -(pct(r) or 0)) if lik else ()) + (
+        SEV_ORDER.get(str(r.get('max_severity')).lower(), 9), -(r.get('finding_count') or 0),
+        str(r.get('asset_label_source'))))
     flagged = 0
     entries = []
     for i, r in enumerate(rows, 1):
@@ -380,7 +386,9 @@ def d1_assets(report, as_of):
                                 label or {'value': None, 'reason_code': 'asset_not_extracted'},
                                 ', '.join(r.get('finding_ids') or [])
                                 or {'value': None, 'reason_code': 'not_printed_in_source'},
-                                r.get('finding_count')]))
+                                r.get('finding_count')]
+                       + ([r.get('breach_likelihood') if r.get('breach_likelihood') is not None
+                           else {'value': None, 'reason_code': 'not_printed_in_source'}] if lik else [])))
     members = sum(r.get('finding_count') or 0 for r in rows)
     src = [f for f in sec.get('findings') or [] if isinstance(f, dict)]
     sec_total = sum(_count(f) or 0 for f in src)      # same count as the Section 04 tables
@@ -390,7 +398,8 @@ def d1_assets(report, as_of):
     rec = '; '.join(f'{t} ({"matches" if v == members else "difference " + signed(members - v)})'
                     for t, v in filter(None, checks))
     flow = opening(rid, title, 's04', [
-        f'One row per affected asset, sorted by highest severity, then number of findings, then name. '
+        f'One row per affected asset, sorted by {"breach likelihood, then " if lik else ""}highest severity, '
+        f'then number of findings, then name. '
         f'Showing {len(rows)} of {len(rows)}\u00a0assets.',
         f'Unit: affected assets; Findings counts finding types per asset. State: '
         f'{T.STATE.get(T.shown_state(info["state"], BY_ID[info["sec"]].key), {}).get("label", "not recorded")}. Snapshot {as_of}.'], [key],
@@ -400,9 +409,12 @@ def d1_assets(report, as_of):
                 [e[1][1].minWidth() + 2 * T.CELL_PAD_H + 1 for e in entries if not isinstance(e[1][1], I.SeverityIcon)])
     asset_w = max([150] + [stringWidth(str(e[1][2]), T.MONO, T.STYLES['dense_tech'].fontSize) + 2 * T.CELL_PAD_H + 1
                            for e in entries if isinstance(e[1][2], str)])
-    t = register_table(['#', 'Highest severity', 'Affected asset', 'Finding IDs', 'Findings'], entries,
-                       title=f'{rid} {title}', sec_id='s04', numeric_cols=(0, 4), ident='regD1',
-                       widths=[26, sev_w, min(asset_w, 200), T.CW - 26 - min(asset_w, 200) - 74 - sev_w, 74],
+    lw = 74 if lik else 0
+    t = register_table(['#', 'Highest severity', 'Affected asset', 'Finding IDs', 'Findings']
+                       + (['Breach likelihood'] if lik else []), entries,
+                       title=f'{rid} {title}', sec_id='s04', numeric_cols=(0, 4, 5) if lik else (0, 4), ident='regD1',
+                       widths=[26, sev_w, min(asset_w, 180 if lik else 200),
+                               T.CW - 26 - min(asset_w, 180 if lik else 200) - 74 - sev_w - lw, 74] + ([lw] if lik else []),
                        tech_cols=(2,))
     flow += const_line(t) + [t]
     if flagged:

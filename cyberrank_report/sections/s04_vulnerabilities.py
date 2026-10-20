@@ -67,11 +67,6 @@ def _count(f):
     return len(f['affected_assets']) if n is None and f.get('affected_assets') is not None else n
 
 
-def _likelihood(f):
-    v = f.get('breach_likelihood')
-    return v if v is not None else {'value': None, 'reason_code': 'not_printed_in_source'}
-
-
 def _no_orphans(t, short=10):
     """Short tables (<= `short` body rows) never split; longer ones never leave a
     single body row alone on either side of a page break."""
@@ -88,7 +83,7 @@ def _broken(text, width, st):
     return C.breakable(text, width, st.fontName, st.fontSize)
 
 
-_SUMMARY_FIXED = [52, C.head_width('Severity'), 98, 98]   # ID, Severity (siren only), Affected domains, Breach likelihood
+_SUMMARY_FIXED = [52, C.head_width('Severity'), 98]   # ID, Severity (siren only), Affected domains
 _ZERO_PAD = [(f'{s}PADDING', (0, 0), (-1, -1), 0) for s in ('LEFT', 'RIGHT', 'TOP', 'BOTTOM')]
 
 
@@ -266,6 +261,53 @@ def _multi_tier_note(data):
                    f'on the affected domain, so {"it is" if one else "each is"} listed once per severity.')]
 
 
+# owner 2026-10-20: internal reconciliation counts, read for QA only (the headline already gives the domains)
+HIDDEN_KPIS = ('asset_memberships', 'distinct_asset_labels')
+
+
+# --- breach likelihood by domain -------------------------------------------------
+LIKELIHOOD_INLINE = 10      # rows shown in the section when the register is long (all rows in D.1)
+
+
+def _by_domain(ctx):
+    """Breach likelihood is one value per domain (owner, 2026-10-20), sent on the affected-asset register rows
+    (`rows[].breach_likelihood`, the same rows as D.1). Highest likelihood first; up to 30 rows inline, a longer
+    register shows the top 10 here and every row in D.1. No row carries a likelihood: say so (never 0)."""
+    _, _, rows, _ = D.d1_register(ctx.report)
+    if not rows:
+        return []
+    head = C.heading('Breach likelihood by domain', 2)
+    if not any('breach_likelihood' in r for r in rows):
+        return [C.keep(head, C.P(C.sentence(C.missing_text({'reason_code': 'not_printed_in_source'})), 'body'))]
+    rank = {k: i for i, k in enumerate(SEVERITIES)}
+
+    def lik(r):
+        v = C.val(r.get('breach_likelihood'))
+        return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+    rows = sorted(rows, key=lambda r: (lik(r) is None, -(lik(r) or 0),
+                                       rank.get(str(r.get('max_severity')).lower(), 9),
+                                       -(r.get('finding_count') or 0), str(r.get('asset_label_source'))))
+    shown = rows if D.tier(len(rows), len(rows)) == 'T1' else rows[:LIKELIHOOD_INLINE]
+    body = [[str(i), C.severity_icon(r.get('max_severity')),
+             C.tech(str(r.get('asset_label_source')), 'cell_tech') if r.get('asset_label_source')
+             else {'value': None, 'reason_code': 'asset_not_extracted'},
+             r.get('finding_count') if r.get('finding_count') is not None
+             else {'value': None, 'reason_code': 'not_printed_in_source'},
+             r.get('breach_likelihood') if r.get('breach_likelihood') is not None
+             else {'value': None, 'reason_code': 'not_printed_in_source'}]
+            for i, r in enumerate(shown, 1)]
+    num_w, sev_w, n_w, l_w = _num_w(range(1, len(shown) + 1)), C.head_width('Severity'), 74, 98
+    out = [C.heading_legend(head, C.severity_legend([(k, [str(r.get('max_severity') or '').lower()
+                                                         for r in rows].count(k)) for k in SEVERITIES])),
+           C.compact_table(['#', 'Severity', 'Domain', 'Findings', 'Breach likelihood'], body,
+                           widths=[num_w, sev_w, T.CW - num_w - sev_w - n_w - l_w, n_w, l_w],
+                           numeric_cols=(0, 3, 4), title='Breach likelihood by domain')]
+    if len(shown) < len(rows):
+        out.append(C.note(f'Showing the {len(shown)} domains with the highest breach likelihood of {len(rows)}; '
+                          f'every domain is listed in Appendix {D.RID["s04"]}.'))
+    return out
+
+
 # --- findings -------------------------------------------------------------------
 def _ordered(findings):
     rank = {s: i for i, s in enumerate(SEVERITIES)}
@@ -279,11 +321,10 @@ def _summary_table(findings, ctx):
         rows.append([C.P(C.val(f.get('finding_id')) or '', 'cell_muted'),
                      C.severity_icon(f.get('severity')),
                      C.M(f'<a href="#{C.esc(_fkey(ctx, f))}">{code}</a>', _LINK),
-                     _count(f) if _count(f) is not None else {'value': None, 'reason_code': 'not_printed_in_source'},
-                     _likelihood(f)])
+                     _count(f) if _count(f) is not None else {'value': None, 'reason_code': 'not_printed_in_source'}])
     fixed = _SUMMARY_FIXED
-    return _no_orphans(C.compact_table(['ID', 'Severity', 'Finding', 'Affected domains', 'Breach likelihood'], rows,
-                                       widths=fixed[:2] + [T.CW - sum(fixed)] + fixed[2:], numeric_cols=(3, 4),
+    return _no_orphans(C.compact_table(['ID', 'Severity', 'Finding', 'Affected domains'], rows,
+                                       widths=fixed[:2] + [T.CW - sum(fixed)] + fixed[2:], numeric_cols=(3,),
                                        title='Finding types'))
 
 
@@ -301,14 +342,12 @@ def _detail_table(findings, ctx):
     rows, sirens = [], []
     lw = T.COL3 - 2 * T.CELL_PAD_H
     for i, f in enumerate(findings, 1):
-        lik = _likelihood(f)
         siren = I.severity_cell(f.get('severity'), style=_CODE_SIREN)    # own column, after '#'
         sirens.append(siren)
         code = C.M(f'<a name="{C.esc(_fkey(ctx, f))}"/>'
                    + _broken(_name(f), lw, _CODE), _CODE)
         left = _atomic([
             code, Spacer(0, 3),
-            C.P(f'Breach likelihood {C.fmt_value(lik)}', 'dense_muted'),
             C.P(f'ID {C.val(f.get("finding_id")) or "not recorded"}', 'dense_muted')], T.COL3 - 2 * T.CELL_PAD_H)
         left._v04_code = _name(f)
         hosts, n = f.get('affected_assets'), _count(f)
@@ -353,11 +392,6 @@ def _findings_body(data, ctx):
     if not findings:
         return out + [C.P(f'Finding list: {C.missing_text({"reason_code": "not_printed_in_source"})}', 'body')]
     out.append(_summary_table(findings, ctx))
-    legend = data.get('breach_likelihood_legend_source')
-    tail = C.val(data.get('breach_likelihood_note_source'))   # only what the payload itself states
-    if legend or tail:
-        out.append(C.note(' '.join(x for x in ('Breach likelihood. ' + C.sentence(legend) if legend else None,
-                                                tail) if x)))
     sev_legend = C.severity_legend([(k, n) for k, n, _ in _severity_groups(data)])     # on the heading line
     out += [C.heading_legend(C.heading('Finding details', 2, style=_H2_FLUSH), sev_legend), _detail_table(findings, ctx)]
     cov = data.get('coverage_note_source')
@@ -827,10 +861,12 @@ def _active_scan(data, ctx):
 
 def build(data, ctx):
     metrics = [m for m in data.get('metrics') or [] if isinstance(m, dict)
-               and str(m.get('id', '')).removeprefix('finding_types_') not in (*SEVERITIES, *GROUPS)]
+               and str(m.get('id', '')).removeprefix('finding_types_') not in (*SEVERITIES, *GROUPS)
+               and m.get('id') not in HIDDEN_KPIS]
     out = [C.kpi_strip(metrics)] if metrics else []
     out += C.flag_notes(data, ctx.report)      # counts the source prints elsewhere and does not reconcile
     out += _scanned_assets(data)
+    out += _by_domain(ctx)
     out += _findings_body(data, ctx)
     out += _active_scan(data, ctx)
     out += _submodules(data, ctx, required=True)

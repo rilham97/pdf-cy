@@ -72,6 +72,9 @@ Each was asked for or approved by the product owner; changing one needs their ap
 - Rating panel (section 01): grade, chips, scale and band text only; never print Net score, Point pool, Methodology version or "Score context". `rating.net`, `rating.pool` and `snapshot.methodology_version` are read for QA only.
 - Vulnerabilities (04) "Scanned assets": headline "X of Y scanned domains have at least one finding" + a bar split by worst
   severity; affected hosts first with their siren, the rest grey. Host lists are comma-separated, never middle dots.
+  Breach likelihood is one value per domain (D.1 register rows), shown in "Breach likelihood by domain"
+  (highest first) and as a D.1 column; never per finding, and no likelihood legend sentence.
+  KPI strip: no "Finding-asset memberships" / "Distinct affected asset labels" tiles (QA-only counts).
 - Plain words for the reader: the root domain is printed as "main domain" (never "apex"); 11 / D.4 label the root row
   "main domain total". Internal names (`apex`, scope_level) stay in code and QA only.
 - Credential exposure (05): short KPI tiles; "Affected domains" table (domain, rows, with password, latest year)

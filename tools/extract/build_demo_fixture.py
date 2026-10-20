@@ -125,17 +125,19 @@ VULNS = [  # (type, severity, likelihood %, rationale, affected subdomains)
      ['auth']),
 ]
 FINDINGS = [{'finding_id': f'vuln-{i:02d}', 'finding_type': t, 'severity': s, 'severity_label_source': s.upper(),
-             'rationale_source': r, 'affected_assets_count': len(a), 'affected_assets': [asset(x) for x in a],
-             'breach_likelihood': {'value': p, 'unit': 'percent', 'likelihood_type': 'ai_derived_per_finding',
-                                   'source_label': f'Breach Likelihood: {p}%'}}
+             'rationale_source': r, 'affected_assets_count': len(a), 'affected_assets': [asset(x) for x in a]}
             for i, (t, s, p, r, a) in enumerate(VULNS, start=1)]
+LIKELIHOOD = {f['finding_id']: p for f, (_, _, p, _, _) in zip(FINDINGS, VULNS)}
 SEV_ORDER = ['critical', 'high', 'medium', 'low']
 asset_rows = {}
 for f in FINDINGS:
     for a in f['affected_assets']:
         asset_rows.setdefault(a, []).append(f)
 VULN_ASSETS = [{'asset_label_source': a, 'finding_ids': [f['finding_id'] for f in fs], 'finding_count': len(fs),
-                'max_severity': min((f['severity'] for f in fs), key=SEV_ORDER.index)}
+                'max_severity': min((f['severity'] for f in fs), key=SEV_ORDER.index),
+                # breach likelihood is one value per domain (synthetic: highest of its findings + 2 per extra finding)
+                'breach_likelihood': {'value': min(95, max(LIKELIHOOD[f['finding_id']] for f in fs) + 2 * (len(fs) - 1)),
+                                      'unit': 'percent'}}
                for a, fs in asset_rows.items()]
 sev_n = {s: sum(f['severity'] == s for f in FINDINGS) for s in SEV_ORDER}
 memberships = sum(len(f['affected_assets']) for f in FINDINGS)
@@ -177,9 +179,6 @@ vulnerabilities = sec(
         {'severity': 'critical_high', 'label': 'CRITICAL/HIGH', 'text': 'Serious vulnerabilities requiring immediate attention'},
         {'severity': 'medium', 'label': 'MEDIUM', 'text': 'Moderate risk issues that should be addressed'},
         {'severity': 'low', 'label': 'LOW', 'text': 'Minor security concerns with limited impact'}],
-    breach_likelihood_legend_source='Indicates the estimated probability that this vulnerability could lead to a '
-                                    'security breach. >=30% represents high risk, 15-29% represents moderate risk, '
-                                    '<15% represents lower risk.',
     findings=FINDINGS,
     assets_register_ref='appendices.d_evidence_registers.vulnerability_asset_register',
     active_scan={'state': 'findings', 'results': [
