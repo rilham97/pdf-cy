@@ -69,7 +69,7 @@ Each was asked for or approved by the product owner; changing one needs their ap
   "All aspects" (name + one result line + state chip, two columns). No aspect numbers: section numbers
   start at 03 and a 1–13 count would clash with the TOC; names link to the section. No intro or
   explanatory captions — owner wants labels cut to what the reader needs.
-- Rating panel (section 01): Net score, Point pool, Methodology version only; no "Score context" heading or row.
+- Rating panel (section 01): grade, chips, scale and band text only; never print Net score, Point pool, Methodology version or "Score context". `rating.net`, `rating.pool` and `snapshot.methodology_version` are read for QA only.
 - Vulnerabilities (04) "Scanned assets": headline "X of Y scanned domains have at least one finding" + a bar split by worst
   severity; affected hosts first with their siren, the rest grey. Host lists are comma-separated, never middle dots.
 - Plain words for the reader: the root domain is printed as "main domain" (never "apex"); 11 / D.4 label the root row

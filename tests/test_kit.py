@@ -551,7 +551,7 @@ def test_gap_new_conditions():                                          # 2026-1
     assert 'Sector' in text and 'Telecommunications' in text and 'Industry' not in text           # N1
     assert 'Sector comparison' in text and 'Sector average' in text and 'Sector Average' not in text
     assert 'Telekomunikasi' not in text and 'Sedang' not in text                                  # source ids never printed
-    assert 'Medium risk band' in text and '86 points' in text                                     # N2
+    assert 'Medium risk band' in text and 'Net score' not in text                                # N2
     text, _ = _gap('actions_remediation')
     assert '(Issue 9)' in text and 'Projected rating after remediation' in text                   # N3/N4
     assert 'CC · score 86 / 360' in text and 'A · score 280 / 360' in text and 'fresh scan' in text
@@ -929,7 +929,7 @@ def test_about_and_fourth_party_trimmed():                             # owner, 
 def test_s01_rating_panel_has_no_score_context():                   # owner removed it, 2026-10-19
     for f in ('demo-preview', 'gmail-2026-10-15'):                     # demo carries a score_context value
         t = _fixture_text(f, ['s01'])
-        assert 'Score context' not in t and 'Methodology version' in t, f
+        assert 'Score context' not in t and 'Methodology version' not in t and 'Net score' not in t and 'Point pool' not in t, f
         assert 'Sector comparison' in t and '360-point' not in t, f                 # sector note dropped too
 
 

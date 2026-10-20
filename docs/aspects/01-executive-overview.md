@@ -10,7 +10,7 @@ No module hooks besides `build` and `build_context` (no `card`, `verdict`, `adju
 
 1. Opener (shared): eyebrow "01 · OVERVIEW AND PRIORITIES", H1 `title`, `intro_source`, verdict row. With state `findings` there is no chip: the row reads "Summary" + `summary`.
 2. State card or banner (shared; only for non-`findings` states, see States).
-3. Rating panel (boxed, left rule in the grade colour): rating name, big grade + grade-mark chip, risk-band chip | Net score / Point pool / Methodology version; grade scale D…AAA; band description; band-mismatch note; "Meaning of every grade: Appendix B …".
+3. Rating panel (boxed, left rule in the grade colour): rating name, big grade + grade-mark chip, risk-band chip (full width; no Net score / Point pool / Methodology version rows); grade scale D…AAA; band description; band-mismatch note; "Meaning of every grade: Appendix B …".
 4. "Scope and coverage" (H2): two key/value columns.
 5. "Observed targets" (H3) + KPI tiles.
 6. Coverage statement (body), method statement (note).
@@ -35,8 +35,6 @@ No module hooks besides `build` and `build_context` (no `card`, `verdict`, `adju
 | `rating.risk_band` (`low`/`medium`/`high`/`critical`) | Band chip colour; chip text when no label | No chip if also no label (`:174`) |
 | `rating.risk_band_label_source` | Band chip text verbatim (e.g. a localised word) | "<Band> risk band" |
 | `rating.band_description_source` | Body row under the scale | Row omitted |
-| `rating.net`, `rating.pool` | "Net score", "Point pool" values (`fmt_value`: `{value:196, unit:"points"}` → "196 points") | Not available (not provided …) |
-| `snapshot.methodology_version` | "Methodology version" → "Version n" (`fmt_version`) | Not available (…) |
 | `appendices.b_rating_scale.rows[] {grade, meaning_source}` | Compared with `band_description_source` (whitespace-normalised) | No comparison |
 | `appendices.b_rating_scale.title` | Link text "Appendix B <title>" | "IISRI rating scale" |
 | `identity.organisation_name` | "Organisation" | Not available (…) |
@@ -75,7 +73,6 @@ No module hooks besides `build` and `build_context` (no `card`, `verdict`, `adju
 | Excellent / Very good / Good / Satisfactory / Sufficient / Moderate / Insufficient / Very insufficient / Poor / Very poor | Grade-mark chip fallback | `theme.GRADE_MARK` |
 | D C CC CCC B BB BBB A AA AAA | Grade scale labels (worst left) | `theme.GRADE_BAR`, `:139` |
 | "<Band> risk band" / "Risk band: <label>" | Band chip | `:176` |
-| "Net score", "Point pool", "Methodology version", "Version n" | Panel key/value | `:189`, `text.fmt_version` |
 | "Wording as printed in the source; it differs from the {g} definition in Appendix B and is held for review." | Panel note | `:164` |
 | "Meaning of every grade: " + "Appendix B <title>, page n" | Panel last row | `:202`, `section_ref :67` |
 | "<Reason>: <label>, <label>." (e.g. "Not provided in the assessment data: net score, point pool.") | Under a key/value list when ≥2 nulls share one reason | `kv_block :100` |
@@ -157,6 +154,7 @@ No long-list policy keys are read directly. Indirect: the vendor "needs a look" 
 | Field | Why it is read (QA, ordering, ...) |
 |---|---|
 | `rating_overview.aspect_breakdown[].value` (unit `percent`) | Score fallback only; non-percent values, `aspect`, `state`, `display_label_source`, `summary_label_source`, `secondary`, `review_flags` are ignored |
+| `rating.net`, `rating.pool`, `snapshot.methodology_version` | Owner decision: not printed in the rating panel |
 | `rating_overview.note` | Owner decision: never printed (`:557`) |
 | `sector_comparison.note` | Owner decision: never printed (`:629`) |
 | `sector_comparison.cohort.cohort_id`, `.state` | Not printed (state/reason only matter when `cohort_size` is missing) |

@@ -186,13 +186,9 @@ def rating_panel(rating, snapshot, report, pages):
         left += [c.P('Grade not available', 'kpi_na', spaceBefore=2),
                  c.P(c.sentence(c.reason_text({'reason_code': rating.get('grade_reason_code')})), 'note_flush')]
     left += band_chip(rating)
-    pairs = [('Net score', rating.get('net')), ('Point pool', rating.get('pool')),
-             ('Methodology version', c.fmt_version(snapshot.get('methodology_version')))]
-    pairs = [(k, v if v is not None else {'value': None, 'reason_code': 'not_printed_in_source'}) for k, v in pairs]
     pad = 12
-    right_w = T.CW - T.COL3 - pad - T.GUTTER          # right column incl. its right padding
-    right = kv_block(pairs, width=right_w - pad, dense=True, label_width=92)
-    rows, cmds = [[left, '', right], [GradeScale(g), '', '']], []
+    right_w = T.CW - T.COL3 - pad - T.GUTTER
+    rows, cmds = [[left, '', ''], [GradeScale(g), '', '']], []
     if rating.get('band_description_source'):
         rows.append([c.P(rating['band_description_source'], 'body_flush'), '', ''])
         diff = band_note(rating, report)
@@ -203,12 +199,12 @@ def rating_panel(rating, snapshot, report, pages):
     t = Table(rows, colWidths=[T.COL3 + pad, T.GUTTER, right_w], hAlign='LEFT')
     t.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('SPAN', (0, 1), (-1, 1)), ('SPAN', (0, 2), (-1, 2)), ('SPAN', (0, -1), (-1, -1)),
+        ('SPAN', (0, 0), (-1, 0)), ('SPAN', (0, 1), (-1, 1)), ('SPAN', (0, 2), (-1, 2)), ('SPAN', (0, -1), (-1, -1)),
         ('BOX', (0, 0), (-1, -1), 0.75, T.RULE),
         ('LINEBEFORE', (0, 0), (0, -1), 3, T.GRADE.get(g, T.UNSCANNED)),
         ('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('LEFTPADDING', (0, 0), (0, -1), pad), ('RIGHTPADDING', (-1, 0), (-1, 0), pad),
-        ('RIGHTPADDING', (0, 1), (0, -1), pad),         # spanned rows use their first cell's padding
+        ('LEFTPADDING', (0, 0), (0, -1), pad),
+        ('RIGHTPADDING', (0, 0), (0, -1), pad),         # spanned rows use their first cell's padding
         ('TOPPADDING', (0, 0), (-1, -1), 0), ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
         ('TOPPADDING', (0, 0), (-1, 0), 12), ('TOPPADDING', (0, 1), (-1, 1), 6),
         ('BOTTOMPADDING', (0, -1), (-1, -1), 12),
