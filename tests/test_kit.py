@@ -1028,7 +1028,7 @@ def test_privacy_policy_state_and_sovereignty_verdict():                        
         sec = json.loads((FIXTURE.parent / f'{name}.json').read_text(encoding='utf-8'))['sections']['privacy']
         assert sec['policy']['policy_state']['value'] == 'valid_assessed', name
         t = _fixture_text(name, ['s03'])
-        assert f'Valid policy, assessed (source p. 2: “Privacy policy exists but has {n} active risks' in t, name
+        assert 'Policy state' not in t and 'Valid policy, assessed' not in t and 'Policy source' in t, name
         t = _fixture_text(name, ['s07'])                     # sovereignty is its own section (item 15)
         assert 'Source verdict “does not match the jurisdictions your organisation accepts' in t, name
         assert 'Review note: the source prints a verdict' in t and 'Cannot be compared' in t, name

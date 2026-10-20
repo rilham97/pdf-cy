@@ -167,8 +167,10 @@ def _policy(data, ctx):
     if label and said:      # the source's own words for the state, quoted after our label
         pg = ps.get('source_page')
         label = f'{label} (source{f" p. {pg}" if pg else ""}: “{said}”)'
-    pairs = [('Policy state', label or (ps if C.is_missing(ps) else str(_val(ps)))),
-             ('Policy source', policy.get('policy_source') or {'value': None, 'reason_code': 'not_printed_in_source'})]
+    # owner: a valid, assessed policy needs no state row (the verdict and score already say it);
+    # the other states (not found, no policy, unrecognised, missing) still print it
+    pairs = [] if _val(ps) == 'valid_assessed' else [('Policy state', label or (ps if C.is_missing(ps) else str(_val(ps))))]
+    pairs += [('Policy source', policy.get('policy_source') or {'value': None, 'reason_code': 'not_printed_in_source'})]
     if policy.get('policy_version') is not None:
         pairs.append(('Policy version', policy['policy_version']))
     if not isinstance(areas, list) and _val(ps) not in ('claimed_missing', 'excluded_no_policy'):

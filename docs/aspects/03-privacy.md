@@ -33,7 +33,7 @@ load time (`sections/__init__.py:140`). Criterion H "Data residency" is policy t
 | `metrics[].label`, `unit`, `state` | Tile label. Unit word via `text.UNITS` or the code with `_` → space, singular when the value is 1. A chip appears when the state is not `findings`. | Empty label |
 | `policy.state` | Chip next to the H2 subtitle, or the card state for no-result states (`s03:94-101`) | Treated as `unavailable` |
 | `policy.subtitle_source` | Subtitle next to the chip (`s03:100`) | "Published privacy policy: state, source, assessed areas and issues" |
-| `policy.policy_state` (value or `{value, source_label, source_page}`) | "Policy state" row: mapped label + optional source quote (`s03:161-170`) | Null record → "Not available (reason)". Key absent → "Not available (reason not recorded)". |
+| `policy.policy_state` (value or `{value, source_label, source_page}`) | "Policy state" row: mapped label + optional source quote. **Not printed for `valid_assessed`** (owner decision); printed for the other states, an unrecognised value and a null | Null record → "Not available (reason)". Key absent → "Not available (reason not recorded)". |
 | `policy.policy_state.source_label`, `.source_page` | Appended: `<label> (source p. 2: “…”)`. The page part is left out when there is no `source_page`. | Label only |
 | `policy.policy_source` (URL string or `{value}`) | "Policy source" row, in monospace when the value is technical (`s03:171`) | "Not available (not provided in the assessment data)" |
 | `policy.policy_version` | "Policy version" row, printed verbatim (`s03:172-173`) | Row omitted |

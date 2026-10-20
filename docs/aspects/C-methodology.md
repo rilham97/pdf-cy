@@ -12,8 +12,8 @@ from an external PDF (a locked page). Its contents never come from the payload.
 2. Verdict row only if `summary` is sent (no chip).
 3. `headline_source` (H2 style, no outline entry), then `lead_source` (intro style).
 4. Columns grid: one column per `columns_source[]` item (title + text), with a rule above each.
-5. "How a rating becomes a risk   {n} steps, one pipeline" (n = number of steps, in words up to ten) + a steps grid. Each step has a navy numbered badge, a title, text and a signals line, with an optional callout row underneath.
-6. "The IISRI rating scale   {scale_caption_source}" + a 10-segment bar D → AAA, the letters and marks below, and the end labels.
+5. "How a rating becomes a risk   {n} steps, one pipeline" (n = number of steps, in words up to ten) + a steps grid. Each step has a navy numbered badge, a title, its text (a blank line starts a new paragraph), the signals as thin-bordered tags, and its callout directly under its own text (not aligned across columns), as in the reference brief `05_Desain_Terbaru/02-methodology-and-typography/CYBERRANK_methodologyOverview.pdf`.
+6. "The IISRI rating scale" with `scale_caption_source` on its own muted line underneath, + a 10-segment bar D → AAA, the letters and marks below, and the end labels (left / right) right under the marks.
 7. Note: generic-material sentence + `copyright_source`.
 8. The locked supply-chain page (new page). If its source file is missing, an "Unavailable" card prints instead.
 
@@ -27,9 +27,9 @@ from an external PDF (a locked page). Its contents never come from the payload.
 | `headline_source` | H2-style line | Omitted |
 | `lead_source` | Intro-style paragraph | Omitted |
 | `columns_source[] {title, text}` | Equal columns (non-dicts skipped) | Grid omitted. A missing title/text prints empty. |
-| `steps_source[] {n, title, text, signals[], callout}` | Badge `n`, title, text, signals joined "  ·  " (no-break inside a signal), callout box (second grid row) | Whole pipeline block omitted (sub-heading too). A missing part is skipped. |
-| `scale_caption_source` | Muted tail after "The IISRI rating scale" | No tail |
-| `scale_ends_source.bottom` / `.top` | Left / right labels under the bar | Empty |
+| `steps_source[] {n, title, text, signals[], callout, callout_emphasis[]}` | Badge `n`, title, text (`\n\n` = new paragraph), signals as bordered tags, callout box under the step's text; each `callout_emphasis` phrase found verbatim in the callout is bold (first match) | Whole pipeline block omitted (sub-heading too). A missing part is skipped. |
+| `scale_caption_source` | Muted line under "The IISRI rating scale" | No line |
+| `scale_ends_source.bottom` / `.top` | Left / right labels right under the marks (D end, AAA end) | Empty |
 | `is_generic_material` (true) | Adds the generic-material note sentence | Sentence omitted |
 | `copyright_source` | Appended to the note | Omitted |
 | `supply_chain` (any truthy value) | **Only a switch:** inserts the locked page | No locked page |
@@ -53,7 +53,8 @@ from an external PDF (a locked page). Its contents never come from the payload.
 | Condition | What prints | Code |
 |---|---|---|
 | `headline_source` / `lead_source` / `columns_source` / `steps_source` empty | That block is omitted | `app_c:157-171` |
-| Any step has a `callout` | Second grid row with the callouts aligned (empty cells for steps without one) | `app_c:99-100` |
+| A step has a `callout` | Callout box under that step's text | `_steps` |
+| A `callout_emphasis` phrase is not in the callout | Ignored (no bold) | `_emphasise` |
 | `is_generic_material` truthy | Generic-material sentence | `app_c:173-174` |
 | Note list empty | No note | `app_c:176-177` |
 | `supply_chain` falsy | No locked page. Appendix D still starts on a new page (it has `new_page` like every section; after the locked page its `PageBreakIfNotEmpty` adds no blank page). Section 14 prints no "Supply-chain aggregation" pointer. | `_supply_chain_page`, `supply_chain_present` |

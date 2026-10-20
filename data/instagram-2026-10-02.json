@@ -4060,25 +4060,37 @@
             "AI",
             "Quantum"
           ],
-          "callout": "Certified controls earn credits: ISO 27001, ISO 27701, SOC 2, ISAE 3402, PCI DSS. Optional questionnaires add a second, bounded evidence channel."
+          "callout": "Certified controls earn credits: ISO 27001, ISO 27701, SOC 2, ISAE 3402, PCI DSS. Optional questionnaires add a second, bounded evidence channel.",
+          "callout_emphasis": [
+            "ISO 27001, ISO 27701, SOC 2, ISAE 3402, PCI DSS"
+          ]
         },
         {
           "n": 2,
           "title": "Rate",
           "text": "Every organisation starts with a full point budget, split evenly between a security bucket and a privacy bucket. Weaknesses deduct capped demerits; certifications add capped credits.",
-          "callout": "The net score maps to the IISRI rating, AAA to D. The rating reflects the organisation's own posture only — a vendor's weakness never changes it."
+          "callout": "The net score maps to the IISRI rating, AAA to D. The rating reflects the organisation's own posture only — a vendor's weakness never changes it.",
+          "callout_emphasis": [
+            "IISRI rating, AAA to D"
+          ]
         },
         {
           "n": 3,
           "title": "Score the risk",
-          "text": "Likelihood = threat probability × weakness. Threat probability comes from sector, size and internet exposure; weakness comes from the rating. Impact is one of four tiers you assign: Critical, High, Medium or Low.",
-          "callout": "Risk = normalised likelihood × impact, reported as a score and a band: Low, Medium, High or Critical."
+          "text": "Likelihood = threat probability × weakness. Threat probability comes from sector, size and internet exposure; weakness comes from the rating.\n\nImpact is one of four tiers you assign: Critical, High, Medium or Low.",
+          "callout": "Risk = normalised likelihood × impact, reported as a score and a band: Low, Medium, High or Critical.",
+          "callout_emphasis": [
+            "likelihood × impact"
+          ]
         },
         {
           "n": 4,
           "title": "Combine",
           "text": "Vendors and sub-vendors are discovered automatically and rated with the same pipeline. Their risks are folded into yours, attenuated by distance in the chain.",
-          "callout": "The combined risk shows the cascading exposure that your own rating cannot see."
+          "callout": "The combined risk shows the cascading exposure that your own rating cannot see.",
+          "callout_emphasis": [
+            "combined risk"
+          ]
         }
       ],
       "scale_caption_source": "Ten grades. Higher grades mean lower weakness values and therefore lower likelihood.",

@@ -81,6 +81,10 @@ Each was asked for or approved by the product owner; changing one needs their ap
 - Labels stay short: no "(as reported)" / "(as sent)" suffixes in column heads; a missing fourth-party sector
   prints "Unknown", an unrated vendor "Not rated" (a real reason only when the payload gives one).
   Appendix A report details carry no methodology version or time zone rows.
+- Privacy (03): no "Policy state" row for a valid, assessed policy; other policy states still print it.
+- Appendix C methodology page follows the reference brief (`05_Desain_Terbaru/02-methodology-and-typography/CYBERRANK_methodologyOverview.pdf`):
+  signals as bordered tags, each callout under its own step with `callout_emphasis` in bold, scale caption on its own line,
+  scale end labels left / right, close under the marks; the page must still fit on one page before the locked supply-chain page.
 - Residency map (`geo_map.py`): mode C table only when ≤1 relevant country (IP country lookups can fail),
   A2 auto-zoom regional, A3 world map with ISO-code badges + insets. Unknown/placeholder countries go to an
   off-map counter, never guessed. Circle = in preference, square = outside, ring = preferred.
