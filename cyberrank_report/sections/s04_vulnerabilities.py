@@ -243,6 +243,29 @@ def _severity_block(data):
             C.M('<br/>'.join(lines), _LEGEND, spaceAfter=T.SP_MD)]
 
 
+def _multi_tier_note(data):
+    """One finding type can carry different severities on different domains (one record per type and
+    severity, as in the app). Only then: say why a type is listed more than once. Every record needs its own
+    finding_id (links to the details use it): a repeated ID raises QA duplicate_finding_id."""
+    findings = [f for f in data.get('findings') or [] if isinstance(f, dict)]
+    ids = [C.val(f.get('finding_id')) for f in findings if C.val(f.get('finding_id')) is not None]
+    dup = sorted({str(i) for i in ids if ids.count(i) > 1})
+    if dup:
+        qa.add('duplicate_finding_id', 'warn', f's04: finding_id repeated: {", ".join(dup)}', once=True)
+    tiers = {}
+    for f in findings:
+        sev = str(C.val(f.get('severity'))).lower()
+        if sev in SEVERITIES:
+            tiers.setdefault(_name(f), set()).add(sev)
+    multi = [n for n in dict.fromkeys(_name(f) for f in findings) if len(tiers.get(n, ())) > 1]
+    if not multi:
+        return []
+    names = multi[0] if len(multi) == 1 else ', '.join(multi[:-1]) + ' and ' + multi[-1]
+    one = len(multi) == 1
+    return [C.note(f'{names} {"appears" if one else "appear"} under more than one severity: the severity depends '
+                   f'on the affected domain, so {"it is" if one else "each is"} listed once per severity.')]
+
+
 # --- findings -------------------------------------------------------------------
 def _ordered(findings):
     rank = {s: i for i, s in enumerate(SEVERITIES)}
@@ -326,7 +349,7 @@ def _findings_body(data, ctx):
     findings = _ordered(data.get('findings') or [])
     if not findings and ctx.state == 'clear':
         return []
-    out = _severity_block(data) + _info_note(data)
+    out = _severity_block(data) + _info_note(data) + _multi_tier_note(data)
     if not findings:
         return out + [C.P(f'Finding list: {C.missing_text({"reason_code": "not_printed_in_source"})}', 'body')]
     out.append(_summary_table(findings, ctx))

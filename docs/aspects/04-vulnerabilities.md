@@ -83,6 +83,7 @@ scan. Its Appendix registers D.1 and D.1.2 are built in [app_d_evidence_register
 | "Exploitable weakness with direct impact; act immediately." / "Serious weakness; fix as a priority." / "Weakness that adds risk; fix in planned work." / "Minor weakness; fix when convenient." | Critical / High / Medium / Low tier text (`theme.py:60-65`) | Overridden by `severity_legend_source` for that tier |
 | " Count not available (<reason>)." | Tier line (`s04:237`) | |
 | `N informational finding type(s) are/is listed below but not counted in the four severity tiers.` | Info note (`s04:219-220`) | |
+| `<type>[, <type> and <type>] appear(s) under more than one severity: the severity depends on the affected domain, so it is / each is listed once per severity.` | Note under "Finding types by severity" (`_multi_tier_note`) | Only when one `finding_type` occurs in two or more of the four tiers |
 | `N finding type(s) have/has no recognised severity and are/is not counted in the tiers.` | Info note (`s04:222-223`) | |
 | `Finding types in total: N.` | Info note (`s04:227`) | Only with another note sentence |
 | `Finding list: Not available (not provided in the assessment data)` | Body (`s04:329`) | |
@@ -163,6 +164,9 @@ scan. Its Appendix registers D.1 and D.1.2 are built in [app_d_evidence_register
 | An IP row value is `-1` (number or string), or a dict with `value: -1` | `adjust()`: the cell → null record (`sentinel_meaning_unconfirmed`, `source_label "-1"`); a null record with `source_label "-1"` stays. IP state → `pending_review` with the generated reason naming the columns. When the check is already `pending_review` with a `state_reason`, the cells are still replaced and that reason stays. | `s04:568-597` |
 | No priority action linked to `vulnerabilities` | No actions block | `s04:548-550` |
 
+| The same `finding_type` occurs at two or more severities (one record per type and severity, each with its own `finding_id`) | Each record is its own row and counts in its own tier; a note names the types; Scanned assets counts each domain once, at its worst severity | `_multi_tier_note`, `_scan_hits` |
+| Two findings share a `finding_id` | QA `duplicate_finding_id` (summary links would point to the same detail) | `_multi_tier_note` |
+
 ## Computed by the generator
 
 | Value | Formula / source fields | Code |
@@ -211,6 +215,7 @@ scan. Its Appendix registers D.1 and D.1.2 are built in [app_d_evidence_register
 | `data_mismatch` | warn | DMARC already at or above the level a linked action asks for (`s04:457`) |
 | `data_mismatch` | warn | Active-scan `findings_reported` ≠ findings listed (`s04:670-672`) |
 | `data_mismatch` | warn | A finding lists more affected domains than `affected_assets_count` (`s04:297-299`) |
+| `duplicate_finding_id` | warn | Two findings share a `finding_id`; every (type, severity) record needs its own ID |
 | `unknown_term` | warn | A finding severity is outside critical/high/medium/low/info (`s04:224`) |
 | `severity_term` | warn | An unknown severity term is rendered as a siren cell, for findings, actions or D.1 (`icons.py:126`) |
 | `state_adjusted` | info | The IP reputation `-1` sentinel moves the sub-check to `pending_review` (`s04:593-595`) |
@@ -243,5 +248,6 @@ scan. Its Appendix registers D.1 and D.1.2 are built in [app_d_evidence_register
 - MUST: `state`, `summary`, `metrics[]` (`vulnerability_score` unit `percent`, `finding_types`, `finding_types_{critical,high,medium,low}`), `findings[] {finding_id, finding_type, severity (critical/high/medium/low/info), rationale_source, affected_assets_count, affected_assets[], breach_likelihood {value, unit}}`.
 - MUST for D.1: `assets_register_ref` → `appendices.d_evidence_registers.<key> {state, counts {rows, memberships}, rows[] {asset_label_source, finding_ids[], finding_count, max_severity}}`.
 - MUST sub-checks (send a state + reason even when not run; a missing one prints "Unavailable"): `email_dns_controls {state, controls[] {finding_id, control, result, line_source, dmarc_policy?, key_strength_bits?}, guidance_source}` with all of SPF/DKIM/DMARC/DNSSEC; `ip_reputation {state, ips_checked, rows[] {ip_address, isp, country, abuse_score, reports}}`; `https_redirect {state, result, narrative_source, state_label_source}`.
+- One `findings[]` record per (finding_type, severity); a type found at Critical on one domain and High on others is two records, each with its own unique `finding_id` and its own `affected_assets`.
 - Use NullReasons, never `-1`, for unknown abuse scores. A raw `-1` holds the check for review.
 - Optional: `severity_legend_source[]` (gives Medium/Low their tier text), `breach_likelihood_legend_source`, `breach_likelihood_note_source`, `coverage_note_source`, `scanned_assets {domains[], subdomains[]}`, `active_scan {state, results[]}`, `review_flags[]`, `what_checked`/`next_step` on sub-checks, priority actions with `linked_sections: ["vulnerabilities"]` + `linked_finding_ids`.

@@ -117,6 +117,12 @@ VULNS = [  # (type, severity, likelihood %, rationale, affected subdomains)
     ('DNSSEC not enabled', 'low', 4,
      'The zone is not signed with DNSSEC, so resolvers cannot verify that DNS answers are authentic.',
      ['']),
+    # same type as vuln-03 at a second severity (as the app reports it): one record per (type, severity),
+    # each with its own finding_id; the PDF lists it once per tier and adds a note
+    ('Expired TLS certificate', 'critical', 31,
+     'The certificate on the sign-in host expired months ago, so every visitor sees a warning on the page '
+     'where credentials are entered. This makes interception attacks far easier than on a status page.',
+     ['auth']),
 ]
 FINDINGS = [{'finding_id': f'vuln-{i:02d}', 'finding_type': t, 'severity': s, 'severity_label_source': s.upper(),
              'rationale_source': r, 'affected_assets_count': len(a), 'affected_assets': [asset(x) for x in a],

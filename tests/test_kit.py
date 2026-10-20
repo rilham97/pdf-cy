@@ -221,6 +221,29 @@ def test_gap_vulnerabilities():
     assert 'already p=reject' in text and 'do not agree' in text                                # V13
 
 
+def test_vuln_type_with_several_severities():
+    """One finding type at two severities on different domains: listed once per severity, with a note only
+    in that case; a repeated finding_id raises QA duplicate_finding_id."""
+    import gap_fixtures as G
+    hosts = [f'h{i}.{G.DOMAIN}' for i in range(3)]
+
+    def rep(findings):
+        return G.report_with(G.section('vulnerabilities', 'Vulnerabilities (multi-severity type)', 'findings',
+                                       'Synthetic: one type at two severities.',
+                                       metrics=G.vuln_metrics(len(findings)), findings=findings))
+    crit, high = G.finding(1, 'critical', 1, hosts[:1]), G.finding(2, 'high', 2, hosts[1:])
+    crit['finding_type'] = high['finding_type'] = 'cert_notAfter'
+    text, issues = _payload_text(rep([crit, high]), ['s04'])
+    assert 'cert_notAfter appears under more than one severity' in text, text
+    assert ('duplicate_finding_id', 's04') not in _checks(issues)
+    text, issues = _payload_text(rep([G.finding(1, 'critical', 1, hosts[:1]), G.finding(2, 'high', 2, hosts[1:])]),
+                                 ['s04'])
+    assert 'more than one severity' not in text, text                    # no such case: no note
+    high['finding_id'] = crit['finding_id']
+    _, issues = _payload_text(rep([crit, high]), ['s04'])
+    assert ('duplicate_finding_id', 's04') in _checks(issues), issues
+
+
 def _demo_variant(mutate, only, check=True):
     """Flattened text + QA issues of data/demo-preview.json after mutate(report), built through validate()
     (check=False: a payload the contract would stop, e.g. a no-result state without a reason)."""
@@ -237,8 +260,9 @@ def _demo_variant(mutate, only, check=True):
 def test_s04_scanned_assets_x_of_y():                                  # owner design 2026-10-19
     t = _fixture_text('demo-preview', ['s04'])
     assert 'Scanned assets 12 of 12 scanned domains have at least one finding' in t, t[:2000]
-    assert '1 Critical 3 High 5 Medium 3 Low' in t and 'no finding reported' not in t   # zero bucket hidden
-    assert '12 Finding types' in t and '12 finding types Finding types' not in t       # no repeated unit
+    assert '2 Critical 3 High 4 Medium 3 Low' in t and 'no finding reported' not in t   # zero bucket hidden
+    assert 'Expired TLS certificate appears under more than one severity' in t          # vuln-03 + vuln-13
+    assert '13 Finding types' in t and '13 finding types Finding types' not in t       # no repeated unit
     from cyberrank_report.sections import s04_vulnerabilities as s04
     hits, partial, outside = s04._scan_hits(
         {'findings': [{'severity': 'low', 'affected_assets': ['a.example.com / 192.0.2.1'], 'affected_assets_count': 2},
@@ -339,7 +363,7 @@ def test_d1_registers_follow_the_long_list_rule():                    # code rev
     assert 'Showing the 10 highest abuse scores of 35 IP addresses' in text and '198.51.100.34' in text
     d1 = text[text.index('One row per affected asset'):]
     assert '2001:db8::7 †' not in d1 and 'Not available' in d1                                 # 24 / 23
-    assert 'Section 04 affected-asset counts 30 (difference +2)' in d1                        # 22: _count fallback
+    assert 'Section 04 affected-asset counts 31 (difference +1)' in d1                        # 22: _count fallback
     assert 'One row per IP address' in text and '35 of 35 IP addresses' in text   # 21
     text, _ = _demo_variant(lambda r: r['sections']['vulnerabilities'].pop('ip_reputation'), ['appD'])
     assert 'Not required — all 12 affected assets shown in Section 04' in text                  # 20: T1 index only
@@ -911,7 +935,7 @@ def test_s01_rating_overview_concept_a():                         # user-approve
     for w in ('Reading order', 'report order', 'own score', 'judged by', '0% 100%', '03 Privacy', '15 Cloud', 'demerit', 'ledger', 'point', 'weighting', 'credit', 'A–J', 'Source', '“'):   # never the ledger / quotes
         assert w.lower() not in ov.lower(), (w, ov)
     ov = _overview(_fixture_text('demo-preview', ['s01']))
-    for s in ('12 finding types · 1 Critical, 2 High, 5 Medium, 4 Low', '3 events · 1 resolved', 'Matches the preference',
+    for s in ('13 finding types · 2 Critical, 2 High, 5 Medium, 4 Low', '3 events · 1 resolved', 'Matches the preference',
               '1 of 6 hosting countries outside the preference', '1 of 2 customer-protection clauses found',
               '3 certifications · 1 awaiting approval', '34 connected organisations · 5 need a look', '4 cloud providers'):
         assert s in ov, (s, ov)

@@ -462,12 +462,12 @@
     },
     "points_recoverable": 94,
     "active_issues": {
-     "total": 18,
+     "total": 19,
      "privacy": 6,
-     "vulnerability": 12
+     "vulnerability": 13
     },
     "conditional_on_rescan": true,
-    "narrative_source": "18 active issues were identified (6 privacy issues, 12 vulnerability findings). Completing the recommended actions is expected to recover up to 94 points, conditional on a fresh scan.",
+    "narrative_source": "19 active issues were identified (6 privacy issues, 13 vulnerability findings). Completing the recommended actions is expected to recover up to 94 points, conditional on a fresh scan.",
     "caption_source": "Estimated improvement upon completion of the recommended actions"
    },
    "note": "Rank is the order of the recommendations. Estimated time is not a due date."
@@ -562,7 +562,7 @@
    "title": "Vulnerabilities",
    "group": "assessment_details",
    "state": "findings",
-   "summary": "12 finding types were reported: 1 critical, 2 high, 5 medium and 4 low, across 12 affected assets.",
+   "summary": "13 finding types were reported: 2 critical, 2 high, 5 medium and 4 low, across 12 affected assets.",
    "state_label_source": "38% VULNERABILITY SCORE",
    "intro_source": "Covers external security posture including network vulnerabilities, open services, certificates and email security controls.",
    "metrics": [
@@ -577,7 +577,7 @@
     {
      "id": "finding_types",
      "label": "Finding types",
-     "value": 12,
+     "value": 13,
      "unit": "finding_types",
      "state": "findings",
      "count_kind": "distinct_finding_type"
@@ -585,7 +585,7 @@
     {
      "id": "finding_types_critical",
      "label": "Critical finding types",
-     "value": 1,
+     "value": 2,
      "unit": "finding_types",
      "state": "findings"
     },
@@ -613,7 +613,7 @@
     {
      "id": "asset_memberships",
      "label": "Finding-asset memberships",
-     "value": 30,
+     "value": 31,
      "unit": "memberships",
      "state": "findings",
      "count_kind": "membership_not_unique_assets"
@@ -885,6 +885,23 @@
       "unit": "percent",
       "likelihood_type": "ai_derived_per_finding",
       "source_label": "Breach Likelihood: 4%"
+     }
+    },
+    {
+     "finding_id": "vuln-13",
+     "finding_type": "Expired TLS certificate",
+     "severity": "critical",
+     "severity_label_source": "CRITICAL",
+     "rationale_source": "The certificate on the sign-in host expired months ago, so every visitor sees a warning on the page where credentials are entered. This makes interception attacks far easier than on a status page.",
+     "affected_assets_count": 1,
+     "affected_assets": [
+      "auth.example.com"
+     ],
+     "breach_likelihood": {
+      "value": 31,
+      "unit": "percent",
+      "likelihood_type": "ai_derived_per_finding",
+      "source_label": "Breach Likelihood: 31%"
      }
     }
    ],
@@ -4941,7 +4958,7 @@
     ],
     "counts": {
      "rows": 12,
-     "memberships": 30
+     "memberships": 31
     },
     "rows": [
      {
@@ -5021,10 +5038,11 @@
      {
       "asset_label_source": "auth.example.com",
       "finding_ids": [
-       "vuln-06"
+       "vuln-06",
+       "vuln-13"
       ],
-      "finding_count": 1,
-      "max_severity": "medium"
+      "finding_count": 2,
+      "max_severity": "critical"
      },
      {
       "asset_label_source": "mail.example.com / 198.51.100.7",
