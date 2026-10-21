@@ -18,6 +18,11 @@ def _txt(c, x, y, s, font=T.LIGHT, size=FS, color=T.BODY, align='l'):
     {'l': c.drawString, 'r': c.drawRightString, 'c': c.drawCentredString}[align](x, y, s)
 
 
+def progress(o, r):
+    """Bar label (owner 2026-10-21): 'resolved/total' once anything is resolved, else the total."""
+    return f'{fmt_number(r)}/{fmt_number(o + r)}' if r else fmt_number(o + r)
+
+
 def _legend(c, x, y):
     for lab, col in (('Open', OPEN), ('Resolved', RESOLVED)):
         c.setFillColor(col)
@@ -28,7 +33,7 @@ def _legend(c, x, y):
 
 class YearBars(Flowable):
     """One horizontal stacked bar per year bucket [(label, open, resolved)]. Full width: exact Open | Resolved |
-    Total columns. compact: the total at the bar end. The colour legend sits on the header line in both."""
+    Total columns. compact: 'resolved/total' (or the total) at the bar end. The colour legend sits on the header line in both."""
     ROW, BAR, LABEL_W, NUM_W = 13.5, 7.5, 78, 54
 
     def __init__(self, rows, compact=False):
@@ -42,7 +47,7 @@ class YearBars(Flowable):
     def draw(self):
         c, W = self.canv, self.width
         cols = [] if self.compact else ['Open', 'Resolved', 'Total']
-        bar_w = W - self.LABEL_W - self.NUM_W * len(cols) - (34 if self.compact else 10)
+        bar_w = W - self.LABEL_W - self.NUM_W * len(cols) - (48 if self.compact else 10)
         top = self.height - self.ROW + 4
         _txt(c, 0, top, 'Latest year', T.MEDIUM, color=T.HEADING)
         for i, h in enumerate(cols):
@@ -65,7 +70,7 @@ class YearBars(Flowable):
                     x += w
             t = o + r
             if self.compact:
-                _txt(c, x + 4, base, fmt_number(t), T.MEDIUM if t else T.LIGHT, color=T.HEADING if t else T.MUTED)
+                _txt(c, x + 4, base, progress(o, r), T.MEDIUM if t else T.LIGHT, color=T.HEADING if t else T.MUTED)
                 continue
             vals = [o, r, t]
             for j, n in enumerate(vals):
@@ -75,8 +80,8 @@ class YearBars(Flowable):
 
 
 class MonthStrip(Flowable):
-    """Stacked columns per month [(year, month, open, resolved)], Open at the base; the total above each
-    column, the month under it and the year under its first month (a tick at the year boundary)."""
+    """Stacked columns per month [(year, month, open, resolved)], Open at the base; 'resolved/total' (or the
+    total) above each column, the month under it and the year under its first month (a tick at the year boundary)."""
     TOP, AX = 12, 22
 
     def __init__(self, months, height=96):
@@ -105,7 +110,10 @@ class MonthStrip(Flowable):
                     c.rect(cx - bw / 2, y, bw, h, stroke=0, fill=1)
                     y += h
             t = o + r
-            _txt(c, cx, y + 2.5, fmt_number(t), T.MEDIUM if t else T.LIGHT, FSB, T.HEADING if t else T.MUTED, 'c')
+            lab, size = progress(o, r), FSB
+            while size > 5 and stringWidth(lab, T.MEDIUM, size) > slot - 1:     # a wide label never hits its neighbour
+                size -= 0.5
+            _txt(c, cx, y + 2.5, lab, T.MEDIUM if t else T.LIGHT, size, T.HEADING if t else T.MUTED, 'c')
             _txt(c, cx, self.AX - 9, MONTHS[m - 1], size=FSB, align='c')
             if yr != prev:
                 _txt(c, cx - slot / 2 + 2, 1, str(yr), T.MEDIUM, FSB, T.MUTED)
@@ -127,4 +135,5 @@ def last_months(end, n=12):
 if __name__ == '__main__':        # self-check of the month window
     assert last_months((2026, 10))[0] == (2025, 11) and last_months((2026, 10))[-1] == (2026, 10)
     assert last_months((2026, 1), 3) == [(2025, 11), (2025, 12), (2026, 1)]
+    assert progress(7, 3) == '3/10' and progress(4, 0) == '4' and progress(0, 0) == '0'
     print('ok')

@@ -26,8 +26,8 @@ Section 05 (state `findings` / `partial` / `pending_review` / `none_identified`,
    domains: Appendix D.2.4."), "Other email domains, name not given", "Unknown Email", "All listed rows";
    then the mailbox-provider caveat note.
 6. "Exposure timeline" (H2, replaces the old "Rows by latest exposure year" table; owner 2026-10-21, no caption):
-   left, stacked Open (orange) / Resolved (blue) bars per fixed year bucket with the total at the bar end and the legend on the
-   header line; right, "Last 12 months" columns up to the assessment month (`snapshot.assessed_at`), from the
+   left, stacked Open (orange) / Resolved (blue) bars per fixed year bucket with "resolved/total" (or the total) at the bar end and the legend on the
+   header line; right, "Last 12 months" columns ("resolved/total" or the total above each) up to the assessment month (`snapshot.assessed_at`), from the
    latest month a row's `exposure_period_source` gives (`YYYY-MM` / `YYYY-MM-DD`). No row gives a month: the year
    bars alone, full width, with exact Open | Resolved | Total columns. Legend "Open" / "Resolved" on the header line
    in both layouts; a row without a status is drawn as Open (the status note gives the count). `cyberrank_report/charts.py`.
