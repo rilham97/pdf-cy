@@ -1,5 +1,5 @@
 """Small canvas charts (owner 2026-10-21, credential exposure timeline): linear from 0, a value on every bar,
-quiet colour (Open navy, Resolved slate; a row without a status counts as Open, as in the tiles).
+Open orange (attention), Resolved blue (owner 2026-10-21); a row without a status counts as Open, as in the tiles.
 A non-zero count is at least 1 pt wide/tall so a small bucket never vanishes next to a dominant one."""
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.platypus import Flowable
@@ -7,7 +7,7 @@ from reportlab.platypus import Flowable
 from . import theme as T
 from .text import fmt_number
 
-OPEN, RESOLVED = T.NAVY, T.SLATE_400
+OPEN, RESOLVED = T.STATUS['attention'], T.NAVY      # owner 2026-10-21: open orange, resolved blue
 FS, FSB = 7.8, 7.0
 MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split()
 

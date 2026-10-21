@@ -90,7 +90,7 @@ Each was asked for or approved by the product owner; changing one needs their ap
   Row status `open` / `resolved` (like 06): resolved rows stay listed (D.2.5, green "Resolved") and in every total, but
   tiles, the lead count and Affected domains / D.2.3 count open rows only ("open · p% resolved", Open | Resolved
   columns); missing or other status counts as open (QA `unknown_row_status`); a fully resolved register never turns `clear`.
-  "Exposure timeline" chart (no caption) replaces the year table: Open / Resolved bars per year bucket + last 12 months;
+  "Exposure timeline" chart (no caption) replaces the year table: Open (orange) / Resolved (blue) bars per year bucket + last 12 months;
   no month data -> year bars with exact columns; legend Open / Resolved always; a row without a status is Open
   (one note gives the count), the same rule as the tiles.
 - Labels stay short: no "(as reported)" / "(as sent)" suffixes in column heads; a missing fourth-party sector
