@@ -70,10 +70,6 @@ def _hml(t, sep=' · '):
                     for lbl, v in zip(('High', 'Moderate', 'Low'), t))
 
 
-def _sum_known(t):
-    return None if t is None or None in t else sum(t)
-
-
 def apex_short(sc):
     """Levels where the subdomain rows add up to more than the apex aggregate (which covers
     them all): impossible in consistent data. [(label, apex, subdomains)]; warns once."""
@@ -286,32 +282,21 @@ def _headline(sec):
 
 def end_line(sec, sc):
     head, scopes = _headline(sec), len(sc['groups']) + bool(sc['apex'])
-    rows_line = (f'; {_plural(len(sc["rows"]), "scope × algorithm row")} by level (highest level per row): '
-                 f'{_hml(sc["row_levels"])}')
     if head == (sc['apex_tot'] if sc['apex'] else sc['child_tot']):
         match = 'matches the Section 11 headline'
     elif None not in head and head == sc['row_levels']:
         match = (f'differs from the Section 11 headline {_hml(head)}, which counts the '
                  f'{_plural(len(sc["rows"]), "scope × algorithm row")} by level (highest level per row)')
-        rows_line = ''
     else:
         match = f'differs from the Section 11 headline {_hml(head)}; not explained by the source data'
     checks = [f'source count “{k}” is {src}, listed {v}'
               for k, v in (('rows', len(sc['rows'])), ('scopes', scopes))
               for src in [sc['counts'].get(k)] if src is not None and src != v]
     checks += [_short_text(x) for x in [apex_short(sc)] if x]
-    n_find = _sum_known(sc['child_tot'])
-    return fill(pol('reconciliation.register_end', 'End of {register_id} — {shown} of {total} {unit} shown; '
-                                                   '{suppressed} not shown ({reason}). Totals: {totals}.'),
-                register_id=RID['s11'], shown=scopes, total=scopes, unit='scopes', suppressed=0,
-                reason=f'none withheld; all {C.fmt_number(len(sc["rows"]))} scope × algorithm rows in {RID["s11"]}.2',
-                totals=f'over {_plural(len(sc["groups"]), "subdomain row")}, '
-                       + (f'{C.fmt_number(n_find)} findings ' if n_find is not None else '')
-                       + f'({_hml(sc["child_tot"])}) from {C.fmt_number(len(sc["child"]))} subdomain × algorithm '
-                       f'rows; '
-                       + (f'{sc["apex_label"]}, not added, {_hml(sc["apex_tot"])} — {match}' if sc['apex'] else
-                          f'no main domain total row; the subdomain total {match}')
-                       + rows_line + ''.join(f'; {c}' for c in checks))
+    parts = [] if match.startswith('matches') else \
+        [f'The {"main domain total" if sc["apex"] else "subdomain total"} {match}']
+    parts += checks          # differences only (owner 2026-10-21); nothing when everything matches
+    return '; '.join(parts) + '.' if parts else ''
 
 
 # --- overview modules ------------------------------------------------------------

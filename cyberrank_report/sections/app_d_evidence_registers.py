@@ -321,7 +321,8 @@ def opening(rid, title, sec_id, lines, key, legend=None):
     # anchors would hide the heading's spaceBefore from Keep's estimate
     h2 = C.heading(f'{rid}  {title}', 2, key=f'reg-{rid}', style=H2T)
     head = [C.heading_legend(h2, legend) if legend else h2, C.register_anchor(rid, 'start')]
-    text = [intro(lines[0])] + [C.P(x, 'note_flush', keepWithNext=1) for x in lines[1:]]
+    lines = [x for x in lines if x]        # owner 2026-10-21: only what the tables cannot say (no unit/state/as-of line)
+    text = [intro(lines[0])] + [C.P(x, 'note_flush', keepWithNext=1) for x in lines[1:]] if lines else []
     head += [C.register_anchor(k, 'start') for k in key]
     head += text + [backlink(sec_id)]
     for f in head:
@@ -333,10 +334,10 @@ def closing(rid, key, text, rows=None, unit='rows'):
     """End line: 'End of register · N rows', then the reconciliation text."""
     head = f'End of register · {C.fmt_number(rows)} {unit}. ' if rows is not None else ''
     text = re.sub(r'^End of [^—]*— ', '', text)      # the policy template repeats the register id
-    text = text[:1].upper() + text[1:]
+    text = (head + text[:1].upper() + text[1:]).strip()      # differences only; nothing when all is consistent
     # end anchors go just before the end line and travel with it: after it, on a full page, they would
     # open a blank page (the line's spaceAfter leaves no room even for a zero-height flowable)
-    return [C.keep(*[C.register_anchor(k, 'end') for k in [rid, *key]], C.P(head + text, END_NOTE, spaceBefore=6))]
+    return [C.keep(*[C.register_anchor(k, 'end') for k in [rid, *key]], C.P(text, END_NOTE, spaceBefore=6))]
 
 
 # --- registers --------------------------------------------------------------------
@@ -402,10 +403,7 @@ def d1_assets(report, as_of):
                     for t, v in filter(None, checks))
     flow = opening(rid, title, 's04', [
         f'One row per affected asset, sorted by {"breach likelihood, then " if lik else ""}highest severity, '
-        f'then number of findings, then name. '
-        f'Showing {len(rows)} of {len(rows)}\u00a0assets.',
-        f'Unit: affected assets; Findings counts finding types per asset. State: '
-        f'{T.STATE.get(T.shown_state(info["state"], BY_ID[info["sec"]].key), {}).get("label", "not recorded")}. Snapshot {as_of}.'], [key],
+        f'then number of findings, then name.'], [key],
         legend=C.severity_legend([(k, [str(r.get('max_severity') or '').lower() for r in rows].count(k))
                                   for k in SEV_ORDER]))
     sev_w = max([C.head_width('Highest severity', dense=True)] +
@@ -423,9 +421,9 @@ def d1_assets(report, as_of):
     if flagged:
         flow.append(C.note(f'† {pol("register_defaults.invalid_value_marker.note", "value as provided by source")}'
                            f' ({flagged} labels are not complete host names).'))
-    flow += closing(rid, [key], f'{len(rows)} of {len(rows)} affected assets shown; 0 not shown. '
-                                  f'Totals: {C.fmt_number(members)} finding memberships'
-                                  + (f'; {rec}.' if rec else '.'), rows=len(rows))
+    diff = '; '.join(x for x in rec.split('; ') if 'difference' in x) if rec else ''
+    flow += closing(rid, [key], f'Finding memberships {C.fmt_number(members)}: {diff}.' if diff else '',
+                    rows=len(rows))
     info.update(flow=flow, content=f'{len(rows)} of {len(rows)} affected assets')
     return info
 
@@ -445,10 +443,7 @@ def d12_ip(report, as_of):
         return {**info, 'content': state_message(ipr, SEC_NUM['s04'], 'IP addresses', len(rows) or None)}
     n = len(rows)
     flow = opening(rid, title, 's04', [
-        f'One row per IP address, sorted by abuse score, highest first; scores held for review and blanks last. '
-        f'Showing {n} of {n} IP addresses.',
-        f'Unit: IP addresses. State: {T.STATE.get(info["state"], {}).get("label", "not recorded")}. '
-        f'Snapshot {as_of}.'], [])
+        'One row per IP address, sorted by abuse score, highest first; scores held for review and blanks last.'], [])
 
     def cell(v, numeric):
         if isinstance(v, dict) and v.get('reason_code') == 'sentinel_meaning_unconfirmed':   # policy: label + caveat
@@ -462,8 +457,7 @@ def d12_ip(report, as_of):
     t = register_table(['#', 'IP address', 'ISP', 'Country', 'Abuse score', 'Reports'], entries,
                        title=f'{rid} {title}', sec_id='s04', numeric_cols=(0, 4, 5), ident='regD12', tech_cols=(1,))
     flow += const_line(t) + [t]
-    flow += closing(rid, [], f'{n} of {n} IP addresses shown; 0 not shown. Section {SEC_NUM["s04"]} shows the first '
-                             f'{min(n, pol("lists.ip_reputation.top_n", 10))}.', rows=n)
+    flow += closing(rid, [], '', rows=n)
     info.update(flow=flow, content=f'{n} of {n} IP addresses')
     return info
 
@@ -520,15 +514,11 @@ def d4_credentials(report, identity, as_of):
     if not s05.register_printed(sec.get('state'), d):      # same rule as the Section 05 pointer
         return {**info, 'content': state_message(sec, SEC_NUM['s05'], 'exposed credentials')}
     key = str(sec.get('register_ref') or '').rsplit('.', 1)[-1] or 'credential_register'
-    showing = (f'Showing {C.fmt_number(d["analysed"])} of {C.fmt_number(d["received"])} register rows'
-               + (f' ({C.fmt_number(d["total"])} in the source).' if d['total'] is not None
-                  else '; source total not provided.'))
+    partial = d['analysed'] != d['received'] or (d['total'] is not None and d['total'] != d['received'])
     flow = opening(rid, title, 's05', [
-        f'{rid}.1–{rid}.4 give the aggregates that support Section {SEC_NUM["s05"]} (not repeated there); {rid}.5 lists every register '
-        'row with the account label as delivered by the Cyberrank system (masked upstream), the approximate '
-        f'exposure period and the exposed field categories. {showing}',
-        f'Unit: register rows, not accounts. State: {T.STATE.get(sec.get("state"), {}).get("label")}. '
-        f'Snapshot {as_of}.'], [key])
+        (f'Showing {C.fmt_number(d["analysed"])} of {C.fmt_number(d["received"])} register rows'
+         + (f' ({C.fmt_number(d["total"])} in the source).' if d['total'] is not None else '.')) if partial else ''],
+        [key])
     cats = sorted(d['by_field'].items(), key=lambda kv: (-kv[1], kv[0]))
     labels = pol('lists.credential_exposure.field_labels', {}) or {}
     entries = [('row', [str(i), labels.get(k, k), s05.category_class_label(k), n,
@@ -556,25 +546,12 @@ def d4_credentials(report, identity, as_of):
              *d23_domains(s05, d, sec, rid), *d24_mailboxes(s05, d, rid)]
     reg_flow, printed, flagged = s05.row_register(d)
     flow += reg_flow
-    dom = d['assessed'] or 'assessed domain'
-    split = [(dom, sum(d['cross']['assessed'])), (f'subdomains of {dom}', sum(d['cross']['assessed_subdomain'])),
-             ('other email domains', sum(d['cross']['other_domain'])),
-             ('Unknown Email', sum(d['cross']['unknown_email']))]
-    split = ' + '.join(f'{k} {C.fmt_number(v)}' for k, v in split if v or k != f'subdomains of {dom}')
-    flow += closing(rid, [key], fill(
-        pol('reconciliation.register_end', 'End of {register_id} — {shown} of {total} {unit} shown; '
-                                          '{suppressed} not shown ({reason}). Totals: {totals}.'),
-        register_id=rid, shown=C.fmt_number(printed), total=C.fmt_number(d['received']),
-        unit='register rows', suppressed=d['suppressed'],
-        reason='mask policy violation' if d['suppressed'] else 'none withheld',
-        totals=f'{split} = {C.fmt_number(printed)} rows = Section {SEC_NUM["s05"]} overview total'
-               + (f'; {C.fmt_number(flagged)} label{"s" if flagged != 1 else ""} without a mask character '
-                  'printed as received' if flagged else '')
-               + '; source headline '
-               + (f'{C.fmt_number(d["headline"])} (unit not defined by the source'
-                  + (f'; difference {signed(printed - d["headline"])}, not explained by the source data'
-                     if printed != d['headline'] else '') + ')'
-                  if d['headline'] is not None else 'not provided')), rows=printed)
+    notes = ([f'{C.fmt_number(d["suppressed"])} not shown (mask policy violation)'] if d['suppressed'] else []) + \
+        ([f'{C.fmt_number(flagged)} label{"s" if flagged != 1 else ""} without a mask character printed as received']
+         if flagged else []) + \
+        ([f'source headline {C.fmt_number(d["headline"])}, difference {signed(printed - d["headline"])}, not explained '
+          'by the source data'] if d['headline'] is not None and printed != d['headline'] else [])
+    flow += closing(rid, [key], '; '.join(notes) + '.' if notes else '', rows=printed)
     info.update(flow=flow, content=f'Aggregates and all {C.fmt_number(printed)} of {C.fmt_number(d["received"])} '
                                    'register rows (masked account as delivered)')
     return info
@@ -599,10 +576,7 @@ def d5_quantum(report, as_of):
     src = f' Source: {sc["source_note"]}.' if sc['source_note'] else ''      # omitted when no row has one
     flow = opening(rid, title, 's11', [
         f'{rid}.1 lists one row per scope with its post-quantum (PQC) status, ordered by High, then Moderate, then '
-        f'Low findings.{apex} Showing {scopes} of {scopes} scopes. {rid}.2 lists every scope × algorithm '
-        f'row ({n_rows} of {n_rows}).',
-        f'Unit: scopes ({rid}.1) and scope × algorithm rows ({rid}.2); counts are findings.{src} '
-        f'State: {T.STATE.get(sec.get("state"), {}).get("label")}. Snapshot {as_of}.'],
+        f'Low findings.{apex}{src}'],
         [key, 'pqc_domain_register'], legend=s11.legend(sec))      # names the siren-only count headers
     t = s11.pivot_table(sc, title=f'{rid}.1 {title}', ident='regD5')
     flow += [C.keep(C.heading(f'{rid}.1  Scopes', 3, style=H3T), *const_line(t), t)]
@@ -629,19 +603,13 @@ def d6_vendors(report, sec, as_of):
     org, n = s14.org_name(report), len(vendors)
     flow = opening(rid, title, 's14', [
         f'{rid}.1 lists all {n} connected organisations reported for {org}, sorted by grade, worst first; '
-        f'organisations without a rating last. Showing {n} of {n}\u00a0organisations.',
-        f'Unit: organisations (each listed name counts once; names are not merged). Grade and risk band as sent; '
-        f'the band is not derived from the grade. State: {T.STATE.get(T.shown_state(info["state"], BY_ID[info["sec"]].key), {}).get("label")}. '
-        f'Snapshot {as_of}.'], ['fourth_party_register'])
+        f'organisations without a rating last.'], ['fourth_party_register'])
     cols, w, entries = s14.register_entries(C, vendors, report)
     t = register_table(cols, entries, title=f'{rid}.1 Connected organisations', sec_id='s14', numeric_cols=(0,),
                        widths=w, ident='regD61')
-    rated = sum(1 for v in vendors if s14.grade(v))
     flow += [C.heading(f'{rid}.1  Connected organisations', 3, style=H3T), *const_line(t), t,
              s14.notes(vendors)]
-    flow += closing(rid, ['fourth_party_register'],
-                    f'{n} of {n} organisations shown; 0 not shown. Totals: {rated} rated + {n - rated} not rated '
-                    f'= {n} = Section {SEC_NUM["s14"]} count.', rows=n)
+    flow += closing(rid, ['fourth_party_register'], '', rows=n)
     info.update(flow=flow, content=f'{n} of {n} connected organisations')
     return info
 
@@ -707,7 +675,8 @@ def cert_documents(report, sec):
             flow += ([PageBreak()] if shown or j else []) + (head if j == 0 else []) + \
                 [KeepInFrame(0, T.FRAME_H - 90 if last else 0, [pic], mode='shrink', hAlign='CENTER')]
         shown += 1
-    flow += closing(rid, [], f'{shown} of {len(docs)} uploaded documents shown.', rows=len(docs), unit='documents')
+    flow += closing(rid, [], f'{shown} of {len(docs)} shown.' if shown != len(docs) else '', rows=len(docs),
+                    unit='documents')
     info.update(flow=flow, content=f'{shown} of {len(docs)} uploaded certificate documents')
     return info
 

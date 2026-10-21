@@ -46,7 +46,8 @@ Each was asked for or approved by the product owner; changing one needs their ap
 - Long lists: ≤30 rows inline, longer ones get an overview in the section and the full register in
   Appendix D (`../long-list-rules/long_list_policy.json` when present, built-in defaults otherwise).
   Split tables repeat the header under "<title> · continued / Rows a–b of N" and end with
-  "End of register · N rows".
+  "End of register · N rows" (+ differences only). Register openings say only the sort order (+ "Showing n of m" when
+  rows are missing) and the backlink; no Unit / State / Snapshot line, no "n of n shown" / "Totals" equation.
 - Severity: four separate tiers, never merged, each with its own colour (Critical #9C3A24, High #DC2626,
   Medium #D97706, Low #1F9D55) and siren marker (5 / 3 / 2 / 0 rays). In tables severity is its own narrow,
   centre-aligned column right after # / ID, icon only (the label is invisible text), with a boxless legend
@@ -83,7 +84,8 @@ Each was asked for or approved by the product owner; changing one needs their ap
   "Unknown". The email-domain table is the mailbox provider, not where the credential leaked, and stays separate
   from "Affected domains": other mailbox domains are named (top 10 when > 30, all in D.2.4 "Rows by email domain");
   a subdomain of the assessed domain (mail.<domain>) is never "other".
-  No repeats (owner 2026-10-21): tiles = records, open share, lead (+ unique accounts); no note restating the tiles;
+  No repeats (owner 2026-10-21): tiles = records, open share, lead (+ unique accounts), minus any count the source
+  summary card already states; no note restating the tiles; D.2.5 group rows name the domain only (no count);
   D.2.3 / D.2.4 print a table only when Section 05 cut its list (else one line pointing to Section 05).
   Row status `open` / `resolved` (like 06): resolved rows stay listed (D.2.5, green "Resolved") and in every total, but
   tiles, the lead count and Affected domains / D.2.3 count open rows only ("open · p% resolved", Open | Resolved

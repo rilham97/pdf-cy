@@ -457,7 +457,7 @@ def test_credential_review_fixes():                                      # code 
     # D.2 end line: headline equals the rows -> no '±0' difference; D.2.2 precedence follows s05.CLASSES
     rows[0]['exposed_field_categories'] = ['email', 'shoe_size']          # unclassified, ranks second
     text, _ = _built_text(rep, ['s05', 'appD'])
-    assert 'source headline 40 (unit not defined by the source)' in text and '±0' not in text, text[-600:]
+    assert 'Source headline 40, difference' not in text and '±0' not in text, text[-600:]   # equal: no line
     assert ('highest class (password, then a category not in the data class map, then sensitive personal data, '
             'then other identity fields)') in text
     # withheld rows and invalid affected domains raise QA with counts only
@@ -546,7 +546,7 @@ def test_quantum_review_fixes():                                       # code re
     text, _ = _payload_text(r, ['s11', 'appD'])
     assert 'Same as main domain' not in text and 'all rows “None”' not in text and 'Source:' not in text, text
     assert 'The main domain total' not in text and 'main domain total, not added' not in text, text
-    assert 'no main domain total row; the subdomain total matches the Section 11 headline' in text, text
+    assert 'matches the Section 11 headline' not in text, text                 # consistent: no end-line text
     # 7/10: one risk-explained row with a missing count; 8: PQC detected without a scope register
     row = {**G.qrow(1, G.DOMAIN, 1, 0), 'moderate': None, 'moderate_reason_code': 'not_printed_in_source',
            'risk_level': 'low', 'risk_note_source': 'Covered by PQC.'}
@@ -712,7 +712,7 @@ def test_s07_t2_register():
     assert 'D.6.1 Connected organisations · 35 organisations' in sec and 'Full register' in sec   # sender's unit
     assert 'Supply-chain aggregation' not in text            # no c_methodology.supply_chain: no pointer to it
     assert 'Not rated (outside the scope of the rating service)' in text
-    assert 'End of register · 35 rows' in text and '33 rated + 2 not rated = 35' in text
+    assert 'End of register · 35 rows' in text and 'rated + ' not in text
     assert 'continued' in text and 'Rows ' in text and 'of 35' in text
     assert 'Grade of Example Org (for reference)' in text and 'BB' in text
     reg = ' '.join(' '.join(p for p in pages if 'D.6.1' in p and 'Needs a look' not in p).split())
@@ -1155,9 +1155,8 @@ def test_credential_register_d44_prints_labels_as_received():
     assert 'D.2.5 Credential register' in t and 'End of register · 30 rows' in t
     assert 'Account (masked, as delivered) Approximate exposure period Exposed fields' in t
     assert 'Status' not in t.split('D.2.5 Credential register', 1)[1].split('End of register', 1)[0]  # no status
-    assert ('End of register · 30 rows. 30 of 30 register rows shown; 0 not shown (none withheld). Totals: '
-            'claude.com 29 + other email domains 0 + Unknown Email 1 = 30 rows = Section 05 overview total; '
-            'source headline 40') in t
+    assert 'End of register · 30 rows. Source headline 40, difference' in t     # differences only
+    assert 'Totals:' not in t and 'none withheld' not in t
     assert not [i for i in qa.ISSUES if i['check'] == 'unmasked_account_label']
 
 
@@ -1175,7 +1174,7 @@ def test_credential_year_buckets_and_affected_domains():                 # owner
     assert 'Affected domains Domain Open Resolved With password (open) Latest year example.com 19 0 4 2026 app.example.com 10' in t
     assert 'Exposure timeline Latest year Open Resolved' in t and 'Last 12 months' in t           # concept 3
     assert all(f' {y} ' in t for y in ('2026', '2025', '2024', '2023', '2022', '2021 and before', 'Unknown'))
-    assert 'D.2.3 Rows by affected domain' in t and 'example.com 19 rows' in t       # register grouped by domain
+    assert 'D.2.3 Rows by affected domain' in t and '19 rows' not in t      # grouped by domain; group count not repeated
     for w in ('Row-level detail', 'Credential score printed', 'unit not defined by source)', 'Not available'):
         assert w not in t.split('Recommended mitigation')[0], w
 
@@ -1195,7 +1194,7 @@ def test_mailbox_domains_named_and_own_subdomains_kept():               # owner,
     assert 'Subdomains of example.com' in t and 'example.net 1 3 0 4 Unknown Email' in t
     assert 'Other email domains' not in t.split('Exposure timeline')[0]
     assert 'D.2.4 Rows by email domain' in t and 'D.2.5 Credential register' in t
-    assert 'D.2.1–D.2.4 give the aggregates' in t
+    assert 'D.2.1–D.2.4 give the aggregates' not in t and 'Unit: register rows' not in t
 
 
 def test_credential_resolved_rows_listed_not_counted_open():           # owner, 2026-10-21
@@ -1212,6 +1211,8 @@ def test_credential_resolved_rows_listed_not_counted_open():           # owner, 
     assert d['domains']['portal.example.com']['res'] == 7 and d['domains']['portal.example.com']['pw'] == 0
     t = _fixture_text('demo-preview', ['s05', 'appD'])
     assert 'Domain Open Resolved With password (open) Latest year' in t and '7 (100%)' in t
+    assert 'open · 18% resolved' not in t and '40 exposed account records 7 open' not in t   # card says 40 / 33
+    assert '7 open rows on example.com or its subdomains with a password' in t
     assert 'Counts include resolved rows.' not in t and 'Row status' not in t      # no repeat of the tiles
     assert 'D.2.3 Rows by affected domain All 4 domains are listed in Section 05.' in t     # no second copy
 
@@ -1492,7 +1493,7 @@ def test_appendix_d_ids_follow_section_order():                       # user dec
     assert ids == ['D.1', 'D.1.2', 'D.2', 'D.3', 'D.4', 'D.5', 'D.6'], ids
     marks = [t.split()[0] for _, t, _ in doc.get_toc() if re.match(r'D\.\d', t)]
     assert marks == sorted(marks) and marks[0] == 'D.2', marks   # D.1 (28 rows <= 30): index row only
-    assert 'D.2.5 lists every register row' in ' '.join(text.split())
+    assert 'D.2.5 Credential register' in ' '.join(text.split())
     assert not re.search(r'D\.4\.4|D\.5\.[12]', text)                  # old ids gone
 
 
@@ -1928,7 +1929,7 @@ def test_uploaded_certificate_documents_in_appendix_d5():                 # user
     assert counts['error'] == 0, counts
     assert 'Document in Appendix D.5' in flat and 'D.5 Uploaded certificate documents' in flat, flat
     assert 'D.5.1 Other (standard not named)' in flat and 'D.5.3 ISO27001' in flat, flat
-    assert 'Not shown: D.5.2' in flat and '2 of 3 uploaded documents shown' in flat, flat
+    assert 'Not shown: D.5.2' in flat and 'End of register · 3 documents. 2 of 3 shown.' in flat, flat
     assert imgs >= 2, imgs                                     # PNG + rendered PDF page
     assert any(i['check'] == 'missing_document' for i in issues), issues
     assert 'Approved' in flat and 'automatically' not in flat and 'Approved by team' not in flat

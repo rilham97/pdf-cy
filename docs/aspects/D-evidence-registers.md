@@ -29,9 +29,9 @@ with a page break, its `PageBreakIfNotEmpty` adds no blank page.
 4. H3 "Register index" + an index table with columns D.n · Register · State · Content · Location (`app_d:619-632`).
 5. Note: "Registers that are not required appear here only. Page references link to the register."
 6. Each **printed** register in id order. Every register follows this pattern:
-   - **Opening:** H2 "D.n  Title" (outline entry, anchor `reg-D.n`, optional severity legend on the heading line). A lead sentence (body). Further lines in note style, usually "Unit: … State: … Snapshot {date}." A backlink "Back to Section NN Title, p. N" (`opening`, `app_d:301-313`).
+   - **Opening:** H2 "D.n  Title" (outline entry, anchor `reg-D.n`, optional severity legend on the heading line). Only what the table cannot say (owner 2026-10-21): the sort order, a "Showing n of m" line only when rows are missing, then the backlink "Back to Section NN Title, p. N". No "Unit / State / Snapshot" line: the state is in the index, the date in the page header (`opening`).
    - **Table:** dense; header row repeats. A page continuation opens with the caption "D.n.m Title · continued / Rows a–b of N". When a plain-text column holds one value in every row, it is removed and printed above the table as "Col: value (all rows)." (`app_d:184-190,207-220,287-289`).
-   - **Closing:** "End of register · N {unit}. " followed by the reconciliation text (`closing`, `app_d:316-323`).
+   - **Closing:** "End of register · N {unit}." plus differences only (withheld rows, a source count that differs); no "n of n shown" or "Totals: …" equation when everything matches (`closing`).
 
 ## From the system (payload)
 
@@ -44,7 +44,6 @@ with a page break, its `PageBreakIfNotEmpty` adds no blank page.
 | `d_evidence_registers.state_reason` / `reason_code` / `what_checked` / `next_step` | Appendix card (card states) | Fallbacks per README |
 | `d_evidence_registers.<register>` (`credential_register`, `quantum_scope_register`, `vulnerability_asset_register`, `pqc_domain_register`) | Per register, via `sections.*.*_ref` | See the section files |
 | `sections.<key>.state` | Index "State" chip (`shown_state` with the section key) | "State not recorded" chip |
-| `snapshot.assessed_at` | "Snapshot {date}" in each opening | "Not available" |
 | **D.6:** `sections.fourth_party_vendors.vendors[]` | D.6.1 rows (same cells as the Section 14 T1 table, see the 14 file) | Index row only |
 | **D.6:** `identity.organisation_name` | `{org}` in the D.6 lead | "this organisation" (`page.org_name`) |
 
@@ -73,12 +72,11 @@ with a page break, its `PageBreakIfNotEmpty` adds no blank page.
 | — no count | "Not produced — no register data in the payload." | Hardcoded |
 | — count > limit | "Not produced — no register data in the payload ({count} {unit} in Section {nn})." | Hardcoded |
 | **D.6** "Fourth-party vendors and technologies" | Register title (H2 + index) | `pol('lists.fourth_party_vendors.register_title')`, `d6_vendors` |
-| **D.6** "D.6.1 lists all {n} connected organisations reported for {org}, sorted by grade, worst first; organisations without a rating last. Showing {n} of {n} organisations." | Lead | `app_d:514-515` |
-| **D.6** "Unit: organisations (each listed name counts once; names are not merged). Grade and risk band as sent; the band is not derived from the grade. State: {chip label}. Snapshot {date}." | Second line | `app_d:516-518` |
+| **D.6** "D.6.1 lists all {n} connected organisations reported for {org}, sorted by grade, worst first; organisations without a rating last." | Lead | `d6_vendors` |
 | **D.6** "D.6.1  Connected organisations" | H3 + table caption title | `app_d:520-523` |
 | **D.6** "#", "Organisation", "Sector", "Grade", "Risk band", "Assessed on" | Table heads | `s14:385` |
 | **D.6** "A detected relationship is not evidence of a contract." (+ alias sentence) | Note after the table | `s14.notes` |
-| **D.6** "End of register · {n} rows. {n} of {n} organisations shown; 0 not shown. Totals: {rated} rated + {n−rated} not rated = {n} = Section 14 count." | Closing | `app_d:525-527` |
+| **D.6** "End of register · {n} rows." | Closing | `d6_vendors` |
 | **D.6** "{n} of {n} connected organisations" | Index Content when printed | `app_d:528` |
 
 ## Conditional rules (if / else)

@@ -250,7 +250,7 @@ def derive(data, report, identity):
             'origin': origin,
             'pw_rows': by_class['password'], 'latest': max(latest_all) if latest_all else None,
             'unknown_any': sum(bool(r.get('exposure_period_has_unknown')) for r in ok), 'metrics': metrics,
-            'domains': doms if any(doms) else {}, 'mail': mail}
+            'domains': doms if any(doms) else {}, 'mail': mail, 'summary': str(C.val(data.get('summary')) or '')}
 
 
 def domain_order(d):
@@ -306,11 +306,13 @@ def lead_metric(data, report, identity):
 # --- overview modules ------------------------------------------------------------
 def kpis(d, ctx):
     """Short tiles only, nothing the tables or the timeline below already show (owner 2026-10-21: no redundant
-    info): every listed row, the open share when rows are resolved, the lead count, unique accounts if given."""
+    info): every listed row, the open share when rows are resolved, the lead count, unique accounts if given. A
+    count the source summary (the card above) already states is not repeated as a tile."""
     ua = d['metrics'].get('unique_accounts') or {}
     unique = ua.get('value') is not None and ua.get('grain', ua.get('unique_accounts_grain')) == 'account'
-    items = [{'label': 'exposed account records', 'value': d['analysed'], 'unit': None}]
-    if d['resolved']:        # open rows only in the risk tiles; the total above stays every listed row
+    said = {int(x.replace(',', '')) for x in re.findall(r'\d[\d,]*', d.get('summary') or '')}   # the card above
+    items = [] if d['analysed'] in said else [{'label': 'exposed account records', 'value': d['analysed'], 'unit': None}]
+    if d['resolved'] and d['open'] not in said:     # open rows only in the risk tiles; the total stays every row
         items.append({'label': f'open · {pct(d["resolved"], d["analysed"])} resolved', 'value': d['open'], 'unit': None})
     items.append({'label': lead_label(d), 'value': d['lead'], 'unit': None})
     if unique:      # printed only when the source confirms an account grain
@@ -545,10 +547,9 @@ def row_register(d):
     for i, r in enumerate(rows, 1):
         if doms and r.get('_dom') != current:
             current = r.get('_dom')
-            g = doms[current]
             name = mono(current, True) if current else 'Domain not given'
             entries.append(('group', group_row(C.M(name, 'dense_head'),
-                                               C.P(f'{C.fmt_number(g["rows"])} rows', 'note_flush', alignment=2),
+                                               '',      # the count is in Affected domains (no repeat)
                                                T.CW - 2 * T.CELL_PAD_H), current or 'Domain not given'))
         entries.append(('row', [str(i), str(r.get('account_label_masked') or 'Label not delivered'),
                                 str(r.get('exposure_period_source') or 'Period not given by source'),

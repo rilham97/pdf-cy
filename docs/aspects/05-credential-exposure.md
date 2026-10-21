@@ -38,7 +38,8 @@ Section 05 (state `findings` / `partial` / `pending_review` / `none_identified`,
 
 Appendix D.2 (printed only for state `findings` / `partial` / `pending_review` with ≥ 1 analysed row):
 
-1. "D.2  Credential exposure — supporting tables" (H2) + intro sentence + "Unit: … State: … Snapshot …" line +
+1. "D.2  Credential exposure — supporting tables" (H2) + "Showing n of m register rows (k in the source)." only when rows are
+   missing + "Back to Section 05 Credential exposure, p. n".
    "Back to Section 05 Credential exposure, p. n".
 2. "D.2.1  Rows by exposed field category": # | Field category | Data class | Rows | Share of rows, then notes.
 3. "D.2.2  Rows by data class": intro, Data class | Rows, then the origin-flag note.
@@ -51,7 +52,7 @@ Appendix D.2 (printed only for state `findings` / `partial` / `pending_review` w
    "Other email domains, name not given" and "Unknown Email" last.
 6. "D.2.5  Credential register": intro, # | Account (masked, as delivered) | Approximate exposure period |
    Exposed fields | Status (optional). Grouped by affected domain when present.
-7. End line "End of register · N rows. N of M register rows shown; … Totals: …".
+7. End line "End of register · N rows." + only differences: withheld rows, labels without a mask character, a source headline that differs.
 
 The Appendix D index always has a D.2 row (title, state chip, content, location).
 
@@ -82,7 +83,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | `breach_source_name` (section level, NullReason) | Reason text in the D.2.3 fallback sentence (`s05:440-444`) | "not provided in the assessment data" |
 | `rows_by_field_category[] {field_category, rows}` | D.2.1 difference note only (`app_d:431-435`) | No comparison |
 | `identity.domain` | Assessed domain: class rule, labels, crosstab first row (`s05:148`) | "the assessed domain" / "Assessed domain" / "Subdomains of the assessed domain" |
-| `snapshot.assessed_at` | Assessment year A (buckets, recency); D.2 "Snapshot {date}" (`app_d:106-109`) | Buckets anchor on the newest year in the rows; lead recency text omitted |
+| `snapshot.assessed_at` | Assessment year A (buckets, recency) | Buckets anchor on the newest year in the rows; lead recency text omitted |
 
 ## Hardcoded in the generator
 
@@ -112,8 +113,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | "No register rows are listed in the assessment data, so no breakdown by domain, period or data class can be shown." | Headline-only body (`s05:537`) | — |
 | "Register rows: Not available (not provided in the assessment data)." | No rows, no headline (`s05:539`) | — |
 | "D.2  Credential exposure — supporting tables" | D.2 H2 + index title (`app_d:404,414`) | `lists.credential_exposure.register_title` |
-| "D.2.1–D.2.4 give the aggregates that support Section 05 (not repeated there); D.2.5 lists every register row with the account label as delivered by the Cyberrank system (masked upstream), the approximate exposure period and the exposed field categories. Showing {a} of {b} register rows ({c} in the source)." / "…; source total not provided." | D.2 intro (`app_d:411-417`) | — |
-| "Unit: register rows, not accounts. State: {state label}. Snapshot {date}." | D.2 line 2 (`app_d:418-419`) | State label from `theme.STATE` (raw state, no INVENTORY mapping) |
+| "Showing {n} of {m} register rows[ ({k} in the source)]." | D.2 opening, only when rows are missing | `d4_credentials` |
 | "D.2.1  Rows by exposed field category"; "#", "Field category", "Data class", "Rows", "Share of rows" | D.2.1 (`app_d:425-428`) | Field labels: `lists.credential_exposure.field_labels` (default: raw category name) |
 | Data class cell: "Password category listed", "Category not in the data class map, no password", "Sensitive personal data, no password", "Other identity fields only", "Origin flag (counted apart from classes)" | D.2.1 (`s05:36-41,114-117`) | Class map: `lists.credential_exposure.data_class_map` (else built-in `_MAP` + `LABEL_CLASS`) |
 | "A row can count in several categories; column total exceeds row total." | D.2.1 note (`app_d:429-430`) | `reconciliation.non_exclusive_note` |
@@ -127,7 +127,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | "One row per register row as delivered by the Cyberrank system. The account label is printed exactly as received (masking is applied upstream, not by this report). {Grouped by affected domain; inside a group, newest period first \| Sorted by the newest period a row lists}; rows whose period is only “Unknown” come last. Exposed fields are category names only; no password or other value is printed." | D.2.5 intro (`s05:494-499`) | — |
 | Group row "{domain}" / "Domain not given" + "{n} rows" | D.2.5 (`s05:477-480`) | — |
 | "{Column}: {value} (all rows)." | Above a D.2.x table when a text column holds one value in every row (`app_d:184-190,287-289`) | e.g. "Status: Open (all rows)." |
-| "End of register · {n} rows. {n} of {m} register rows shown; {s} not shown ({mask policy violation \| none withheld}). Totals: {domain} a + subdomains of {domain} b + other email domains c + Unknown Email d = {n} rows = Section 05 overview total[; {f} label(s) without a mask character printed as received]; source headline {h} (unit not defined by the source[; difference ±n, not explained by the source data]) \| source headline not provided." | D.2 end line; the difference only when the headline differs from the rows shown (`app_d:447-465`, `closing`) | `reconciliation.register_end` |
+| "End of register · {n} rows.[ {s} not shown (mask policy violation); {f} labels without a mask character printed as received; source headline {h}, difference {±d}, not explained by the source data.]" | D.2 end line, differences only | `d4_credentials` |
 | Index content "Aggregates and all {n} of {m} register rows (masked account as delivered)" | Appendix D index (`app_d:466-467`) | When D.2 is not printed: `state_message(…, 'exposed credentials')` (`app_d:599-612`, policy `states.register_messages`) |
 
 ## Conditional rules (if / else)
