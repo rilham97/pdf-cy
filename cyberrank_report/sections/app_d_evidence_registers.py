@@ -479,6 +479,28 @@ def d23_domains(s05, d, sec, rid):
     return [C.heading(f'{rid}.3  Rows by affected domain', 3, style=H3T), *const_line(t), t]
 
 
+def d24_mailboxes(s05, d, rid):
+    """<D.n>.4: every account email domain (mailbox provider) by name: the assessed domain, each of its
+    subdomains, then other domains by rows; unnamed and 'Unknown Email' rows last."""
+    a = d['assessed']
+    order = {'assessed': 0, 'assessed_subdomain': 1, 'other_domain': 2}
+    named = sorted(((k, n, c) for (k, n), c in d['mail'].items() if n),
+                   key=lambda x: (order[x[0]], -sum(x[2]), x[1]))
+    num = lambda n: C.P(C.fmt_number(n), s05.ZERO_C if n == 0 else 'dense_num')
+    entries = [('row', [str(i), C.M(s05.mono(n, True), 'dense'), *map(num, c), num(sum(c))])
+               for i, (_, n, c) in enumerate(named, 1)]
+    extra = [('Other email domains, name not given', d['mail'].get(('other_domain', None))),
+             ('Unknown Email', d['cross']['unknown_email'] if sum(d['cross']['unknown_email']) else None)]
+    entries += [('row', [str(len(entries) + i), C.P(name, 'dense_muted'), *map(num, c), num(sum(c))])
+                for i, (name, c) in enumerate([x for x in extra if x[1]], 1)]
+    t = register_table(['#', 'Account email domain', *s05.CROSS_COLS, 'Total'], entries,
+                       title=f'{rid}.4 Rows by email domain', sec_id='s05', numeric_cols=(0, 2, 3, 4, 5), ident='regD44',
+                       widths=[28, T.CW - 28 - 4 * s05.CROSS_WN] + [s05.CROSS_WN] * 4)
+    return [C.heading(f'{rid}.4  Rows by email domain', 3, style=H3T),
+            intro(f'The account\'s mailbox provider, not the site where the credential leaked. {a or "The assessed domain"} '
+                  'and its subdomains first, then other domains by rows.', 'note_flush'), *const_line(t), t]
+
+
 def d4_credentials(report, identity, as_of):
     from . import s05_credential_exposure as s05
     sec = (report.get('sections') or {}).get('credential_exposure') or {}
@@ -493,7 +515,7 @@ def d4_credentials(report, identity, as_of):
                + (f' ({C.fmt_number(d["total"])} in the source).' if d['total'] is not None
                   else '; source total not provided.'))
     flow = opening(rid, title, 's05', [
-        f'{rid}.1–{rid}.3 give the aggregates that support Section {SEC_NUM["s05"]} (not repeated there); {rid}.4 lists every register '
+        f'{rid}.1–{rid}.4 give the aggregates that support Section {SEC_NUM["s05"]} (not repeated there); {rid}.5 lists every register '
         'row with the account label as delivered by the Cyberrank system (masked upstream), the approximate '
         f'exposure period and the exposed field categories. {showing}',
         f'Unit: register rows, not accounts. State: {T.STATE.get(sec.get("state"), {}).get("label")}. '
@@ -522,7 +544,7 @@ def d4_credentials(report, identity, as_of):
              s05.by_data_class(d),
              C.note(f'Service/URL recorded (origin), counted apart from the classes: {C.fmt_number(d["origin"])} '
                     f'row{"s" if d["origin"] != 1 else ""}; the value itself is not provided by the source.'),
-             *d23_domains(s05, d, sec, rid)]
+             *d23_domains(s05, d, sec, rid), *d24_mailboxes(s05, d, rid)]
     reg_flow, printed, flagged = s05.row_register(d)
     flow += reg_flow
     dom = d['assessed'] or 'assessed domain'

@@ -78,9 +78,11 @@ Each was asked for or approved by the product owner; changing one needs their ap
 - Plain words for the reader: the root domain is printed as "main domain" (never "apex"); 11 / D.4 label the root row
   "main domain total". Internal names (`apex`, scope_level) stay in code and QA only.
 - Credential exposure (05): short KPI tiles; "Affected domains" table (domain, rows, with password, latest year)
-  only when register rows carry `affected_domain` — then D.2.3 lists every domain and D.2.4 groups rows by domain,
+  only when register rows carry `affected_domain` — then D.2.3 lists every domain and D.2.5 groups rows by domain,
   like the app. Years in fixed buckets: assessment year and the 4 before it one by one, "<year> and before",
-  "Unknown". The email-domain table is the mailbox provider, not where the credential leaked.
+  "Unknown". The email-domain table is the mailbox provider, not where the credential leaked, and stays separate
+  from "Affected domains": other mailbox domains are named (top 10 when > 30, all in D.2.4 "Rows by email domain");
+  a subdomain of the assessed domain (mail.<domain>) is never "other".
 - Labels stay short: no "(as reported)" / "(as sent)" suffixes in column heads; a missing fourth-party sector
   prints "Unknown", an unrated vendor "Not rated" (a real reason only when the payload gives one).
   Appendix A report details carry no methodology version or time zone rows.

@@ -2,7 +2,7 @@
 (register id RID['s05'] from the registry order).
 
 Long-list policy (lists.credential_exposure), option B (user decision 2026-10-15): Section 05 prints
-aggregates and points to Appendix <D.n>.4, which lists every register row -- the account label exactly as
+aggregates and points to Appendix <D.n>.5, which lists every register row -- the account label exactly as
 delivered by the Cyberrank system (masked upstream; never re-masked here), the approximate exposure
 period, the exposed field categories (names only, never values) and the row status when present.
 Labels without a mask character print as received and raise QA 'unmasked_account_label'.
@@ -13,7 +13,7 @@ mailbox provider, never "where" a credential was exposed, so the caveat always p
 the Unknown period is its own bucket; the origin flag is a count of its own.
 Affected domains (owner request 2026-10-19, like the app's credential view): rows carrying
 `affected_domain` (the organisation domain/subdomain the leaked entry is linked to) get a domain table
-here and are grouped by domain in <D.n>.4; without it neither prints.
+here and are grouped by domain in <D.n>.5; without it neither prints.
 """
 import re
 from collections import Counter
@@ -122,11 +122,23 @@ def data_class(cats):
     return next((c for c in CLASSES if c in found), 'none_provided')
 
 
+def mailbox(row):
+    """The account's mailbox domain as a host name: `email_domain` when it names one, else the part after the
+    last '@' of the delivered label (the backend may send only 'other_domain' / 'external'); None otherwise."""
+    for v in (row.get('email_domain'), str(row.get('account_label_masked') or '').rpartition('@')[2]):
+        v = str(v or '').strip().lower().rstrip('.')
+        if HOST.fullmatch(v):
+            return v
+    return None
+
+
 def domain_class(row, assessed):
-    """Mailbox-provider class of the account email (no webmail list: open decision 17 closed)."""
-    d = str(row.get('email_domain') or '').lower()
-    if row.get('email_state') == 'unknown_email' or not d:
+    """Mailbox-provider class of the account email (no webmail list: open decision 17 closed). A mailbox on
+    the assessed domain or one of its subdomains (mail.example.com) never counts as another domain, even when
+    the backend sent 'other_domain'."""
+    if row.get('email_state') == 'unknown_email' or not row.get('email_domain') and mailbox(row) is None:
         return 'unknown_email'
+    d = mailbox(row) or ''
     if assessed and d == assessed:
         return 'assessed'
     if assessed and d.endswith('.' + assessed):
@@ -160,6 +172,7 @@ def derive(data, report, identity):
     lead_recent = lead_unknown = origin = year_and_unknown = 0
     lead_older = Counter()       # lead rows by latest year, older than the recent range
     doms = {}                    # affected domain -> {rows, pw, latest, unknown}
+    mail = {}                    # (class, mailbox domain or None) -> [with password, without, fields not reported]
     for r in ok:
         dc = domain_class(r, assessed)
         ys = [y for y in r.get('exposure_years') or [] if isinstance(y, int)]
@@ -168,6 +181,8 @@ def derive(data, report, identity):
         cats = sorted(set(r.get('exposed_field_categories') or []))
         cls = data_class(cats)
         cross[dc][0 if cls == 'password' else 2 if not cats else 1] += 1
+        if dc != 'unknown_email':
+            mail.setdefault((dc, mailbox(r)), [0, 0, 0])[0 if cls == 'password' else 2 if not cats else 1] += 1
         by_class[cls] += 1
         by_field.update(cats)
         unmapped.update(c for c in cats if field_class(c) == 'unclassified')
@@ -203,7 +218,7 @@ def derive(data, report, identity):
             'origin': origin, 'year_and_unknown': year_and_unknown,
             'pw_rows': by_class['password'], 'latest': max(latest_all) if latest_all else None,
             'unknown_any': sum(bool(r.get('exposure_period_has_unknown')) for r in ok), 'metrics': metrics,
-            'domains': doms if any(doms) else {}}
+            'domains': doms if any(doms) else {}, 'mail': mail}
 
 
 def domain_order(d):
@@ -374,23 +389,44 @@ def domain_row(name, g, plain=False, dense=False):
             num(g['rows']), num(g['pw']), C.P(latest, base + '_num')]
 
 
+def other_mailboxes(d):
+    """Named mailbox domains outside the assessed domain, most rows first: [(domain, [pw, no pw, not reported])]."""
+    named = [(n, c) for (k, n), c in d['mail'].items() if k == 'other_domain' and n]
+    return sorted(named, key=lambda nc: (-sum(nc[1]), nc[0]))
+
+
 def crosstab(d):
-    """Email domain of the exposed accounts (mailbox provider) x password category listed."""
+    """Email domain of the exposed accounts (mailbox provider) x password category listed. Other email domains
+    are named, most rows first (owner 2026-10-21); more than INLINE_DOMAINS: the top TOP_DOMAINS plus one
+    '{n} other email domains' row, every domain in <D.n>.4."""
     dom = d['assessed']
-    label = {'assessed': dom or 'Assessed domain',
-             'assessed_subdomain': f'Subdomains of {dom}' if dom else 'Subdomains of the assessed domain',
-             'other_domain': 'Other email domains', 'unknown_email': 'Unknown Email'}
-    keys = [k for k in DOMAIN_CLASSES if k != 'assessed_subdomain' or sum(d['cross'][k])]
     cell = lambda n, lead=False: C.P(C.fmt_number(n), LEAD_C if lead and n else ZERO_C if n == 0 else 'cell_num')
-    rows = [[label[k], *[cell(n, k == 'assessed' and j == 0) for j, n in enumerate(d['cross'][k])],
-             cell(sum(d['cross'][k]))] for k in keys]
+    line = lambda name, c, lead=False, tech=False: [C.M(mono(name), 'cell') if tech else name,
+                                                    *[cell(n, lead and j == 0) for j, n in enumerate(c)], cell(sum(c))]
+    rows = [line(dom or 'Assessed domain', d['cross']['assessed'], lead=True)]
+    if sum(d['cross']['assessed_subdomain']):
+        rows.append(line(f'Subdomains of {dom}' if dom else 'Subdomains of the assessed domain',
+                         d['cross']['assessed_subdomain']))
+    others = other_mailboxes(d)
+    cut = others[:TOP_DOMAINS] if len(others) > INLINE_DOMAINS else others
+    rows += [line(n, c, tech=True) for n, c in cut]
+    rest = others[len(cut):]
+    if rest:
+        rows.append(line(f'{C.fmt_number(len(rest))} other email domains', [sum(c[j] for _, c in rest) for j in range(3)]))
+    unnamed = d['mail'].get(('other_domain', None))
+    if unnamed:
+        rows.append(line('Other email domains, name not given', unnamed))
+    if sum(d['cross']['unknown_email']):
+        rows.append(line('Unknown Email', d['cross']['unknown_email']))
     tot = [sum(d['cross'][k][j] for k in DOMAIN_CLASSES) for j in range(3)]
     rows.append([C.P('All listed rows', 'cell_head')] + [C.P(C.fmt_number(n), 'cell_head_num')
                                                          for n in tot + [sum(tot)]])
-    return [C.heading('Email domain of exposed accounts', 2, style=H2T),
-            gap(C.compact_table(['Account email domain', *CROSS_COLS, 'Total'], rows, numeric_cols=(1, 2, 3, 4),
-                                widths=[T.CW - 4 * CROSS_WN] + [CROSS_WN] * 4), 6),
-            C.note(CAVEAT)]
+    out = [C.heading('Email domain of exposed accounts', 2, style=H2T),
+           gap(C.compact_table(['Account email domain', *CROSS_COLS, 'Total'], rows, numeric_cols=(1, 2, 3, 4),
+                               widths=[T.CW - 4 * CROSS_WN] + [CROSS_WN] * 4), 6)]
+    if rest:
+        out.append(C.note(f'All {C.fmt_number(len(others))} other email domains: Appendix {RID["s05"]}.4.'))
+    return out + [C.note(CAVEAT)]
 
 
 def year_buckets(d):
@@ -455,7 +491,7 @@ REG_COLS = ['#', 'Account (masked, as delivered)', 'Approximate exposure period'
 
 
 def row_register(d):
-    """Appendix <D.n>.4: every analysed register row. The label prints AS RECEIVED (masking is upstream);
+    """Appendix <D.n>.5: every analysed register row. The label prints AS RECEIVED (masking is upstream);
     QA flags labels without a mask character. Status column only when a row carries one; one value in
     every row collapses into the caption line. With affected domains the rows are grouped by domain
     (domain_order), newest period first inside each group. Returns (flowables, rows printed, labels flagged)."""
@@ -489,7 +525,7 @@ def row_register(d):
     w_per = min(max([sw(str(r.get('exposure_period_source') or '')) for r in rows] + [96]), 150)
     w_st = max([sw(x) for x in statuses] + [sw('Status', T.MEDIUM)]) if with_status else 0
     widths = [w0, w_acc, w_per, T.CW - w0 - w_acc - w_per - w_st] + ([w_st] if with_status else [])
-    t = register_table(REG_COLS + (['Status'] if with_status else []), entries, title=f'{RID["s05"]}.4 Credential register',
+    t = register_table(REG_COLS + (['Status'] if with_status else []), entries, title=f'{RID["s05"]}.5 Credential register',
                        sec_id='s05', numeric_cols=(0,), ident='regD44', widths=widths, text_cells=True, tech_cols=(1,))
     order = ('Grouped by affected domain; inside a group, newest period first' if doms else
              'Sorted by the newest period a row lists')
@@ -497,7 +533,7 @@ def row_register(d):
                  f'exactly as received (masking is applied upstream, not by this report). {order}; rows whose '
                  'period is only “Unknown” come last. Exposed fields are category names only; no password or '
                  'other value is printed.', 'note_flush')
-    return [C.heading(f'{RID["s05"]}.4  Credential register', 3, style=H3T), lead, *const_line(t), t], len(rows), flagged
+    return [C.heading(f'{RID["s05"]}.5  Credential register', 3, style=H3T), lead, *const_line(t), t], len(rows), flagged
 
 
 def mitigations(data, d):

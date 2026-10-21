@@ -470,7 +470,7 @@ def test_credential_review_fixes():                                      # code 
     warn = {i['check']: i['detail'] for i in qa.ISSUES}
     assert d['suppressed'] == 1 and 'x*@' not in warn['mask_policy_violation'], warn
     assert '1 credential register rows' in warn['invalid_affected_domain'] and 'not a host!' not in str(warn)
-    # status as received (the D.2.4 column prints it raw too); pointer only where D.2 renders
+    # status as received (the D.2.5 column prints it raw too); pointer only where D.2 renders
     assert 'OPEN 1' in s05.status_line({**d, 'rows': [{'status': 'OPEN'}], 'analysed': 1})[0].getPlainText()
     assert s05.register_printed('findings', d) and not s05.register_printed('none_identified', d)
     ctx = Ctx(BY_ID['s05'], rep, ident, 'none_identified', False)
@@ -1146,7 +1146,7 @@ def test_gmail_scan_time_and_source_labels():                                   
     assert 'Review flag RF-G04' in t
 
 
-# --- credential register in Appendix D.2.4 (policy option B, 2026-10-15) ------------------------------------
+# --- credential register in Appendix D.2.5 (policy option B, 2026-10-15) ------------------------------------
 def test_credential_register_d44_prints_labels_as_received():
     report = json.loads(FIXTURE.read_text(encoding='utf-8'))
     rows = report['appendices']['d_evidence_registers']['credential_register']['rows']
@@ -1155,9 +1155,9 @@ def test_credential_register_d44_prints_labels_as_received():
     for r in rows:                                                   # every label, exactly as delivered
         assert r['account_label_masked'] in t, r['id']
     assert 'Full register D.2 Credential exposure' in t and '30 rows' in t      # one pointer, no repeat line
-    assert 'D.2.4 Credential register' in t and 'End of register · 30 rows' in t
+    assert 'D.2.5 Credential register' in t and 'End of register · 30 rows' in t
     assert 'Account (masked, as delivered) Approximate exposure period Exposed fields' in t
-    assert 'Status' not in t.split('D.2.4 Credential register', 1)[1].split('End of register', 1)[0]  # no status
+    assert 'Status' not in t.split('D.2.5 Credential register', 1)[1].split('End of register', 1)[0]  # no status
     assert ('End of register · 30 rows. 30 of 30 register rows shown; 0 not shown (none withheld). Totals: '
             'claude.com 29 + other email domains 0 + Unknown Email 1 = 30 rows = Section 05 overview total; '
             'source headline 40') in t
@@ -1182,6 +1182,24 @@ def test_credential_year_buckets_and_affected_domains():                 # owner
         assert w not in t.split('Recommended mitigation')[0], w
 
 
+def test_mailbox_domains_named_and_own_subdomains_kept():               # owner, 2026-10-21
+    from cyberrank_report.page import identity_from_report
+    from cyberrank_report.sections import s05_credential_exposure as s05
+    report = json.loads((FIXTURE.parent / 'demo-preview.json').read_text(encoding='utf-8'))
+    rows = report['appendices']['d_evidence_registers']['credential_register']['rows']
+    for r in rows:
+        if r.get('email_domain') == 'mail.example.com':
+            r['email_domain'] = 'other_domain'          # backend sends only the class: the label still names it
+    d = s05.derive(report['sections']['credential_exposure'], report, identity_from_report(report))
+    assert sum(d['cross']['assessed_subdomain']) == 5 and sum(d['cross']['other_domain']) == 4, d['cross']
+    assert [n for n, _ in s05.other_mailboxes(d)] == ['example.net']
+    t = _fixture_text('demo-preview', ['s05', 'appD'])
+    assert 'Subdomains of example.com' in t and 'example.net 1 3 0 4 Unknown Email' in t
+    assert 'Other email domains' not in t.split('Rows by latest exposure year')[0]
+    assert 'D.2.4 Rows by email domain' in t and 'D.2.5 Credential register' in t
+    assert 'D.2.1–D.2.4 give the aggregates' in t
+
+
 def test_credential_register_order_status_and_unmasked_warning():
     from cyberrank_report.sections import s05_credential_exposure as s05
     mk = lambda i, latest, period, label, status=None: {
@@ -1203,7 +1221,7 @@ def test_credential_register_order_status_and_unmasked_warning():
     assert not [i for i in issues if i['severity'] == 'error'], issues   # the tall row continues overleaf
     import pymupdf
     text = ' '.join(' '.join(p.get_text() for p in pymupdf.open(out)).split())
-    assert 'category_000' in text and 'category_399' in text and 'D.2.4 Credential register · continued' in text
+    assert 'category_000' in text and 'category_399' in text and 'D.2.5 Credential register · continued' in text
     assert 'plainuser@example.com' in text                           # printed as received, not re-masked
     assert 'Status' in text and 'Not recorded' in text               # a row has a status: column printed
     assert text.index('n**w@example.com') < text.index('plainuser@example.com') < text.index('u***@example.com')
@@ -1458,7 +1476,7 @@ def test_appendix_d_ids_follow_section_order():                       # user dec
     assert ids == ['D.1', 'D.1.2', 'D.2', 'D.3', 'D.4', 'D.5', 'D.6'], ids
     marks = [t.split()[0] for _, t, _ in doc.get_toc() if re.match(r'D\.\d', t)]
     assert marks == sorted(marks) and marks[0] == 'D.2', marks   # D.1 (28 rows <= 30): index row only
-    assert 'D.2.4 lists every register row' in ' '.join(text.split())
+    assert 'D.2.5 lists every register row' in ' '.join(text.split())
     assert not re.search(r'D\.4\.4|D\.5\.[12]', text)                  # old ids gone
 
 

@@ -9,7 +9,7 @@ their sections:
 | Id | Register | File |
 |---|---|---|
 | D.1 (+ D.1.2) | Affected assets by finding (+ IP reputation, index row only) | [04-vulnerabilities.md](04-vulnerabilities.md) |
-| D.2 (D.2.1–D.2.4) | Credential exposure — supporting tables | [05-credential-exposure.md](05-credential-exposure.md) |
+| D.2 (D.2.1–D.2.5) | Credential exposure — supporting tables | [05-credential-exposure.md](05-credential-exposure.md) |
 | D.3 | Data leak event details (always an index row only) | [06-data-leak-history.md](06-data-leak-history.md) |
 | D.4 (D.4.1–D.4.2) | Quantum scope breakdown | [11-quantum-security.md](11-quantum-security.md) |
 | D.5 (D.5.n) | Uploaded certificate documents | [13-certifications.md](13-certifications.md) |

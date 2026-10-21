@@ -17,7 +17,10 @@ Section 05 (state `findings` / `partial` / `pending_review` / `none_identified`,
 3. Reconciliation notes, 0..n (headline vs rows, rows received vs total, withheld rows, payload metric mismatches).
 4. "Affected domains" (H2): Domain | Rows | With password | Latest year. Only when rows carry `affected_domain`.
 5. "Email domain of exposed accounts" (H2): Account email domain | With password | Without password |
-   Fields not reported | Total, then the mailbox-provider caveat note.
+   Fields not reported | Total. Rows: the assessed domain, "Subdomains of {domain}", then every other mailbox
+   domain by name, most rows first (> 30 named: top 10 + "{n} other email domains" + "All {n} other email
+   domains: Appendix D.2.4."), "Other email domains, name not given", "Unknown Email", "All listed rows";
+   then the mailbox-provider caveat note.
 6. "Rows by latest exposure year" (H2): one row of fixed year buckets + one note line.
 7. "Row status as recorded: …" note (only when rows carry `status`).
 8. Register pointer: "**Full register**  D.2 Credential exposure — supporting tables  ·  N rows  ·  Appendix D, pages a–b".
@@ -33,9 +36,12 @@ Appendix D.2 (printed only for state `findings` / `partial` / `pending_review` w
 3. "D.2.2  Rows by data class": intro, Data class | Rows, then the origin-flag note.
 4. "D.2.3  Rows by affected domain": # | Domain | Rows | With password | Latest year. **Or**, without
    `affected_domain`: "D.2.3  Exposure episodes and sources" + an "unavailable" sentence.
-5. "D.2.4  Credential register": intro, # | Account (masked, as delivered) | Approximate exposure period |
+5. "D.2.4  Rows by email domain": intro, # | Account email domain | With password | Without password |
+   Fields not reported | Total: the assessed domain, each of its subdomains, then every other domain by rows;
+   "Other email domains, name not given" and "Unknown Email" last.
+6. "D.2.5  Credential register": intro, # | Account (masked, as delivered) | Approximate exposure period |
    Exposed fields | Status (optional). Grouped by affected domain when present.
-6. End line "End of register · N rows. N of M register rows shown; … Totals: …".
+7. End line "End of register · N rows. N of M register rows shown; … Totals: …".
 
 The Appendix D index always has a D.2 row (title, state chip, content, location).
 
@@ -45,16 +51,16 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 |---|---|---|
 | `title`, `intro_source`, `summary`, `state`, `state_reason`, `reason_code`, `what_checked`, `next_step`, `empty_state_source {text, coverage}` | Opener / card (README §3) | Shared rules; `empty_state_source.text` is the `clear` card reason when there is no `state_reason` / `reason_code` (`s05:520-524`) |
 | `register_ref` | Dotted path to the register, e.g. `appendices.d_evidence_registers.credential_register` (`s05:146`, `lookup`) | No rows: body is "Register rows: Not available (not provided in the assessment data)." (`s05:539`) |
-| register `rows[]` | Everything below: every count, table and D.2.4 row | See no-rows branches in Conditional rules |
-| `rows[].account_label_masked` | D.2.4 "Account" column, **verbatim** (never re-masked), JetBrains Mono (`s05:481`) | "Label not delivered" |
-| `rows[].exposure_period_source` | D.2.4 "Approximate exposure period", verbatim (`s05:482`) | "Period not given by source" |
-| `rows[].exposed_field_categories[]` | Data class of the row; crosstab column; D.2.1 rows; D.2.4 "Exposed fields" (raw names joined ", ", `s05:483`) | Empty: crosstab "Fields not reported"; class "Fields not reported by source"; D.2.4 "Not provided by source" |
-| `rows[].exposure_years[]` (ints) | Latest year = max → year buckets, "latest exposure year" tile, domain "Latest year", lead recency, D.2.4 sort (`s05:165-166`) | Non-int items ignored; no year → "Unknown" bucket (if flag) or "Not given" bucket |
+| register `rows[]` | Everything below: every count, table and D.2.5 row | See no-rows branches in Conditional rules |
+| `rows[].account_label_masked` | D.2.5 "Account" column, **verbatim** (never re-masked), JetBrains Mono (`s05:481`) | "Label not delivered" |
+| `rows[].exposure_period_source` | D.2.5 "Approximate exposure period", verbatim (`s05:482`) | "Period not given by source" |
+| `rows[].exposed_field_categories[]` | Data class of the row; crosstab column; D.2.1 rows; D.2.5 "Exposed fields" (raw names joined ", ", `s05:483`) | Empty: crosstab "Fields not reported"; class "Fields not reported by source"; D.2.5 "Not provided by source" |
+| `rows[].exposure_years[]` (ints) | Latest year = max → year buckets, "latest exposure year" tile, domain "Latest year", lead recency, D.2.5 sort (`s05:165-166`) | Non-int items ignored; no year → "Unknown" bucket (if flag) or "Not given" bucket |
 | `rows[].exposure_period_has_unknown` | "Unknown" bucket when the row has no year; "row(s) list both a year and “Unknown”" note (`s05:167-176`) | false |
 | `rows[].email_domain` | Mailbox-provider class (assessed / subdomain / other / unknown) for the crosstab and lead tile (`s05:125-134`); **never printed** | Empty → "Unknown Email" class |
 | `rows[].email_state` | `unknown_email` → "Unknown Email" class (`s05:128`) | — |
-| `rows[].affected_domain` *(optional)* | "Affected domains" table, "affected domains" tile, D.2.3 table, D.2.4 groups. Lower-cased, trailing dot stripped, must be a host name (`s05:137-140`) | Missing / not a host → "Domain not given" row/group; a value that is not a host also raises QA `invalid_affected_domain` (`s05:153-156`). No row has one → none of these print |
-| `rows[].status` *(optional)* | "Row status as recorded" note and D.2.4 "Status" column, both as received (trimmed only, `s05:218,484`) | Column only when any row has one; that row prints "Not recorded" |
+| `rows[].affected_domain` *(optional)* | "Affected domains" table, "affected domains" tile, D.2.3 table, D.2.5 groups. Lower-cased, trailing dot stripped, must be a host name (`s05:137-140`) | Missing / not a host → "Domain not given" row/group; a value that is not a host also raises QA `invalid_affected_domain` (`s05:153-156`). No row has one → none of these print |
+| `rows[].status` *(optional)* | "Row status as recorded" note and D.2.5 "Status" column, both as received (trimmed only, `s05:218,484`) | Column only when any row has one; that row prints "Not recorded" |
 | `rows[].id` | Named in QA `unmasked_account_label` detail only (`s05:467`) | — |
 | register `counts.total_rows` (number, `{value}`, or NullReason) | Reconciliation "of {total_rows} rows"; D.2 intro "(Z in the source)" (`s05:194,199`; `app_d:411-413`) | "source total not provided" wording |
 | register `counts.headline_found` | Headline fallback when metric `found_headline` is absent (`s05:193`) | — |
@@ -84,7 +90,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | "Source metric “{label}” is {x}; the register rows give {y} (difference ±n).{ note}" / "Payload count (prepared from the source rows; not printed by the source) “{label}” …" | Reconciliation (`s05:336-340`) | First wording when the metric has `source_label` |
 | "Affected domains"; "Domain", "Rows", "With password", "Latest year"; "{n} other domains"; "Domain not given"; "Unknown" / "Not given" (latest-year cell) | Affected domains table (`s05:358-374`) | — |
 | "All {n} domains: Appendix D.2.3." | Under the domain table when cut (`s05:365`) | — |
-| "Email domain of exposed accounts"; "Account email domain", "With password", "Without password", "Fields not reported", "Total"; "Subdomains of {domain}", "Other email domains", "Unknown Email", "All listed rows" | Crosstab (`s05:32,380-392`) | — |
+| "Email domain of exposed accounts"; "Account email domain", "With password", "Without password", "Fields not reported", "Total"; "Subdomains of {domain}", "{n} other email domains", "Other email domains, name not given", "All {n} other email domains: Appendix D.2.4.", "Unknown Email", "All listed rows" | Crosstab (`s05:32,380-392`) | — |
 | "The email domain is the account's mailbox provider, not the site where the credential leaked." | Note under the crosstab, always (`s05:51,393`) | — |
 | "Rows by latest exposure year"; bucket heads "{year}", "{A-5} and before", "Unknown", "Not given" | Year table (`s05:396-428`) | — |
 | "Each row counts once, under the latest year the source gives; “Unknown” rows have no year." | Year note, always (`s05:421`) | — |
@@ -100,7 +106,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | "No register rows are listed in the assessment data, so no breakdown by domain, period or data class can be shown." | Headline-only body (`s05:537`) | — |
 | "Register rows: Not available (not provided in the assessment data)." | No rows, no headline (`s05:539`) | — |
 | "D.2  Credential exposure — supporting tables" | D.2 H2 + index title (`app_d:404,414`) | `lists.credential_exposure.register_title` |
-| "D.2.1–D.2.3 give the aggregates that support Section 05 (not repeated there); D.2.4 lists every register row with the account label as delivered by the Cyberrank system (masked upstream), the approximate exposure period and the exposed field categories. Showing {a} of {b} register rows ({c} in the source)." / "…; source total not provided." | D.2 intro (`app_d:411-417`) | — |
+| "D.2.1–D.2.4 give the aggregates that support Section 05 (not repeated there); D.2.5 lists every register row with the account label as delivered by the Cyberrank system (masked upstream), the approximate exposure period and the exposed field categories. Showing {a} of {b} register rows ({c} in the source)." / "…; source total not provided." | D.2 intro (`app_d:411-417`) | — |
 | "Unit: register rows, not accounts. State: {state label}. Snapshot {date}." | D.2 line 2 (`app_d:418-419`) | State label from `theme.STATE` (raw state, no INVENTORY mapping) |
 | "D.2.1  Rows by exposed field category"; "#", "Field category", "Data class", "Rows", "Share of rows" | D.2.1 (`app_d:425-428`) | Field labels: `lists.credential_exposure.field_labels` (default: raw category name) |
 | Data class cell: "Password category listed", "Category not in the data class map, no password", "Sensitive personal data, no password", "Other identity fields only", "Origin flag (counted apart from classes)" | D.2.1 (`s05:36-41,114-117`) | Class map: `lists.credential_exposure.data_class_map` (else built-in `_MAP` + `LABEL_CLASS`) |
@@ -111,9 +117,9 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | "Service/URL recorded (origin), counted apart from the classes: {n} row(s); the value itself is not provided by the source." | D.2.2 note (`app_d:442-443`) | — |
 | "D.2.3  Rows by affected domain"; "#", "Domain", "Rows", "With password", "Latest year" | D.2.3 (`app_d:393-398`) | — |
 | "D.2.3  Exposure episodes and sources" + "Data unavailable: episode grouping and breach source names are {reason}. This is not a zero result." | D.2.3 fallback (`app_d:391`, `s05:440-444`) | `states.overview_messages.unavailable` |
-| "D.2.4  Credential register"; "#", "Account (masked, as delivered)", "Approximate exposure period", "Exposed fields", "Status" | D.2.4 (`s05:454,492,500`) | — |
-| "One row per register row as delivered by the Cyberrank system. The account label is printed exactly as received (masking is applied upstream, not by this report). {Grouped by affected domain; inside a group, newest period first \| Sorted by the newest period a row lists}; rows whose period is only “Unknown” come last. Exposed fields are category names only; no password or other value is printed." | D.2.4 intro (`s05:494-499`) | — |
-| Group row "{domain}" / "Domain not given" + "{n} rows" | D.2.4 (`s05:477-480`) | — |
+| "D.2.5  Credential register"; "#", "Account (masked, as delivered)", "Approximate exposure period", "Exposed fields", "Status" | D.2.5 (`s05:454,492,500`) | — |
+| "One row per register row as delivered by the Cyberrank system. The account label is printed exactly as received (masking is applied upstream, not by this report). {Grouped by affected domain; inside a group, newest period first \| Sorted by the newest period a row lists}; rows whose period is only “Unknown” come last. Exposed fields are category names only; no password or other value is printed." | D.2.5 intro (`s05:494-499`) | — |
+| Group row "{domain}" / "Domain not given" + "{n} rows" | D.2.5 (`s05:477-480`) | — |
 | "{Column}: {value} (all rows)." | Above a D.2.x table when a text column holds one value in every row (`app_d:184-190,287-289`) | e.g. "Status: Open (all rows)." |
 | "End of register · {n} rows. {n} of {m} register rows shown; {s} not shown ({mask policy violation \| none withheld}). Totals: {domain} a + subdomains of {domain} b + other email domains c + Unknown Email d = {n} rows = Section 05 overview total[; {f} label(s) without a mask character printed as received]; source headline {h} (unit not defined by the source[; difference ±n, not explained by the source data]) \| source headline not provided." | D.2 end line; the difference only when the headline differs from the rows shown (`app_d:447-465`, `closing`) | `reconciliation.register_end` |
 | Index content "Aggregates and all {n} of {m} register rows (masked account as delivered)" | Appendix D index (`app_d:466-467`) | When D.2 is not printed: `state_message(…, 'exposed credentials')` (`app_d:599-612`, policy `states.register_messages`) |
@@ -125,16 +131,16 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | state `clear` | Card only; body empty | `s05:528-529` |
 | No register rows **and** headline non-zero | Headline tile + reconciliation + "No register rows are listed…" sentence; QA `data_mismatch` | `s05:532-538` |
 | No register rows, no headline | "Register rows: Not available (not provided in the assessment data)." | `s05:539` |
-| Row `email_domain` contains `@` or `*` | Row withheld from every count and from D.2.4; "{n} rows withheld…" note; end line "mask policy violation"; QA `mask_policy_violation` | `s05:149-152,321-323`; `app_d:457` |
+| Row `email_domain` contains `@` or `*` | Row withheld from every count and from D.2.5; "{n} rows withheld…" note; end line "mask policy violation"; QA `mask_policy_violation` | `s05:149-152,321-323`; `app_d:457` |
 | `email_state == unknown_email` or no `email_domain` | Class "Unknown Email" | `s05:128-129` |
-| `email_domain == identity.domain` / ends with `.{domain}` / else | assessed / assessed_subdomain / other_domain | `s05:130-134` |
+| Mailbox domain (`email_domain` when it is a host name, else the part after '@' in `account_label_masked`) `== identity.domain` / ends with `.{domain}` / else (incl. `other_domain` / `external` with no host) | assessed / assessed_subdomain / other_domain; a subdomain such as `mail.{domain}` is never "other", even when the backend sent `other_domain` | `s05:130-134` |
 | Row's categories contain a password category | Crosstab "With password"; else categories present → "Without password"; none → "Fields not reported" | `s05:170` |
 | Category class | policy/built-in map: password → sensitive personal → other identity (exact, then normalised, then breach-label list) → `service_recorded` (`origin`) → else unclassified + QA warn | `s05:101-111,189-191` |
 | Row class (exclusive) | First present in: password, unclassified, sensitive_personal, other_identity, service_recorded_only, none_provided | `s05:33,120-122` |
 | Lead count | Rows with class password on assessed domain or its subdomains | `s05:200` |
 | No row on assessed domain or subdomains (but rows exist) | Lead tile label "of N listed rows are on …; all are …" (names other email domains and/or Unknown Email, whichever have rows); extra reconciliation sentence | `s05:227-229,249-252,306-311` |
 | Subdomain rows with a password > 0 | " or its subdomains" in lead label | `s05:253` |
-| Any row has a valid `affected_domain` | "affected domains" tile, "Affected domains" table, D.2.3 domain table, D.2.4 grouping | `s05:206,276-277,347-348`; `app_d:390`; `s05:464-466` |
+| Any row has a valid `affected_domain` | "affected domains" tile, "Affected domains" table, D.2.3 domain table, D.2.5 grouping | `s05:206,276-277,347-348`; `app_d:390`; `s05:464-466` |
 | Named affected domains > 30 | Table shows top 10 + "{n} other domains" row + "All {n} domains: Appendix D.2.3." | `s05:53,351-365` |
 | Some rows lack a valid `affected_domain` | "Domain not given" row (last) / group; a non-empty value that is not a host also raises QA `invalid_affected_domain` (count only) | `s05:153-156,359-360,477` |
 | Domain order | Assessed domain, then its subdomains, then other hosts; each by rows desc, then name; "Domain not given" last | `s05:209-213` |
@@ -146,7 +152,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | No row has a year | Latest tile "Not available" + reason: "Period “Unknown” in source" when every yearless row is flagged Unknown, "Exposure year not given by the source" when none is, "Period “Unknown” or not given in source" for a mix | `s05:278-279,285-289` |
 | Rows with both year and unknown flag | Note "… count under the year." | `s05:422-425` |
 | Lead > 0 and A known | Recency note: recent = latest ≥ A-1; older as year range; unknown-only count | `s05:177-182,232-243,426-427` |
-| Any row has `status` | Status note; D.2.4 Status column | `s05:218-224,468-491` |
+| Any row has `status` | Status note; D.2.5 Status column | `s05:218-224,468-491` |
 | `unique_accounts` value set and grain `account` | "unique accounts" tile | `s05:272,280-281` |
 | headline ≠ received rows | Source mismatch note | `s05:299-305` |
 | `total_rows` missing / received < total | "source total not provided" note / "of {total} rows" note | `s05:312-320` |
@@ -155,7 +161,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | No `mitigations_source` and no generated bullet | Heading and bullets omitted; `attention_source` (if any) prints alone | `s05:513-515` |
 | D.2 printed **and** Section 05 register pointer | Section state ∈ findings / partial / pending_review **and** analysed rows > 0 (`register_printed`); else index row only and no pointer (e.g. `none_identified` with rows) | `s05:45,292-294,542`; `app_d:408-409` |
 | D.2.1 source differs | Difference note when `rows_by_field_category` is sent and any category count differs | `app_d:431-435` |
-| D.2.4 sort | Newest latest year first; rows without a year after; among those, rows without `exposure_period_source` last; stable; then grouped by domain order | `s05:447-451,462-466` |
+| D.2.5 sort | Newest latest year first; rows without a year after; among those, rows without `exposure_period_source` last; stable; then grouped by domain order | `s05:447-451,462-466` |
 | D.2 end-line subdomain term | Omitted when 0; other terms always print | `app_d:451` |
 | D.2 end-line headline difference | "; difference ±n, not explained by the source data" only when the headline ≠ rows shown | `app_d:462-465` |
 
@@ -210,7 +216,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | `data_mismatch` | warn | Headline non-zero but 0 register rows (`s05:533`) |
 | `mask_policy_violation` | warn | Rows withheld because `email_domain` contains `@` / `*`; count only, never the value (`s05:150-152`) |
 | `invalid_affected_domain` | warn | Rows whose `affected_domain` is not a host name (listed under "Domain not given"); count only (`s05:153-156`) |
-| `unmasked_account_label` | warn | A D.2.4 label has no `*` / `•` (literal "Unknown Email" exempt); names row ids (`s05:467`, `qa.py:44-54`) |
+| `unmasked_account_label` | warn | A D.2.5 label has no `*` / `•` (literal "Unknown Email" exempt); names row ids (`s05:467`, `qa.py:44-54`) |
 | `unresolved_reference` | warn | Shared: the pointer's D.2 target did not render (README §9) |
 
 ## Backend checklist
@@ -221,7 +227,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
   (category names only, never values).
 - MUST at top level: `identity.domain`, `snapshot.assessed_at` (drives the year buckets).
 - SHOULD: `metrics[id=found_headline]`, register `counts.total_rows` (else "source total not provided" + lower-bound note).
-- Optional: `rows[].affected_domain` (plain host such as `app.example.com`; enables the domain table, tile, D.2.3, D.2.4 groups),
+- Optional: `rows[].affected_domain` (plain host such as `app.example.com`; enables the domain table, tile, D.2.3, D.2.5 groups),
   `rows[].status`, `metrics[id=unique_accounts]` with `grain: account`, comparison metrics, `mitigations_source[]`,
   `attention_source` (under the mitigation heading, or alone when there are no bullets), `breach_source_name` NullReason, `rows_by_field_category[]`,
   `summary`, `intro_source`, `metrics[id=credential_score]` (01 only).
