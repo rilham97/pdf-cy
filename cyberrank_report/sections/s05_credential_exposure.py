@@ -49,7 +49,6 @@ _MAP = {'password': ['password'], 'sensitive_personal': ['ssn', 'dob', 'address'
         'other_identity': ['email', 'username', 'name', 'first_name', 'last_name', 'profile_name', 'gender', 'title',
                            'city', 'country', 'district', 'province', 'state', 'zip'],
         'service_recorded': ['origin']}
-UNKNOWN = 'Period “Unknown” in source'
 CAVEAT = "The email domain is the account's mailbox provider, not the site where the credential leaked."
 HOST = re.compile(r'[a-z0-9-]+(\.[a-z0-9-]+)+')
 INLINE_DOMAINS, TOP_DOMAINS = 30, 10      # long-list rule: <=30 inline, else top 10 + the rest in <D.n>.3
@@ -194,10 +193,9 @@ def derive(data, report, identity):
     origin_fields = set(_map().get('service_recorded', ()))
     cross = {k: [0, 0, 0] for k in DOMAIN_CLASSES}
     by_class, by_field, years, enriched, unmapped = Counter(), Counter(), Counter(), [], Counter()
-    lead_recent = lead_unknown = origin = year_and_unknown = lead = pw_open = 0
+    origin = lead = pw_open = 0
     status = Counter()           # row_status -> rows
     years_res, months = Counter(), {}      # resolved rows per year key; (year, month) -> [open, resolved]
-    lead_older = Counter()       # lead rows by latest year, older than the recent range
     doms = {}                    # affected domain -> {rows, pw, latest, unknown}
     mail = {}                    # (class, mailbox domain or None) -> [with password, without, password unknown]
     for r in ok:
@@ -217,20 +215,13 @@ def derive(data, report, identity):
         by_field.update(cats)
         unmapped.update(c for c in cats if field_class(c) == 'unclassified')
         origin += bool(origin_fields & set(cats))
-        year_and_unknown += latest is not None and unknown
         years[latest if latest is not None else 'unknown' if unknown else None] += 1
         years_res[latest if latest is not None else 'unknown' if unknown else None] += not is_open
         ym = latest_month(r)
         if ym:
             months.setdefault(ym, [0, 0])[0 if is_open else 1] += 1
         pw_open += cls == 'password' and is_open
-        if cls == 'password' and dc in ('assessed', 'assessed_subdomain') and is_open:
-            lead += 1
-            recent = latest is not None and A is not None and latest >= A - 1
-            lead_recent += recent
-            lead_unknown += latest is None and unknown      # period printed only as 'Unknown'
-            if latest is not None and not recent:
-                lead_older[latest] += 1
+        lead += cls == 'password' and dc in ('assessed', 'assessed_subdomain') and is_open
         g = doms.setdefault(affected(r), {'rows': 0, 'pw': 0, 'res': 0, 'latest': None, 'unknown': False})
         g['rows'] += 1
         g['pw'] += cls == 'password' and is_open
@@ -256,9 +247,7 @@ def derive(data, report, identity):
             'lead': lead, 'status': status, 'resolved': status['resolved'], 'years_res': years_res,
             'months': months, 'month_end': report_month(report) or max(months, default=None),
             'open': len(ok) - status['resolved'], 'pw_open': pw_open,
-            'lead_recent': lead_recent if A is not None else None, 'lead_unknown': lead_unknown,
-            'lead_older': lead_older,
-            'origin': origin, 'year_and_unknown': year_and_unknown,
+            'origin': origin,
             'pw_rows': by_class['password'], 'latest': max(latest_all) if latest_all else None,
             'unknown_any': sum(bool(r.get('exposure_period_has_unknown')) for r in ok), 'metrics': metrics,
             'domains': doms if any(doms) else {}, 'mail': mail}
@@ -276,22 +265,17 @@ def pct(n, d):
 
 
 def status_line(d):
-    """Row status as recorded: Open / Resolved (share of rows) / other values as received / missing. Resolved
-    rows stay in every list and total; only the risk counts (tiles, Affected domains) leave them out."""
+    """Only what the tiles and the timeline cannot show: rows whose status is missing or not open / resolved
+    (values as received), counted as open. Open / resolved counts are in the tiles, so no note for them."""
     by = Counter(row_status(r) for r in d['rows'])
     st = Counter(str(r['status']).strip() for r in d['rows'] if row_status(r) == 'other')     # as received
     if not any(by[k] for k in ('open', 'resolved', 'other')):
         return []
-    parts = [f'Open {C.fmt_number(by["open"])}'] if by['open'] else []
-    if by['resolved']:
-        parts.append(f'Resolved {C.fmt_number(by["resolved"])} ({pct(by["resolved"], d["analysed"])})')
-    parts += [f'{k} {C.fmt_number(n)}' for k, n in st.most_common()]
-    tail = f'; {C.fmt_number(by[None])} rows without a status (counted as open)' if by[None] else ''
-    text = f'Row status as recorded: {", ".join(parts)}{tail}.'
-    if by['resolved']:
-        text += (' Resolved rows were marked resolved in Cyberrank (for example, the password was changed); the '
-                 'exposed data itself remains on record, so they stay listed but are not counted as open.')
-    return [C.note(text)]
+    rows = lambda n: f'{C.fmt_number(n)} row{"s" if n != 1 else ""}'
+    parts = [f'{rows(by[None])} without a status'] if by[None] else []
+    parts += [f'{rows(n)} with status “{k}”' for k, n in st.most_common()]
+    n = by[None] + by['other']
+    return [C.note(f'{" and ".join(parts)} count{"" if n != 1 else "s"} as open.')] if parts else []
 
 
 def none_on_assessed(d):
@@ -299,31 +283,15 @@ def none_on_assessed(d):
     return d['analysed'] > 0 and not (sum(d['cross']['assessed']) + sum(d['cross']['assessed_subdomain']))
 
 
-def lead_recency(d):
-    """'4 dated 2025–2026; 3 with latest year 2019–2021; 1 with period “Unknown” only' ('' when none)."""
-    if d['lead_recent'] is None or not d['lead']:
-        return ''
-    old = d.get('lead_older') or {}
-    parts = [f'{C.fmt_number(d["lead_recent"])} dated {d["A"] - 1}–{d["A"]}']
-    if old:
-        span = f'{min(old)}–{max(old)}' if min(old) != max(old) else str(min(old))
-        parts.append(f'{C.fmt_number(sum(old.values()))} with latest year {span}')
-    if d['lead_unknown']:
-        parts.append(f'{C.fmt_number(d["lead_unknown"])} with period “Unknown” only')
-    return '; '.join(parts)
-
-
-def lead_label(d, recency=True):
-    """KPI / tile label for the lead count: rows, never accounts; recency as a range."""
+def lead_label(d):
+    """KPI / tile label for the lead count: rows, never accounts (their age is in the exposure timeline)."""
     dom = d['assessed'] or 'the assessed domain'
     if none_on_assessed(d):      # a bare 0 would read as good news
         where = ' or '.join(w for k, w in (('other_domain', 'on other email domains'),
                                            ('unknown_email', 'Unknown Email')) if sum(d['cross'][k]))
         return f'of {C.fmt_number(d["analysed"])} listed rows are on {dom}; all are {where}'
     sub = ' or its subdomains' if d['cross']['assessed_subdomain'][0] else ''
-    label = f'{"open " if d.get("resolved") else ""}rows on {dom}{sub} with a password'
-    rec = lead_recency(d) if recency else ''
-    return f'{label} ({rec})' if rec else label
+    return f'{"open " if d.get("resolved") else ""}rows on {dom}{sub} with a password'
 
 
 def lead_metric(data, report, identity):
@@ -332,34 +300,22 @@ def lead_metric(data, report, identity):
     d = derive(data, report, identity)
     if not d['received']:
         return None, d
-    return {'value': d['lead'], 'unit': 'rows', 'label': lead_label(d, recency=False), 'state': data.get('state')}, d
+    return {'value': d['lead'], 'unit': 'rows', 'label': lead_label(d), 'state': data.get('state')}, d
 
 
 # --- overview modules ------------------------------------------------------------
 def kpis(d, ctx):
-    """Short tiles only; the detail behind each number sits in the tables below."""
+    """Short tiles only, nothing the tables or the timeline below already show (owner 2026-10-21: no redundant
+    info): every listed row, the open share when rows are resolved, the lead count, unique accounts if given."""
     ua = d['metrics'].get('unique_accounts') or {}
     unique = ua.get('value') is not None and ua.get('grain', ua.get('unique_accounts_grain')) == 'account'
     items = [{'label': 'exposed account records', 'value': d['analysed'], 'unit': None}]
     if d['resolved']:        # open rows only in the risk tiles; the total above stays every listed row
         items.append({'label': f'open · {pct(d["resolved"], d["analysed"])} resolved', 'value': d['open'], 'unit': None})
-    items += [{'label': 'open rows include a password' if d['resolved'] else 'include a password',
-               'value': d['pw_open'], 'unit': None},
-             {'label': lead_label(d, recency=False), 'value': d['lead'], 'unit': None}]
-    if d['domains']:
-        items.append({'label': 'affected domains', 'value': sum(1 for k in d['domains'] if k), 'unit': None})
-    items.append({'label': 'latest exposure year', 'value': str(d['latest']) if d['latest'] else None,
-                  'reason': latest_reason(d)})
+    items.append({'label': lead_label(d), 'value': d['lead'], 'unit': None})
     if unique:      # printed only when the source confirms an account grain
         items.append({**ua, 'label': 'unique accounts', 'unit': None, 'state': None})
     return C.kpi_strip(items, per_row=len(items) if len(items) <= 4 else 3)
-
-
-def latest_reason(d):
-    """Why no row has a year: every yearless row says 'Unknown', none does, or a mix."""
-    u, n = d['years']['unknown'], d['years'][None]
-    return UNKNOWN if not n else 'Exposure year not given by the source' if not u else \
-        'Period “Unknown” or not given in source'
 
 
 def register_printed(state, d):
@@ -494,7 +450,7 @@ def crosstab(d):
                                widths=[T.CW - 4 * CROSS_WN] + [CROSS_WN] * 4), 6)]
     if rest:
         out.append(C.note(f'All {C.fmt_number(len(others))} other email domains: Appendix {RID["s05"]}.4.'))
-    return out + [C.note(CAVEAT + (' Counts include resolved rows.' if d['resolved'] else ''))]
+    return out + [C.note(CAVEAT)]
 
 
 def year_buckets(d, src='years'):

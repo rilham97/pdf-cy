@@ -474,6 +474,9 @@ def d23_domains(s05, d, sec, rid):
     if not d['domains']:
         return [C.heading(f'{rid}.3  Exposure episodes and sources', 3, style=H3T), C.P(s05.episodes_text(sec), 'body')]
     keys = s05.domain_order(d)
+    if sum(1 for k in keys if k) <= s05.INLINE_DOMAINS:      # Section 05 shows every domain: no second copy
+        return [C.heading(f'{rid}.3  Rows by affected domain', 3, style=H3T),
+                C.P(f'All {C.fmt_number(len(keys))} domains are listed in Section {SEC_NUM["s05"]}.', 'body')]
     res = bool(d['resolved'])
     entries = [('row', [str(i), *s05.domain_row(k or 'Domain not given', d['domains'][k], plain=not k, dense=True,
                                                 res=res)])
@@ -488,7 +491,6 @@ def d23_domains(s05, d, sec, rid):
 def d24_mailboxes(s05, d, rid):
     """<D.n>.4: every account email domain (mailbox provider) by name: the assessed domain, each of its
     subdomains, then other domains by rows; unnamed and 'Unknown Email' rows last."""
-    a = d['assessed']
     order = {'assessed': 0, 'assessed_subdomain': 1, 'other_domain': 2}
     named = sorted(((k, n, c) for (k, n), c in d['mail'].items() if n),
                    key=lambda x: (order[x[0]], -sum(x[2]), x[1]))
@@ -499,12 +501,13 @@ def d24_mailboxes(s05, d, rid):
              ('Unknown Email', d['cross']['unknown_email'] if sum(d['cross']['unknown_email']) else None)]
     entries += [('row', [str(len(entries) + i), C.P(name, 'dense_muted'), *map(num, c), num(sum(c))])
                 for i, (name, c) in enumerate([x for x in extra if x[1]], 1)]
+    if len(s05.other_mailboxes(d)) <= s05.INLINE_DOMAINS and not sum(d['cross']['assessed_subdomain']):
+        return [C.heading(f'{rid}.4  Rows by email domain', 3, style=H3T),     # Section 05 shows every one
+                C.P(f'All email domains are listed in Section {SEC_NUM["s05"]}.', 'body')]
     t = register_table(['#', 'Account email domain', *s05.CROSS_COLS, 'Total'], entries,
                        title=f'{rid}.4 Rows by email domain', sec_id='s05', numeric_cols=(0, 2, 3, 4, 5), ident='regD44',
                        widths=[28, T.CW - 28 - 4 * s05.CROSS_WN] + [s05.CROSS_WN] * 4)
-    return [C.heading(f'{rid}.4  Rows by email domain', 3, style=H3T),
-            intro(f'The account\'s mailbox provider, not the site where the credential leaked. {a or "The assessed domain"} '
-                  'and its subdomains first, then other domains by rows.', 'note_flush'), *const_line(t), t]
+    return [C.heading(f'{rid}.4  Rows by email domain', 3, style=H3T), *const_line(t), t]
 
 
 def d4_credentials(report, identity, as_of):

@@ -83,6 +83,8 @@ Each was asked for or approved by the product owner; changing one needs their ap
   "Unknown". The email-domain table is the mailbox provider, not where the credential leaked, and stays separate
   from "Affected domains": other mailbox domains are named (top 10 when > 30, all in D.2.4 "Rows by email domain");
   a subdomain of the assessed domain (mail.<domain>) is never "other".
+  No repeats (owner 2026-10-21): tiles = records, open share, lead (+ unique accounts); no note restating the tiles;
+  D.2.3 / D.2.4 print a table only when Section 05 cut its list (else one line pointing to Section 05).
   Row status `open` / `resolved` (like 06): resolved rows stay listed (D.2.5, green "Resolved") and in every total, but
   tiles, the lead count and Affected domains / D.2.3 count open rows only ("open · p% resolved", Open | Resolved
   columns); missing or other status counts as open (QA `unknown_row_status`); a fully resolved register never turns `clear`.

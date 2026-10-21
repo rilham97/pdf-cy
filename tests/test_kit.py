@@ -151,11 +151,8 @@ def test_credential_crosstab_and_caveat():
     sec = report['sections']['credential_exposure']
     d = s05.derive(sec, report, identity_from_report(report))
     assert d['cross']['assessed'] == [18, 11, 0] and d['cross']['unknown_email'] == [1, 0, 0], d['cross']
-    assert d['lead'] == 18 and d['lead_recent'] == 1 and d['lead_unknown'] == 3 and d['origin'] == 2
-    # buckets by latest year: recent + older + 'Unknown' only = lead (no row labelled 'Unknown' twice)
-    assert d['lead_recent'] + sum(d['lead_older'].values()) + d['lead_unknown'] == d['lead']
-    label = s05.lead_label(d)
-    assert '14 with latest year 2008–2024' in label and '3 with period “Unknown” only' in label, label
+    assert d['lead'] == 18 and d['origin'] == 2
+    assert s05.lead_label(d) == 'rows on claude.com with a password'      # age lives in the timeline, not the label
     for cross in (d['cross'], {**d['cross'], 'other_domain': [5, 0, 0]}):      # caveat prints whatever the split
         flow = s05.crosstab({**d, 'cross': cross})
         assert any("mailbox provider" in getattr(f, 'getPlainText', lambda: '')() for f in flow)
@@ -471,14 +468,13 @@ def test_credential_review_fixes():                                      # code 
     assert d['suppressed'] == 1 and 'x*@' not in warn['mask_policy_violation'], warn
     assert '1 credential register rows' in warn['invalid_affected_domain'] and 'not a host!' not in str(warn)
     # status as received (the D.2.5 column prints it raw too); pointer only where D.2 renders
-    assert 'Open 1' in s05.status_line({**d, 'rows': [{'status': 'OPEN'}], 'analysed': 1})[0].getPlainText()  # enum
-    assert 'Pending 1' in s05.status_line({**d, 'rows': [{'status': 'Pending'}], 'analysed': 1})[0].getPlainText()
+    assert s05.status_line({**d, 'rows': [{'status': 'OPEN'}], 'analysed': 1}) == []      # enum: tiles say it
+    assert '1 row with status “Pending” counts as open.' in s05.status_line(
+        {**d, 'rows': [{'status': 'Pending'}], 'analysed': 1})[0].getPlainText()
     assert s05.register_printed('findings', d) and not s05.register_printed('none_identified', d)
     ctx = Ctx(BY_ID['s05'], rep, ident, 'none_identified', False)
     assert not [f for f in s05.build(sec, ctx) if type(f).__name__ == 'RegisterPointer']
-    # latest-year reason follows the rows; lead label names Unknown Email rows
-    assert s05.latest_reason({'years': Counter({None: 2})}) == 'Exposure year not given by the source'
-    assert s05.latest_reason({'years': Counter({'unknown': 2})}) == s05.UNKNOWN
+    # lead label names Unknown Email rows
     cross = {'assessed': [0, 0, 0], 'assessed_subdomain': [0, 0, 0], 'other_domain': [2, 0, 0],
              'unknown_email': [1, 0, 0]}
     assert s05.lead_label({'analysed': 3, 'assessed': 'example.com', 'cross': cross}).endswith(
@@ -595,9 +591,7 @@ def test_gap_new_conditions():                                          # 2026-1
     text, _ = _gap('vendors_profile')
     assert '5,200 employees' in text and 'revenue 2.2B (as printed)' in text and '573 technologies' in text
     text, _ = _gap('creds_status')
-    assert 'Row status as recorded: Open 4, Resolved 2 (33%).' in text                            # N10
-    assert '6 exposed account records 4 open · 33% resolved 4 open rows include a password' in text
-    assert 'not counted as open' in text
+    assert '6 exposed account records 4 open · 33% resolved' in text and 'Row status' not in text   # N10: tiles only
     text, _ = _gap('ai_missing')
     assert 'Not included in the source report' in text                                            # N11
     text, issues = _gap('quantum_q6')
@@ -1218,7 +1212,8 @@ def test_credential_resolved_rows_listed_not_counted_open():           # owner, 
     assert d['domains']['portal.example.com']['res'] == 7 and d['domains']['portal.example.com']['pw'] == 0
     t = _fixture_text('demo-preview', ['s05', 'appD'])
     assert 'Domain Open Resolved With password (open) Latest year' in t and '7 (100%)' in t
-    assert 'Counts include resolved rows.' in t and 'Resolved 7 (18%)' in t
+    assert 'Counts include resolved rows.' not in t and 'Row status' not in t      # no repeat of the tiles
+    assert 'D.2.3 Rows by affected domain All 4 domains are listed in Section 05.' in t     # no second copy
 
 
 def test_credential_register_order_status_and_unmasked_warning():
