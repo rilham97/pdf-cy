@@ -1153,7 +1153,7 @@ def test_credential_register_d44_prints_labels_as_received():
         assert r['account_label_masked'] in t, r['id']
     assert 'Full register D.2 Credential exposure' in t and '30 rows' in t      # one pointer, no repeat line
     assert 'D.2.5 Credential register' in t and 'End of register · 30 rows' in t
-    assert 'Account (masked, as delivered) Approximate exposure period Exposed fields' in t
+    assert '# Account Approximate exposure period Exposed fields' in t
     assert 'Status' not in t.split('D.2.5 Credential register', 1)[1].split('End of register', 1)[0]  # no status
     assert 'End of register · 30 rows. Source headline 40, difference' in t     # differences only
     assert 'Totals:' not in t and 'none withheld' not in t

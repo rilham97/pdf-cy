@@ -517,7 +517,7 @@ def register_order(rows):
                                        not str(r.get('exposure_period_source') or '').strip()))
 
 
-REG_COLS = ['#', 'Account (masked, as delivered)', 'Approximate exposure period', 'Exposed fields']
+REG_COLS = ['#', 'Account', 'Approximate exposure period', 'Exposed fields']
 
 
 def status_cell(r):

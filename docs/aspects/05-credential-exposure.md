@@ -50,7 +50,7 @@ Appendix D.2 (printed only for state `findings` / `partial` / `pending_review` w
    email domains are listed in Section 05."): # | Account email domain | With password | Without password |
    Password unknown | Total: the assessed domain, each of its subdomains, then every other domain by rows;
    "Other email domains, name not given" and "Unknown Email" last.
-6. "D.2.5  Credential register": intro, # | Account (masked, as delivered) | Approximate exposure period |
+6. "D.2.5  Credential register": intro, # | Account | Approximate exposure period |
    Exposed fields | Status (optional). Grouped by affected domain when present.
 7. End line "End of register · N rows." + only differences: withheld rows, labels without a mask character, a source headline that differs.
 
@@ -123,12 +123,12 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | "Service/URL recorded (origin), counted apart from the classes: {n} row(s); the value itself is not provided by the source." | D.2.2 note (`app_d:442-443`) | — |
 | "D.2.3  Rows by affected domain"; "#", "Domain", "Rows", "With password", "Latest year" | D.2.3 (`app_d:393-398`) | — |
 | "D.2.3  Exposure episodes and sources" + "Data unavailable: episode grouping and breach source names are {reason}. This is not a zero result." | D.2.3 fallback (`app_d:391`, `s05:440-444`) | `states.overview_messages.unavailable` |
-| "D.2.5  Credential register"; "#", "Account (masked, as delivered)", "Approximate exposure period", "Exposed fields", "Status" | D.2.5 (`s05:454,492,500`) | — |
+| "D.2.5  Credential register"; "#", "Account", "Approximate exposure period", "Exposed fields", "Status" | D.2.5 (`s05:454,492,500`) | — |
 | "One row per register row as delivered by the Cyberrank system. The account label is printed exactly as received (masking is applied upstream, not by this report). {Grouped by affected domain; inside a group, newest period first \| Sorted by the newest period a row lists}; rows whose period is only “Unknown” come last. Exposed fields are category names only; no password or other value is printed." | D.2.5 intro (`s05:494-499`) | — |
 | Group row "{domain}" / "Domain not given" + "{n} rows" | D.2.5 (`s05:477-480`) | — |
 | "{Column}: {value} (all rows)." | Above a D.2.x table when a text column holds one value in every row (`app_d:184-190,287-289`) | e.g. "Status: Open (all rows)." |
 | "End of register · {n} rows.[ {s} not shown (mask policy violation); {f} labels without a mask character printed as received; source headline {h}, difference {±d}, not explained by the source data.]" | D.2 end line, differences only | `d4_credentials` |
-| Index content "Aggregates and all {n} of {m} register rows (masked account as delivered)" | Appendix D index (`app_d:466-467`) | When D.2 is not printed: `state_message(…, 'exposed credentials')` (`app_d:599-612`, policy `states.register_messages`) |
+| Index content "Aggregates and all {n} of {m} register rows" | Appendix D index (`app_d:466-467`) | When D.2 is not printed: `state_message(…, 'exposed credentials')` (`app_d:599-612`, policy `states.register_messages`) |
 
 ## Conditional rules (if / else)
 

@@ -553,7 +553,7 @@ def d4_credentials(report, identity, as_of):
           'by the source data'] if d['headline'] is not None and printed != d['headline'] else [])
     flow += closing(rid, [key], '; '.join(notes) + '.' if notes else '', rows=printed)
     info.update(flow=flow, content=f'Aggregates and all {C.fmt_number(printed)} of {C.fmt_number(d["received"])} '
-                                   'register rows (masked account as delivered)')
+                                   'register rows')
     return info
 
 
