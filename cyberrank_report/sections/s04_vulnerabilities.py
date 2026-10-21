@@ -303,8 +303,8 @@ def _by_domain(ctx):
                            widths=[num_w, sev_w, T.CW - num_w - sev_w - n_w - l_w, n_w, l_w],
                            numeric_cols=(0, 3, 4), title='Breach likelihood by domain')]
     if len(shown) < len(rows):
-        out.append(C.note(f'Showing the {len(shown)} domains with the highest breach likelihood of {len(rows)}; '
-                          f'every domain is listed in Appendix {D.RID["s04"]}.'))
+        out.append(C.AppendixRef(f'Showing the {len(shown)} domains with the highest breach likelihood of {len(rows)}; '
+                                 'every domain is listed in', D.RID['s04']))
     return out
 
 

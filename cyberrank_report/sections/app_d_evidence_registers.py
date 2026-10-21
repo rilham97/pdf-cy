@@ -479,7 +479,8 @@ def d23_domains(s05, d, sec, rid):
     t = register_table(['#', *cols], entries, title=f'{rid}.3 Rows by affected domain', sec_id='s05',
                        numeric_cols=(0, *range(2, n + 2)), ident='regD43',
                        widths=[28, T.CW - 28 - n * s05.CROSS_WN] + [s05.CROSS_WN] * n)
-    return [C.heading(f'{rid}.3  Rows by affected domain', 3, style=H3T), *const_line(t), t]
+    return [C.heading(f'{rid}.3  Rows by affected domain', 3, style=H3T), C.register_anchor(f'{rid}.3'),
+            *const_line(t), t]
 
 
 def d24_mailboxes(s05, d, rid):
@@ -501,7 +502,8 @@ def d24_mailboxes(s05, d, rid):
     t = register_table(['#', 'Account email domain', *s05.CROSS_COLS, 'Total'], entries,
                        title=f'{rid}.4 Rows by email domain', sec_id='s05', numeric_cols=(0, 2, 3, 4, 5), ident='regD44',
                        widths=[28, T.CW - 28 - 4 * s05.CROSS_WN] + [s05.CROSS_WN] * 4)
-    return [C.heading(f'{rid}.4  Rows by email domain', 3, style=H3T), *const_line(t), t]
+    return [C.heading(f'{rid}.4  Rows by email domain', 3, style=H3T), C.register_anchor(f'{rid}.4'),
+            *const_line(t), t]
 
 
 def d4_credentials(report, identity, as_of):

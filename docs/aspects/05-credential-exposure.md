@@ -11,10 +11,12 @@ rows, not accounts.
 
 Section 05 (state `findings` / `partial` / `pending_review` / `none_identified`, at least one register row):
 
-1. Opener and card (shared, README §3). Verdict = `summary`; the module has no `verdict()` hook.
-2. KPI tiles, one row, nothing the tables or timeline below already show (owner 2026-10-21): "exposed account
-   records" (every listed row), "open · {p}% resolved" (only with resolved rows), the lead tile ("[open ]rows on
-   {domain}[ or its subdomains] with a password", open rows only), "unique accounts" (optional).
+1. Opener and card (shared, README §3). State `findings`: no summary paragraph (`KPI_ONLY`, owner 2026-10-21) — the
+   tiles say it; other states keep the card and its reason.
+2. KPI tiles, one row: "Credential score" ({n}%, `metrics[id=credential_score]` as sent; omitted when absent), then the
+   supporting counts: "exposed account records" (every listed row), "open · {p}% resolved" (only with resolved
+   rows), the lead tile ("[open, ]with password on {domain}", subdomains included, open rows only), "unique
+   accounts" (optional).
 3. Reconciliation notes, 0..n (headline vs rows, rows received vs total, withheld rows, payload metric mismatches).
 4. "Affected domains" (H2): Domain | Rows | With password | Latest year; with resolved rows Domain | Open | Resolved
    ("n (p%)") | With password (open) | Latest year. Only when rows carry `affected_domain`.
@@ -27,8 +29,8 @@ Section 05 (state `findings` / `partial` / `pending_review` / `none_identified`,
    left, stacked Open / Resolved bars per fixed year bucket with the total at the bar end and the legend on the
    header line; right, "Last 12 months" columns up to the assessment month (`snapshot.assessed_at`), from the
    latest month a row's `exposure_period_source` gives (`YYYY-MM` / `YYYY-MM-DD`). No row gives a month: the year
-   bars alone, full width, with exact Open | Resolved | Total columns. No status in any row: one muted tone,
-   legend "Rows (status not given)" / column "Rows", never drawn as Open. `cyberrank_report/charts.py`.
+   bars alone, full width, with exact Open | Resolved | Total columns. Legend "Open" / "Resolved" on the header line
+   in both layouts; a row without a status is drawn as Open (the status note gives the count). `cyberrank_report/charts.py`.
 7. Status note only for what the tiles cannot show: "{n} row(s) without a status and {n} row(s) with status “{value}”
    count(s) as open." (missing / not open-resolved status). Open / resolved counts are in the tiles only.
 8. Register pointer: "**Full register**  D.2 Credential exposure — supporting tables  ·  N rows  ·  Appendix D, pages a–b".
@@ -89,12 +91,12 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 
 | Text or label (exact) | Where it prints | Notes (e.g. policy override key) |
 |---|---|---|
-| "exposed account records", "open · {p}% resolved", "[open ]rows on {domain}[ or its subdomains] with a password", "unique accounts" | KPI tile labels (`kpis`, `lead_label`) | — |
+| "exposed account records", "open · {p}% resolved", "[open, ]with password on {domain}", "unique accounts" | KPI tile labels (`kpis`, `lead_label`) | — |
 | "rows on {domain}[ or its subdomains] with a password" | Lead tile label (`s05:254`) | — |
 | "of {N} listed rows are on {domain}; all are {on other email domains \| Unknown Email \| on other email domains or Unknown Email}" | Lead tile label when no row is on the assessed domain; names only the classes that have rows (`s05:249-252`) | — |
-| "Source headline: {headline} (unit not defined by the source); listed: {n} register rows; difference ±n — not explained by the source data." | Reconciliation (`s05:300-305`) | `reconciliation.source_mismatch`, `lists.credential_exposure.headline_unit`, `.list_unit` |
+| "Source headline {h}; {n} rows listed (difference ±d, not explained by the source data)." | Reconciliation, only when the headline differs from the listed rows (`reconciliation`) | — |
 | "None of the {N} listed rows is an account on {domain}: they are on other mailbox providers or have no email. The 0 on the assessed domain describes the listed rows only; it is not a statement that the organisation is unaffected." | Reconciliation (`s05:308-311`) | — |
-| "Computed over {n} rows; source total not provided — counts are lower bounds." | Reconciliation (`s05:314`) | `reconciliation.rows_total_unknown` |
+| "Computed over {n} rows; source total not provided — counts are lower bounds." | Reconciliation, only when there is no headline mismatch line (`s05:reconciliation`) | `reconciliation.rows_total_unknown` |
 | "Computed over {n} of {total} rows; counts are lower bounds." | Reconciliation (`s05:318`) | `reconciliation.rows_received` |
 | "{n} rows withheld — domain text failed the masking check." | Reconciliation (`s05:322-323`) | `reconciliation.suppressed` |
 | "Source metric “{label}” is {x}; the register rows give {y} (difference ±n).{ note}" / "Payload count (prepared from the source rows; not printed by the source) “{label}” …" | Reconciliation (`s05:336-340`) | First wording when the metric has `source_label` |
@@ -102,7 +104,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | "All {n} domains: Appendix D.2.3." | Under the domain table when cut (`s05:365`) | — |
 | "Email domain of exposed accounts"; "Account email domain", "With password", "Without password", "Password unknown", "Total"; "Subdomains of {domain}", "{n} other email domains", "Other email domains, name not given", "All {n} other email domains: Appendix D.2.4.", "Unknown Email", "All listed rows" | Crosstab (`s05:32,380-392`) | — |
 | "The email domain is the account's mailbox provider, not the site where the credential leaked." | Note under the crosstab, always (`s05:51,393`) | — |
-| "Exposure timeline"; "Latest year", "Open", "Resolved", "Total" / "Rows", "Rows (status not given)"; bucket labels "{year}", "{A-5} and before", "Unknown", "Not given"; "Last 12 months", month abbreviations, year under the first month | Timeline (`by_year`, `charts.py`) | — |
+| "Exposure timeline"; "Latest year", "Open", "Resolved", "Total"; bucket labels "{year}", "{A-5} and before", "Unknown", "Not given"; "Last 12 months", month abbreviations, year under the first month | Timeline (`by_year`, `charts.py`) | — |
 | "{n} row(s) without a status and {n} row(s) with status “{value}” count(s) as open."; "Domain", "Open", "Resolved", "With password (open)"; "All {n} domains are listed in Section 05." / "All email domains are listed in Section 05." | Status note (only for missing / other status), domain tables, D.2.3 / D.2.4 when Section 05 shows the full list (`status_line`, `domain_cols`, `app_d`) | — |
 | "Full register  D.2 Credential exposure — supporting tables  ·  {n} rows  ·  Appendix D, pages a–b" | Register pointer, only when D.2 prints (`s05:542-544`, `components.py:432-438`) | `lists.credential_exposure.register_title`; "page reference pending" before pages resolve |
 | "Recommended mitigation measures" | H2 (`s05:516`) | — |
@@ -199,7 +201,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | `rows[].id` | QA `unmasked_account_label` detail |
 | `metrics[]` comparison ids (`returned_rows`, `rows_org_*`, `rows_external_domain`, `rows_unknown_email`, `rows_with_password`, `rows_period_unknown`) | Reconciliation; printed only on mismatch |
 | `rows_by_field_category[]` | D.2.1 comparison; printed only on mismatch |
-| `metrics[id=credential_score]` | Not printed in 05; section 01 aspect score (`s01:272-274`) |
+| `metrics[id=credential_score]` | First KPI tile "Credential score" (percent as sent) and the section 01 aspect score |
 | Not read at all | `rows_by_exposure_year`, `exposure_years_source`, `aggregation_note` (kept in the payload for reconciliation, not printed), `state_label_source`, `rows[].breach_source_name`, `rows[].source_page`, register `state` / `columns` / `sanitised` / `source_pages` / `counts.returned_rows` / `counts.status` |
 
 ## States

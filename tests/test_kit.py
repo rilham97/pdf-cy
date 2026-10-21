@@ -152,7 +152,7 @@ def test_credential_crosstab_and_caveat():
     d = s05.derive(sec, report, identity_from_report(report))
     assert d['cross']['assessed'] == [18, 11, 0] and d['cross']['unknown_email'] == [1, 0, 0], d['cross']
     assert d['lead'] == 18 and d['origin'] == 2
-    assert s05.lead_label(d) == 'rows on claude.com with a password'      # age lives in the timeline, not the label
+    assert s05.lead_label(d) == 'with password on claude.com'      # age lives in the timeline, not the label
     for cross in (d['cross'], {**d['cross'], 'other_domain': [5, 0, 0]}):      # caveat prints whatever the split
         flow = s05.crosstab({**d, 'cross': cross})
         assert any("mailbox provider" in getattr(f, 'getPlainText', lambda: '')() for f in flow)
@@ -424,7 +424,7 @@ def test_gap_leaks():
 
 def test_gap_credentials_and_ai():
     text, _ = _gap('creds_c2')
-    assert '40' in text and 'listed: 0 register rows; difference −40' in text                   # C2
+    assert '40' in text and 'Source headline 40; 0 rows listed (difference −40' in text           # C2
     text, _ = _gap('creds_c3')
     assert 'of 5 listed rows are on example.com; all are on other email domains' in text        # C3
     assert 'not a statement that the organisation is unaffected' in text
@@ -1092,7 +1092,8 @@ def test_credential_section_source_vs_payload_counts():                         
     assert '2021 and before' in t and 'Earlier (' not in t and 'Exposure years as listed' not in t   # fixed buckets
     assert '3685' not in t and '15879 (' not in t                           # formatted numbers in the summary
     t = _fixture_text('instagram-2026-10-02', ['s05'])
-    assert 'Exposure timeline Latest year Rows 2026 117 2025 140' in t and 'Last 12 months' not in t  # years only
+    assert 'Exposure timeline' in t and 'Last 12 months' not in t and 'Status not given' not in t  # years only
+    assert '6,883 rows without a status count as open.' in t                 # no status sent: all open, said once
 
 
 def test_no_unsourced_likelihood_sentence():                                           # item 7
@@ -1211,8 +1212,8 @@ def test_credential_resolved_rows_listed_not_counted_open():           # owner, 
     assert d['domains']['portal.example.com']['res'] == 7 and d['domains']['portal.example.com']['pw'] == 0
     t = _fixture_text('demo-preview', ['s05', 'appD'])
     assert 'Domain Open Resolved With password (open) Latest year' in t and '7 (100%)' in t
-    assert 'open · 18% resolved' not in t and '40 exposed account records 7 open' not in t   # card says 40 / 33
-    assert '7 open rows on example.com or its subdomains with a password' in t
+    assert '45% Credential score 40 exposed account records 33 open · 18% resolved 7 open, with password on example.com' in t
+    assert 'still open' not in t                                     # findings: KPI only, no summary paragraph
     assert 'Counts include resolved rows.' not in t and 'Row status' not in t      # no repeat of the tiles
     assert 'D.2.3 Rows by affected domain All 4 domains are listed in Section 05.' in t     # no second copy
 

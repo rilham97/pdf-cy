@@ -30,6 +30,7 @@ from .app_d_evidence_registers import (RID, H2T, H3T, assessment_year, const_lin
 from .s11_quantum_security import mono
 
 LIST = 'lists.credential_exposure'
+KPI_ONLY = True      # findings: no source summary paragraph above the tiles (owner 2026-10-21)
 DOMAIN_CLASSES = ('assessed', 'assessed_subdomain', 'other_domain', 'unknown_email')
 CROSS_COLS = ('With password', 'Without password', 'Password unknown')   # unknown: source lists no fields
 CLASSES = ('password', 'unclassified', 'sensitive_personal', 'other_identity', 'service_recorded_only',
@@ -250,7 +251,7 @@ def derive(data, report, identity):
             'origin': origin,
             'pw_rows': by_class['password'], 'latest': max(latest_all) if latest_all else None,
             'unknown_any': sum(bool(r.get('exposure_period_has_unknown')) for r in ok), 'metrics': metrics,
-            'domains': doms if any(doms) else {}, 'mail': mail, 'summary': str(C.val(data.get('summary')) or '')}
+            'domains': doms if any(doms) else {}, 'mail': mail}
 
 
 def domain_order(d):
@@ -269,8 +270,6 @@ def status_line(d):
     (values as received), counted as open. Open / resolved counts are in the tiles, so no note for them."""
     by = Counter(row_status(r) for r in d['rows'])
     st = Counter(str(r['status']).strip() for r in d['rows'] if row_status(r) == 'other')     # as received
-    if not any(by[k] for k in ('open', 'resolved', 'other')):
-        return []
     rows = lambda n: f'{C.fmt_number(n)} row{"s" if n != 1 else ""}'
     parts = [f'{rows(by[None])} without a status'] if by[None] else []
     parts += [f'{rows(n)} with status “{k}”' for k, n in st.most_common()]
@@ -290,8 +289,7 @@ def lead_label(d):
         where = ' or '.join(w for k, w in (('other_domain', 'on other email domains'),
                                            ('unknown_email', 'Unknown Email')) if sum(d['cross'][k]))
         return f'of {C.fmt_number(d["analysed"])} listed rows are on {dom}; all are {where}'
-    sub = ' or its subdomains' if d['cross']['assessed_subdomain'][0] else ''
-    return f'{"open " if d.get("resolved") else ""}rows on {dom}{sub} with a password'
+    return f'{"open, " if d.get("resolved") else ""}with password on {dom}'      # subdomains included
 
 
 def lead_metric(data, report, identity):
@@ -306,13 +304,14 @@ def lead_metric(data, report, identity):
 # --- overview modules ------------------------------------------------------------
 def kpis(d, ctx):
     """Short tiles only, nothing the tables or the timeline below already show (owner 2026-10-21: no redundant
-    info): every listed row, the open share when rows are resolved, the lead count, unique accounts if given. A
-    count the source summary (the card above) already states is not repeated as a tile."""
+    info): the system's credential score (percent, as sent, like 04), then the supporting counts: every listed
+    row, the open share when rows are resolved, the lead count, unique accounts if given."""
     ua = d['metrics'].get('unique_accounts') or {}
     unique = ua.get('value') is not None and ua.get('grain', ua.get('unique_accounts_grain')) == 'account'
-    said = {int(x.replace(',', '')) for x in re.findall(r'\d[\d,]*', d.get('summary') or '')}   # the card above
-    items = [] if d['analysed'] in said else [{'label': 'exposed account records', 'value': d['analysed'], 'unit': None}]
-    if d['resolved'] and d['open'] not in said:     # open rows only in the risk tiles; the total stays every row
+    score = d['metrics'].get('credential_score') or {}
+    items = [{**score, 'label': 'Credential score', 'state': None}] if score.get('value') is not None else []
+    items.append({'label': 'exposed account records', 'value': d['analysed'], 'unit': None})
+    if d['resolved']:        # open rows only in the risk tiles; the total stays every listed row
         items.append({'label': f'open · {pct(d["resolved"], d["analysed"])} resolved', 'value': d['open'], 'unit': None})
     items.append({'label': lead_label(d), 'value': d['lead'], 'unit': None})
     if unique:      # printed only when the source confirms an account grain
@@ -326,14 +325,11 @@ def register_printed(state, d):
 
 
 def reconciliation(d, ctx):
-    lines, unit = [], pol(f'{LIST}.headline_unit', '(unit not defined by the source)')
-    if d['headline'] is not None and d['headline'] != d['received']:
-        lines.append(fill(pol('reconciliation.source_mismatch', 'Source headline: {headline} {headline_unit}; '
-                                                                'listed: {listed} {list_unit}; difference {signed_diff}'
-                                                                " — {reason|'not explained by the source data'}."),
-                          headline=C.fmt_number(d['headline']), headline_unit=unit, listed=C.fmt_number(d['received']),
-                          list_unit=pol(f'{LIST}.list_unit', 'register rows'),
-                          signed_diff=signed(d['received'] - d['headline'])))
+    lines = []
+    mismatch = d['headline'] is not None and d['headline'] != d['received']
+    if mismatch:             # one short line (owner 2026-10-21); the tile above already gives the listed rows
+        lines.append(f'Source headline {C.fmt_number(d["headline"])}; {C.fmt_number(d["received"])} rows listed '
+                     f'(difference {signed(d["received"] - d["headline"])}, not explained by the source data).')
     if none_on_assessed(d):
         dom = d['assessed'] or 'the assessed domain'
         lines.append(f'None of the {C.fmt_number(d["analysed"])} listed rows is an account on {dom}: they are on '
@@ -341,7 +337,7 @@ def reconciliation(d, ctx):
                      'assessed domain describes the listed rows only; it is not a statement that the organisation '
                      'is unaffected.')
     if d['total'] is None:
-        if d['received']:
+        if d['received'] and not mismatch:      # the headline line already says the list is not the whole count
             lines.append(fill(pol('reconciliation.rows_total_unknown', 'Computed over {returned_rows} rows; source total '
                                                                        'not provided — counts are lower bounds.'),
                               returned_rows=C.fmt_number(d['received'])))
@@ -395,7 +391,7 @@ def domains_block(d):
            gap(C.compact_table(cols, rows, numeric_cols=tuple(range(1, len(cols))),
                                widths=[T.CW - (len(cols) - 1) * CROSS_WN] + [CROSS_WN] * (len(cols) - 1)), 6)]
     if rest:
-        out.append(C.note(f'All {C.fmt_number(len(named))} domains: Appendix {RID["s05"]}.3.'))
+        out.append(C.AppendixRef(f'All {C.fmt_number(len(named))} domains:', f'{RID["s05"]}.3'))
     return out
 
 
@@ -451,7 +447,7 @@ def crosstab(d):
            gap(C.compact_table(['Account email domain', *CROSS_COLS, 'Total'], rows, numeric_cols=(1, 2, 3, 4),
                                widths=[T.CW - 4 * CROSS_WN] + [CROSS_WN] * 4), 6)]
     if rest:
-        out.append(C.note(f'All {C.fmt_number(len(others))} other email domains: Appendix {RID["s05"]}.4.'))
+        out.append(C.AppendixRef(f'All {C.fmt_number(len(others))} other email domains:', f'{RID["s05"]}.4'))
     return out + [C.note(CAVEAT)]
 
 
@@ -477,18 +473,17 @@ def year_buckets(d, src='years'):
 def by_year(d):
     """Exposure timeline (owner 2026-10-21, concept 3): rows by latest exposure year in the fixed buckets as
     stacked Open / Resolved bars, beside the last 12 months up to the assessment month when any row gives a
-    month. No month data: the year bars alone, full width, with exact Open | Resolved | Total columns. No
-    status in the payload: one muted tone, never drawn as Open. No caption under the chart (owner)."""
-    known = any(d['status'][k] for k in ('open', 'resolved', 'other'))
+    month. No month data: the year bars alone, full width, with exact Open | Resolved | Total columns. A row
+    without a status is Open (as in the tiles; status_line says how many). No caption under the chart (owner)."""
     res = dict(year_buckets(d, 'years_res'))
     rows = [(label, n - res.get(label, 0), res.get(label, 0)) for label, n in year_buckets(d)]
     head = C.heading('Exposure timeline', 2, style=H2T)
     if not d['months'] or not d['month_end']:
-        return [C.keep(head, gap(charts.YearBars(rows, known), 4), Spacer(1, 6))]
+        return [C.keep(head, gap(charts.YearBars(rows), 4), Spacer(1, 6))]
     months = [(y, m, *d['months'].get((y, m), [0, 0])) for y, m in charts.last_months(d['month_end'])]
     left_w = T.COL2 - 6
-    t = Table([[[charts.YearBars(rows, known, compact=True)], '',
-                [C.P('Last 12 months', 'dense_head'), charts.MonthStrip(months, known)]]],
+    t = Table([[[charts.YearBars(rows, compact=True)], '',
+                [C.P('Last 12 months', 'dense_head'), charts.MonthStrip(months)]]],
               colWidths=[left_w, T.GUTTER + 12, T.CW - left_w - T.GUTTER - 12], hAlign='LEFT')
     t.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP')] +
                           [(k, (0, 0), (-1, -1), 0) for k in ('LEFTPADDING', 'RIGHTPADDING', 'TOPPADDING', 'BOTTOMPADDING')]))

@@ -465,6 +465,40 @@ class RegisterPointer(Flowable):
         return 4
 
 
+class AppendixRef(Flowable):
+    """Note '<text> Appendix D.n.m, page p.' linked to the register (sub)table anchor 'reg:<rid>:start'
+    (register_anchor); the page resolves on the next pass, unlinked until then."""
+
+    def __init__(self, text, rid):
+        super().__init__()
+        self.text, self.rid = text, rid
+
+    def _para(self):
+        key = f'reg:{self.rid}:start'
+        label, ok = _pages_label(_doc(self), key, key)
+        ref = f'Appendix {esc(self.rid)}' + (f', {esc(label)}' if ok else '')
+        if ok:
+            ref = f'<a href="#{esc(key)}" color="{hexstr(T.NAVY)}">{ref}</a>'
+        return M(f'{esc(self.text)} {ref}.', 'note')
+
+    def wrap(self, aw, ah):
+        self._p = self._para()
+        self.width, self.height = self._p.wrapOn(self.canv, aw, ah)
+        return self.width, self.height
+
+    def draw(self):
+        doc = _doc(self)
+        if doc is not None and hasattr(doc, 'refs'):
+            doc.refs.add(f'reg:{self.rid}:start')
+        self._p.drawOn(self.canv, 0, 0)
+
+    def getSpaceBefore(self):
+        return STYLES['note'].spaceBefore
+
+    def getSpaceAfter(self):
+        return STYLES['note'].spaceAfter
+
+
 def register_pointer(register_id, rows=None, title=None, where='Appendix D'):
     return RegisterPointer(register_id, rows, title, where)
 

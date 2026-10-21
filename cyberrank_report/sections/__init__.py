@@ -192,6 +192,8 @@ def render_section(spec, report, identity, blueprint=False):
     ctx = Ctx(spec, report, identity, state, blueprint)
     mod = None if (blueprint or missing) else load(spec)
     verdict = data.get('summary') or (mod.verdict(data, ctx) if mod and hasattr(mod, 'verdict') else None)
+    if state == 'findings' and getattr(mod, 'KPI_ONLY', False):
+        verdict = None      # owner 2026-10-21: the KPI strip says it; no summary paragraph above it
     flow = [PageBreakIfNotEmpty()] if spec.new_page else []
     shown = T.shown_state(state, spec.key)
     if spec.key == 'executive_overview' and state == 'findings':

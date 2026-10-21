@@ -1,5 +1,5 @@
 """Small canvas charts (owner 2026-10-21, credential exposure timeline): linear from 0, a value on every bar,
-quiet colour (Open navy, Resolved slate; one muted tone when the payload gives no status, never drawn as Open).
+quiet colour (Open navy, Resolved slate; a row without a status counts as Open, as in the tiles).
 A non-zero count is at least 1 pt wide/tall so a small bucket never vanishes next to a dominant one."""
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.platypus import Flowable
@@ -7,7 +7,7 @@ from reportlab.platypus import Flowable
 from . import theme as T
 from .text import fmt_number
 
-OPEN, RESOLVED, NO_STATUS = T.NAVY, T.SLATE_400, T.MUTED
+OPEN, RESOLVED = T.NAVY, T.SLATE_400
 FS, FSB = 7.8, 7.0
 MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split()
 
@@ -18,8 +18,8 @@ def _txt(c, x, y, s, font=T.LIGHT, size=FS, color=T.BODY, align='l'):
     {'l': c.drawString, 'r': c.drawRightString, 'c': c.drawCentredString}[align](x, y, s)
 
 
-def _legend(c, x, y, known):
-    for lab, col in ([('Open', OPEN), ('Resolved', RESOLVED)] if known else [('Rows (status not given)', NO_STATUS)]):
+def _legend(c, x, y):
+    for lab, col in (('Open', OPEN), ('Resolved', RESOLVED)):
         c.setFillColor(col)
         c.rect(x, y, 6, 6, stroke=0, fill=1)
         _txt(c, x + 9, y, lab)
@@ -28,12 +28,12 @@ def _legend(c, x, y, known):
 
 class YearBars(Flowable):
     """One horizontal stacked bar per year bucket [(label, open, resolved)]. Full width: exact Open | Resolved |
-    Total columns whose heads are the legend. compact: legend on the header line, the total at the bar end."""
+    Total columns. compact: the total at the bar end. The colour legend sits on the header line in both."""
     ROW, BAR, LABEL_W, NUM_W = 13.5, 7.5, 78, 54
 
-    def __init__(self, rows, known=True, compact=False):
+    def __init__(self, rows, compact=False):
         super().__init__()
-        self.rows, self.known, self.compact = rows, known, compact
+        self.rows, self.compact = rows, compact
 
     def wrap(self, aw, ah):
         self.width, self.height = aw, self.ROW * (len(self.rows) + 1)
@@ -41,19 +41,13 @@ class YearBars(Flowable):
 
     def draw(self):
         c, W = self.canv, self.width
-        cols = [] if self.compact else (['Open', 'Resolved', 'Total'] if self.known else ['Rows'])
+        cols = [] if self.compact else ['Open', 'Resolved', 'Total']
         bar_w = W - self.LABEL_W - self.NUM_W * len(cols) - (34 if self.compact else 10)
         top = self.height - self.ROW + 4
         _txt(c, 0, top, 'Latest year', T.MEDIUM, color=T.HEADING)
-        if cols:
-            for i, h in enumerate(cols):
-                xr = W - self.NUM_W * (len(cols) - 1 - i)
-                _txt(c, xr, top, h, T.MEDIUM, color=T.HEADING, align='r')
-                if h in ('Open', 'Resolved'):
-                    c.setFillColor(OPEN if h == 'Open' else RESOLVED)
-                    c.rect(xr - stringWidth(h, T.MEDIUM, FS) - 9, top, 6, 6, stroke=0, fill=1)
-        else:
-            _legend(c, self.LABEL_W, top, self.known)
+        for i, h in enumerate(cols):
+            _txt(c, W - self.NUM_W * (len(cols) - 1 - i), top, h, T.MEDIUM, color=T.HEADING, align='r')
+        _legend(c, self.LABEL_W, top)          # what each bar colour means, in every mode
         c.setStrokeColor(T.RULE)
         c.setLineWidth(T.HAIRLINE)
         c.line(0, self.height - self.ROW - 1, W, self.height - self.ROW - 1)
@@ -63,7 +57,7 @@ class YearBars(Flowable):
             base = y + (self.ROW - FS) / 2 + 0.5
             _txt(c, 0, base, label)
             x = self.LABEL_W
-            for n, col in ((o, OPEN if self.known else NO_STATUS), (r, RESOLVED)):
+            for n, col in ((o, OPEN), (r, RESOLVED)):
                 if n:
                     w = max(1.0, bar_w * n / mx)
                     c.setFillColor(col)
@@ -73,7 +67,7 @@ class YearBars(Flowable):
             if self.compact:
                 _txt(c, x + 4, base, fmt_number(t), T.MEDIUM if t else T.LIGHT, color=T.HEADING if t else T.MUTED)
                 continue
-            vals = [o, r, t] if self.known else [t]
+            vals = [o, r, t]
             for j, n in enumerate(vals):
                 bold = j == len(vals) - 1 and n
                 _txt(c, W - self.NUM_W * (len(vals) - 1 - j), base, fmt_number(n), T.MEDIUM if bold else T.LIGHT,
@@ -85,9 +79,9 @@ class MonthStrip(Flowable):
     column, the month under it and the year under its first month (a tick at the year boundary)."""
     TOP, AX = 12, 22
 
-    def __init__(self, months, known=True, height=96):
+    def __init__(self, months, height=96):
         super().__init__()
-        self.months, self.known, self.h = months, known, height
+        self.months, self.h = months, height
 
     def wrap(self, aw, ah):
         self.width, self.height = aw, self.h
@@ -104,7 +98,7 @@ class MonthStrip(Flowable):
         prev = None
         for i, (yr, m, o, r) in enumerate(self.months):
             cx, y = slot * (i + 0.5), self.AX
-            for v, col in ((o, OPEN if self.known else NO_STATUS), (r, RESOLVED)):
+            for v, col in ((o, OPEN), (r, RESOLVED)):
                 if v:
                     h = max(1.0, plot_h * v / mx)
                     c.setFillColor(col)
