@@ -83,6 +83,11 @@ Each was asked for or approved by the product owner; changing one needs their ap
   "Unknown". The email-domain table is the mailbox provider, not where the credential leaked, and stays separate
   from "Affected domains": other mailbox domains are named (top 10 when > 30, all in D.2.4 "Rows by email domain");
   a subdomain of the assessed domain (mail.<domain>) is never "other".
+  Row status `open` / `resolved` (like 06): resolved rows stay listed (D.2.5, green "Resolved") and in every total, but
+  tiles, the lead count and Affected domains / D.2.3 count open rows only ("open · p% resolved", Open | Resolved
+  columns); missing or other status counts as open (QA `unknown_row_status`); a fully resolved register never turns `clear`.
+  "Exposure timeline" chart (no caption) replaces the year table: Open / Resolved bars per year bucket + last 12 months;
+  no month data -> year bars with exact columns; no status -> one muted tone, never drawn as Open.
 - Labels stay short: no "(as reported)" / "(as sent)" suffixes in column heads; a missing fourth-party sector
   prints "Unknown", an unrated vendor "Not rated" (a real reason only when the payload gives one).
   Appendix A report details carry no methodology version or time zone rows.

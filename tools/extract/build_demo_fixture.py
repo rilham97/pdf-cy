@@ -238,7 +238,10 @@ for i, local in enumerate(LOCALS, start=1):
     cred_rows.append({
         'id': f'cred-{i:04d}', 'email_domain': dom if dom != 'example.net' else 'external',
         'email_state': 'masked_label_present', 'account_label_masked': f'{mask(local)}@{dom}',
-        'exposure_period_source': ', '.join(map(str, years)) + (', Unknown' if unknown else ''),
+        # recent rows give a month for their latest year (no RNG draw: the rest of the demo stays the same)
+        'exposure_period_source': ', '.join([f'{y}-{min((i * 5) % 12 + 1, 9 if y == 2026 else 12):02d}'
+                                             if j == 0 and y >= 2025 else str(y) for j, y in enumerate(years)])
+                                  + (', Unknown' if unknown else ''),
         'exposure_years': years, 'exposure_period_has_unknown': unknown,
         'exposed_field_categories': fields, 'breach_source_name': nr(),
         'affected_domain': ('portal.example.com' if i % 5 == 0 else 'vpn.example.com' if i % 7 == 0

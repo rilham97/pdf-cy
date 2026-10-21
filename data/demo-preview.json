@@ -3021,7 +3021,7 @@
       "email_domain": "example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "a******s@example.com",
-      "exposure_period_source": "2026, 2019",
+      "exposure_period_source": "2026-06, 2019",
       "exposure_years": [
        2026,
        2019
@@ -3046,7 +3046,7 @@
       "email_domain": "example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "b*****g@example.com",
-      "exposure_period_source": "2025, 2017",
+      "exposure_period_source": "2025-11, 2017",
       "exposure_years": [
        2025,
        2017
@@ -3142,7 +3142,7 @@
       "email_domain": "example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "t******y@example.com",
-      "exposure_period_source": "2026, 2021, 2016, Unknown",
+      "exposure_period_source": "2026-07, 2021, 2016, Unknown",
       "exposure_years": [
        2026,
        2021,
@@ -3214,7 +3214,7 @@
       "email_domain": "example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "m*******g@example.com",
-      "exposure_period_source": "2025, 2024, 2022, 2016",
+      "exposure_period_source": "2025-10, 2024, 2022, 2016",
       "exposure_years": [
        2025,
        2024,
@@ -3240,7 +3240,7 @@
       "email_domain": "example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "a***t@example.com",
-      "exposure_period_source": "2025, 2023, 2017, 2014",
+      "exposure_period_source": "2025-03, 2023, 2017, 2014",
       "exposure_years": [
        2025,
        2023,
@@ -3409,7 +3409,7 @@
       "email_domain": "example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "a*******s@example.com",
-      "exposure_period_source": "2026, 2021, 2014",
+      "exposure_period_source": "2026-02, 2021, 2014",
       "exposure_years": [
        2026,
        2021,
@@ -3478,7 +3478,7 @@
       "email_domain": "mail.example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "f*******k@mail.example.com",
-      "exposure_period_source": "2026, 2017, 2016",
+      "exposure_period_source": "2026-05, 2017, 2016",
       "exposure_years": [
        2026,
        2017,
@@ -3504,7 +3504,7 @@
       "email_domain": "example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "t*****g@example.com",
-      "exposure_period_source": "2025, 2018",
+      "exposure_period_source": "2025-10, 2018",
       "exposure_years": [
        2025,
        2018
@@ -3527,7 +3527,7 @@
       "email_domain": "example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "l****r@example.com",
-      "exposure_period_source": "2025, 2024, 2021, 2016",
+      "exposure_period_source": "2025-03, 2024, 2021, 2016",
       "exposure_years": [
        2025,
        2024,
@@ -3603,7 +3603,7 @@
       "email_domain": "example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "s******y@example.com",
-      "exposure_period_source": "2025, 2021",
+      "exposure_period_source": "2025-06, 2021",
       "exposure_years": [
        2025,
        2021
@@ -3626,7 +3626,7 @@
       "email_domain": "example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "n*****y@example.com",
-      "exposure_period_source": "2025, 2022, 2019, 2015",
+      "exposure_period_source": "2025-11, 2022, 2019, 2015",
       "exposure_years": [
        2025,
        2022,
@@ -3820,7 +3820,7 @@
       "email_domain": "example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "r******h@example.com",
-      "exposure_period_source": "2026, 2024, 2016, 2015",
+      "exposure_period_source": "2026-03, 2024, 2016, 2015",
       "exposure_years": [
        2026,
        2024,
@@ -3869,7 +3869,7 @@
       "email_domain": "mail.example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "n*****s@mail.example.com",
-      "exposure_period_source": "2025, 2018, 2016, Unknown",
+      "exposure_period_source": "2025-01, 2018, 2016, Unknown",
       "exposure_years": [
        2025,
        2018,
@@ -3894,7 +3894,7 @@
       "email_domain": "example.com",
       "email_state": "masked_label_present",
       "account_label_masked": "c***s@example.com",
-      "exposure_period_source": "2026, 2016",
+      "exposure_period_source": "2026-06, 2016",
       "exposure_years": [
        2026,
        2016

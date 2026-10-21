@@ -248,15 +248,18 @@ def register_table(columns, entries, *, title, sec_id, numeric_cols=(), widths=N
             # a tall row goes in chunks of TEXT_ROW_LINES lines (the later chunks carry no '#' and no rule
             # above), so it can continue overleaf: RL's in-row split of string cells overflows the frame
             sts = [T.STYLES[base + ('_tech' if j in tech_cols else '')] for j in range(len(e[1]))]
-            lines = [tech_lines(C.missing_text(v) if C.is_missing(v) else str(v),
-                                widths[j] - 2 * T.CELL_PAD_H, sts[j].fontName, sts[j].fontSize)
-                     for j, v in enumerate(e[1])]
-            for x, st in zip(e[1], sts):      # plain-string cells get no per-character fallback
-                report_missing(x, f'{title} (plain-text register cell)', st.fontName)
+            flow = [isinstance(v, Flowable) for v in e[1]]      # a one-line flowable (status icon) passes through
+            lines = [[v] if f else tech_lines(C.missing_text(v) if C.is_missing(v) else str(v),
+                                              widths[j] - 2 * T.CELL_PAD_H, sts[j].fontName, sts[j].fontSize)
+                     for j, (v, f) in enumerate(zip(e[1], flow))]
+            for x, st, f in zip(e[1], sts, flow):      # plain-string cells get no per-character fallback
+                if not f:
+                    report_missing(x, f'{title} (plain-text register cell)', st.fontName)
             for a in range(0, max(map(len, lines)), TEXT_ROW_LINES):
                 if a:
                     joins.append(len(data))
-                data.append(['\n'.join(x[a:a + TEXT_ROW_LINES]) for x in lines])
+                data.append([(x[0] if not a else '') if f else '\n'.join(x[a:a + TEXT_ROW_LINES])
+                             for x, f in zip(lines, flow)])
                 rowno.append(None if a else ordinals[n - 1] if ordinals else n)
                 rowgrp.append(current)
             continue
@@ -471,11 +474,14 @@ def d23_domains(s05, d, sec, rid):
     if not d['domains']:
         return [C.heading(f'{rid}.3  Exposure episodes and sources', 3, style=H3T), C.P(s05.episodes_text(sec), 'body')]
     keys = s05.domain_order(d)
-    entries = [('row', [str(i), *s05.domain_row(k or 'Domain not given', d['domains'][k], plain=not k, dense=True)])
+    res = bool(d['resolved'])
+    entries = [('row', [str(i), *s05.domain_row(k or 'Domain not given', d['domains'][k], plain=not k, dense=True,
+                                                res=res)])
                for i, k in enumerate(keys, 1)]
-    t = register_table(['#', 'Domain', 'Rows', 'With password', 'Latest year'], entries,
-                       title=f'{rid}.3 Rows by affected domain', sec_id='s05', numeric_cols=(0, 2, 3, 4), ident='regD43',
-                       widths=[28, T.CW - 28 - 3 * s05.CROSS_WN] + [s05.CROSS_WN] * 3)
+    cols, n = s05.domain_cols(res), len(s05.domain_cols(res)) - 1
+    t = register_table(['#', *cols], entries, title=f'{rid}.3 Rows by affected domain', sec_id='s05',
+                       numeric_cols=(0, *range(2, n + 2)), ident='regD43',
+                       widths=[28, T.CW - 28 - n * s05.CROSS_WN] + [s05.CROSS_WN] * n)
     return [C.heading(f'{rid}.3  Rows by affected domain', 3, style=H3T), *const_line(t), t]
 
 

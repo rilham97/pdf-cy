@@ -13,16 +13,26 @@ Section 05 (state `findings` / `partial` / `pending_review` / `none_identified`,
 
 1. Opener and card (shared, README §3). Verdict = `summary`; the module has no `verdict()` hook.
 2. KPI tiles (one row when there are ≤ 4 tiles, else 3 per row): "exposed account records", "include a password",
-   the lead tile, "affected domains" (optional), "latest exposure year", "unique accounts" (optional).
+   the lead tile, "affected domains" (optional), "latest exposure year", "unique accounts" (optional). With resolved
+   rows: an "open · {p}% resolved" tile after the first, and "include a password" / the lead tile count open rows only
+   ("open rows include a password", "open rows on {domain} … with a password"); the first tile stays every listed row.
 3. Reconciliation notes, 0..n (headline vs rows, rows received vs total, withheld rows, payload metric mismatches).
-4. "Affected domains" (H2): Domain | Rows | With password | Latest year. Only when rows carry `affected_domain`.
+4. "Affected domains" (H2): Domain | Rows | With password | Latest year; with resolved rows Domain | Open | Resolved
+   ("n (p%)") | With password (open) | Latest year. Only when rows carry `affected_domain`.
 5. "Email domain of exposed accounts" (H2): Account email domain | With password | Without password |
    Password unknown | Total. Rows: the assessed domain, "Subdomains of {domain}", then every other mailbox
    domain by name, most rows first (> 30 named: top 10 + "{n} other email domains" + "All {n} other email
    domains: Appendix D.2.4."), "Other email domains, name not given", "Unknown Email", "All listed rows";
    then the mailbox-provider caveat note.
-6. "Rows by latest exposure year" (H2): one row of fixed year buckets + one note line.
-7. "Row status as recorded: …" note (only when rows carry `status`).
+6. "Exposure timeline" (H2, replaces the old "Rows by latest exposure year" table; owner 2026-10-21, no caption):
+   left, stacked Open / Resolved bars per fixed year bucket with the total at the bar end and the legend on the
+   header line; right, "Last 12 months" columns up to the assessment month (`snapshot.assessed_at`), from the
+   latest month a row's `exposure_period_source` gives (`YYYY-MM` / `YYYY-MM-DD`). No row gives a month: the year
+   bars alone, full width, with exact Open | Resolved | Total columns. No status in any row: one muted tone,
+   legend "Rows (status not given)" / column "Rows", never drawn as Open. `cyberrank_report/charts.py`.
+7. "Row status as recorded: Open n, Resolved n (p%), <other values as received> n[; n rows without a status (counted
+   as open)]." + with resolved rows the sentence that resolved rows stay listed but are not counted as open
+   (only when rows carry `status`). The email-domain and year tables keep every row: "Counts include resolved rows."
 8. Register pointer: "**Full register**  D.2 Credential exposure — supporting tables  ·  N rows  ·  Appendix D, pages a–b".
    Only when D.2 is printed (same rule, `register_printed`), so the pointer always has a target.
 9. "Recommended mitigation measures" (H2): `attention_source` paragraph + bullets (only when there is a bullet).
@@ -60,7 +70,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | `rows[].email_domain` | Mailbox-provider class (assessed / subdomain / other / unknown) for the crosstab and lead tile (`s05:125-134`); **never printed** | Empty → "Unknown Email" class |
 | `rows[].email_state` | `unknown_email` → "Unknown Email" class (`s05:128`) | — |
 | `rows[].affected_domain` *(optional)* | "Affected domains" table, "affected domains" tile, D.2.3 table, D.2.5 groups. Lower-cased, trailing dot stripped, must be a host name (`s05:137-140`) | Missing / not a host → "Domain not given" row/group; a value that is not a host also raises QA `invalid_affected_domain` (`s05:153-156`). No row has one → none of these print |
-| `rows[].status` *(optional)* | "Row status as recorded" note and D.2.5 "Status" column, both as received (trimmed only, `s05:218,484`) | Column only when any row has one; that row prints "Not recorded" |
+| `rows[].status` *(optional)* | Enum `open` / `resolved`, case-insensitive (`row_status`). Resolved rows: listed in D.2.5 with the green "Resolved" icon, counted in every total, left out of the open counts (tiles, Affected domains, D.2.3). Other text prints as received and counts as open (QA `unknown_row_status`) | Missing: "Not recorded" in D.2.5, counted as open; the column only when any row has one |
 | `rows[].id` | Named in QA `unmasked_account_label` detail only (`s05:467`) | — |
 | register `counts.total_rows` (number, `{value}`, or NullReason) | Reconciliation "of {total_rows} rows"; D.2 intro "(Z in the source)" (`s05:194,199`; `app_d:411-413`) | "source total not provided" wording |
 | register `counts.headline_found` | Headline fallback when metric `found_headline` is absent (`s05:193`) | — |
@@ -92,11 +102,8 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | "All {n} domains: Appendix D.2.3." | Under the domain table when cut (`s05:365`) | — |
 | "Email domain of exposed accounts"; "Account email domain", "With password", "Without password", "Password unknown", "Total"; "Subdomains of {domain}", "{n} other email domains", "Other email domains, name not given", "All {n} other email domains: Appendix D.2.4.", "Unknown Email", "All listed rows" | Crosstab (`s05:32,380-392`) | — |
 | "The email domain is the account's mailbox provider, not the site where the credential leaked." | Note under the crosstab, always (`s05:51,393`) | — |
-| "Rows by latest exposure year"; bucket heads "{year}", "{A-5} and before", "Unknown", "Not given" | Year table (`s05:396-428`) | — |
-| "Each row counts once, under the latest year the source gives; “Unknown” rows have no year." | Year note, always (`s05:421`) | — |
-| "{n} row lists / rows list both a year and “Unknown” and count under the year." | Year note (`s05:424`) | — |
-| "Rows on {domain} with a password: {n} dated {A-1}–{A}[; {n} with latest year {y1}–{y2}][; {n} with period “Unknown” only]." | Year note (`s05:237-242,427`) | — |
-| "Row status as recorded: {Status} {n}, …[; {n} rows without a status]." | Note (`s05:221-224`) | — |
+| "Exposure timeline"; "Latest year", "Open", "Resolved", "Total" / "Rows", "Rows (status not given)"; bucket labels "{year}", "{A-5} and before", "Unknown", "Not given"; "Last 12 months", month abbreviations, year under the first month | Timeline (`by_year`, `charts.py`) | — |
+| "Row status as recorded: Open {n}, Resolved {n} ({p}%), {other} {n}[; {n} rows without a status (counted as open)]." + "Resolved rows were marked resolved in Cyberrank (for example, the password was changed); the exposed data itself remains on record, so they stay listed but are not counted as open."; "open · {p}% resolved"; "Domain", "Open", "Resolved", "With password (open)"; "Counts include resolved rows." | Status note, tiles, domain tables (`status_line`, `kpis`, `domain_cols`) | — |
 | "Full register  D.2 Credential exposure — supporting tables  ·  {n} rows  ·  Appendix D, pages a–b" | Register pointer, only when D.2 prints (`s05:542-544`, `components.py:432-438`) | `lists.credential_exposure.register_title`; "page reference pending" before pages resolve |
 | "Recommended mitigation measures" | H2 (`s05:516`) | — |
 | "{n} row(s) record a service/URL (origin) with the credential, a pattern typical of infostealer logs: revoke active sessions and tokens for the affected accounts and notify the affected users." | Generated bullet (`s05:507-509`) | — |

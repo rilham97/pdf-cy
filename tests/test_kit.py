@@ -471,7 +471,8 @@ def test_credential_review_fixes():                                      # code 
     assert d['suppressed'] == 1 and 'x*@' not in warn['mask_policy_violation'], warn
     assert '1 credential register rows' in warn['invalid_affected_domain'] and 'not a host!' not in str(warn)
     # status as received (the D.2.5 column prints it raw too); pointer only where D.2 renders
-    assert 'OPEN 1' in s05.status_line({**d, 'rows': [{'status': 'OPEN'}], 'analysed': 1})[0].getPlainText()
+    assert 'Open 1' in s05.status_line({**d, 'rows': [{'status': 'OPEN'}], 'analysed': 1})[0].getPlainText()  # enum
+    assert 'Pending 1' in s05.status_line({**d, 'rows': [{'status': 'Pending'}], 'analysed': 1})[0].getPlainText()
     assert s05.register_printed('findings', d) and not s05.register_printed('none_identified', d)
     ctx = Ctx(BY_ID['s05'], rep, ident, 'none_identified', False)
     assert not [f for f in s05.build(sec, ctx) if type(f).__name__ == 'RegisterPointer']
@@ -594,7 +595,9 @@ def test_gap_new_conditions():                                          # 2026-1
     text, _ = _gap('vendors_profile')
     assert '5,200 employees' in text and 'revenue 2.2B (as printed)' in text and '573 technologies' in text
     text, _ = _gap('creds_status')
-    assert 'Row status as recorded: Open 4, Resolved 2' in text                                   # N10
+    assert 'Row status as recorded: Open 4, Resolved 2 (33%).' in text                            # N10
+    assert '6 exposed account records 4 open · 33% resolved 4 open rows include a password' in text
+    assert 'not counted as open' in text
     text, _ = _gap('ai_missing')
     assert 'Not included in the source report' in text                                            # N11
     text, issues = _gap('quantum_q6')
@@ -1095,7 +1098,7 @@ def test_credential_section_source_vs_payload_counts():                         
     assert '2021 and before' in t and 'Earlier (' not in t and 'Exposure years as listed' not in t   # fixed buckets
     assert '3685' not in t and '15879 (' not in t                           # formatted numbers in the summary
     t = _fixture_text('instagram-2026-10-02', ['s05'])
-    assert '19 dated 2025–2026; 13 with latest year 2015–2024; 109 with period “Unknown” only' in t
+    assert 'Exposure timeline Latest year Rows 2026 117 2025 140' in t and 'Last 12 months' not in t  # years only
 
 
 def test_no_unsourced_likelihood_sentence():                                           # item 7
@@ -1175,8 +1178,9 @@ def test_credential_year_buckets_and_affected_domains():                 # owner
     t = _fixture_text('gmail-2026-10-15', ['s05'])
     assert 'Affected domains' not in t                                 # no affected_domain in the rows: no table
     t = _fixture_text('demo-preview', ['s05', 'appD'])
-    assert 'Affected domains Domain Rows With password Latest year example.com 19 4 2026 app.example.com 10' in t
-    assert '2026 2025 2024 2023 2022 2021 and before Unknown' in t
+    assert 'Affected domains Domain Open Resolved With password (open) Latest year example.com 19 0 4 2026 app.example.com 10' in t
+    assert 'Exposure timeline Latest year Open Resolved' in t and 'Last 12 months' in t           # concept 3
+    assert all(f' {y} ' in t for y in ('2026', '2025', '2024', '2023', '2022', '2021 and before', 'Unknown'))
     assert 'D.2.3 Rows by affected domain' in t and 'example.com 19 rows' in t       # register grouped by domain
     for w in ('Row-level detail', 'Credential score printed', 'unit not defined by source)', 'Not available'):
         assert w not in t.split('Recommended mitigation')[0], w
@@ -1195,9 +1199,26 @@ def test_mailbox_domains_named_and_own_subdomains_kept():               # owner,
     assert [n for n, _ in s05.other_mailboxes(d)] == ['example.net']
     t = _fixture_text('demo-preview', ['s05', 'appD'])
     assert 'Subdomains of example.com' in t and 'example.net 1 3 0 4 Unknown Email' in t
-    assert 'Other email domains' not in t.split('Rows by latest exposure year')[0]
+    assert 'Other email domains' not in t.split('Exposure timeline')[0]
     assert 'D.2.4 Rows by email domain' in t and 'D.2.5 Credential register' in t
     assert 'D.2.1–D.2.4 give the aggregates' in t
+
+
+def test_credential_resolved_rows_listed_not_counted_open():           # owner, 2026-10-21
+    from cyberrank_report.page import identity_from_report
+    from cyberrank_report.sections import s05_credential_exposure as s05
+    report = json.loads((FIXTURE.parent / 'demo-preview.json').read_text(encoding='utf-8'))
+    rows = report['appendices']['d_evidence_registers']['credential_register']['rows']
+    rows[0]['status'], rows[1]['status'] = 'Closed', None      # other text counts as open (QA), missing too
+    qa.ISSUES.clear()
+    d = s05.derive(report['sections']['credential_exposure'], report, identity_from_report(report))
+    assert d['resolved'] == 7 and d['open'] == 33 and d['analysed'] == 40
+    assert any(i['check'] == 'unknown_row_status' for i in qa.ISSUES)
+    assert sum(d['cross'][k][j] for k in s05.DOMAIN_CLASSES for j in range(3)) == 40   # email table: every row
+    assert d['domains']['portal.example.com']['res'] == 7 and d['domains']['portal.example.com']['pw'] == 0
+    t = _fixture_text('demo-preview', ['s05', 'appD'])
+    assert 'Domain Open Resolved With password (open) Latest year' in t and '7 (100%)' in t
+    assert 'Counts include resolved rows.' in t and 'Resolved 7 (18%)' in t
 
 
 def test_credential_register_order_status_and_unmasked_warning():
@@ -1826,7 +1847,8 @@ def _status_markers(pdf):
     for page in pymupdf.open(pdf):
         if 'Page ' not in page.get_text() or 'Supply-chain aggregation' in page.get_text() and '2 / 2' in page.get_text():
             continue
-        icons = [d for d in page.get_drawings() if d.get('fill') and d['rect'].width < 14 and d['rect'].height < 14]
+        icons = [d for d in page.get_drawings() if d.get('fill') and d['rect'].width < 14 and d['rect'].height < 14
+                 and not (abs(d['rect'].width - 6) < .05 and abs(d['rect'].height - 6) < .05)]   # chart legend swatch
         for b in page.get_text('dict')['blocks']:
             for line in b.get('lines', []):
                 for sp in line['spans']:
