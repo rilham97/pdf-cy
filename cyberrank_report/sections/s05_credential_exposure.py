@@ -29,7 +29,7 @@ from .s11_quantum_security import mono
 
 LIST = 'lists.credential_exposure'
 DOMAIN_CLASSES = ('assessed', 'assessed_subdomain', 'other_domain', 'unknown_email')
-CROSS_COLS = ('With password', 'Without password', 'Fields not reported')
+CROSS_COLS = ('With password', 'Without password', 'Password unknown')   # unknown: source lists no fields
 CLASSES = ('password', 'unclassified', 'sensitive_personal', 'other_identity', 'service_recorded_only',
            'none_provided')
 OPTIONAL_CLASSES = ('unclassified', 'service_recorded_only')     # <D.n>.2 rows printed only when non-zero
@@ -38,7 +38,7 @@ CLASS_LABEL = {'password': 'Password category listed',
                'unclassified': 'Category not in the data class map, no password',
                'sensitive_personal': 'Sensitive personal data, no password',
                'other_identity': 'Other identity fields only', 'service_recorded_only': 'Service/URL recorded only',
-               'none_provided': 'Fields not reported by source'}
+               'none_provided': 'Exposed fields not listed (password unknown)'}
 CLASS_RANK_TEXT = {'password': 'password', 'unclassified': 'a category not in the data class map',       # <D.n>.2 intro
                    'sensitive_personal': 'sensitive personal data', 'other_identity': 'other identity fields',
                    'service_recorded_only': 'a recorded service or URL only'}
@@ -172,7 +172,7 @@ def derive(data, report, identity):
     lead_recent = lead_unknown = origin = year_and_unknown = 0
     lead_older = Counter()       # lead rows by latest year, older than the recent range
     doms = {}                    # affected domain -> {rows, pw, latest, unknown}
-    mail = {}                    # (class, mailbox domain or None) -> [with password, without, fields not reported]
+    mail = {}                    # (class, mailbox domain or None) -> [with password, without, password unknown]
     for r in ok:
         dc = domain_class(r, assessed)
         ys = [y for y in r.get('exposure_years') or [] if isinstance(y, int)]
@@ -403,7 +403,7 @@ def crosstab(d):
     cell = lambda n, lead=False: C.P(C.fmt_number(n), LEAD_C if lead and n else ZERO_C if n == 0 else 'cell_num')
     line = lambda name, c, lead=False, tech=False: [C.M(mono(name), 'cell') if tech else name,
                                                     *[cell(n, lead and j == 0) for j, n in enumerate(c)], cell(sum(c))]
-    rows = [line(dom or 'Assessed domain', d['cross']['assessed'], lead=True)]
+    rows = [line(dom or 'Assessed domain', d['cross']['assessed'], lead=True, tech=bool(dom))]
     if sum(d['cross']['assessed_subdomain']):
         rows.append(line(f'Subdomains of {dom}' if dom else 'Subdomains of the assessed domain',
                          d['cross']['assessed_subdomain']))
