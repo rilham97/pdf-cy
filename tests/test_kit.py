@@ -581,7 +581,8 @@ def test_gap_new_conditions():                                          # 2026-1
     assert 'Medium risk band' in text and 'Net score' not in text                                # N2
     text, _ = _gap('actions_remediation')
     assert '(Issue 9)' in text and 'Projected rating after remediation' in text                   # N3/N4
-    assert 'CC · score 86 / 360' in text and 'A · score 280 / 360' in text and 'fresh scan' in text
+    assert 'Up 5 grades, from CC (Very insufficient) to A (Good); rating score from 24% to 78%.' in text and 'fresh scan' in text
+    assert '360' not in text and '194' not in text and 'Recoverable' not in text     # hidden scoring
     text, _ = _gap('privacy_c')
     assert 'placeholder code “XX”' in text and 'Data Protection Officer (source: Company Website; LinkedIn)' in text
     assert 'compared with the preference set by the report owner/requestor' in text and 'your preference' not in text
@@ -639,7 +640,7 @@ def test_s02_card_state_cert_action_and_remediation_text():              # code 
     assert len(action_rows(pa, rep)) == 5                          # no Next step in 13: no added action
     qa.ISSUES.clear()
     remediation_block({'current': {'grade': 'BB'}, 'active_issues': {'total': 5, 'privacy': 'two', 'vulnerability': 3}})
-    assert not any(i['check'] == 'data_mismatch' for i in qa.ISSUES), qa.ISSUES     # text count: no false mismatch
+    assert not any(i['check'] == 'data_mismatch' and 'active issues' in i['detail'] for i in qa.ISSUES), qa.ISSUES  # text count
 
     def clear(r):
         r['sections']['certifications'].update(state='not_assessed', reason_code='module_not_assessed')
@@ -649,6 +650,24 @@ def test_s02_card_state_cert_action_and_remediation_text():              # code 
     assert t.count('Nothing needs action this quarter') == 1, t
     t = _demo_text(lambda r: None, ['s02'])
     assert 'Projected Rating After Remediation' in t and 'Estimated improvement upon completion' in t, t
+
+
+def test_projected_rating_steps():                                     # owner 2026-10-20: no points, staircase
+    from cyberrank_report.sections.s02_priority_actions import GradeSteps, grade_walk, remediation_block
+    assert grade_walk('BB', 'AA') == ['BB', 'BBB', 'A', 'AA'] and grade_walk('BB', 'BB') == ['BB']
+    assert grade_walk('D', 'AAA') == T.GRADE_BAR
+    assert grade_walk('AA', 'BB') is None and grade_walk(None, 'AA') is None and grade_walk('BB', 'X') is None
+    assert GradeSteps(T.GRADE_BAR).wrap(T.CW, 999)[0] == T.CW                  # D -> AAA fits the width
+    has = lambda out, cls: any(isinstance(f, cls) for k in out for f in getattr(k, '_content', [k]))
+    qa.ISSUES.clear()
+    ri = {'current': {'grade': 'AA', 'score': 300, 'pool': 360}, 'projected': {'grade': 'BB', 'score': 196, 'pool': 360},
+          'points_recoverable': 50, 'narrative_source': 'Recover up to 50 points.', 'active_issues': {'total': 3}}
+    out = remediation_block(ri)                                                # downward: no staircase, no table
+    assert out and not has(out, GradeSteps) and 'Current rating' not in str(out)
+    checks = [i['check'] for i in qa.ISSUES]
+    assert checks.count('data_mismatch') == 2 and 'hidden_scoring_in_source' in checks, qa.ISSUES
+    assert has(remediation_block({'current': {'grade': 'BB'}, 'projected': {'grade': 'BB'}}), GradeSteps)
+    assert remediation_block({'current': {'grade': 'BB'}}) == []               # nothing drawable: no block
 
 
 def test_vendor_technology_display_cap():

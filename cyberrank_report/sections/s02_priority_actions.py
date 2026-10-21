@@ -5,7 +5,9 @@ whose text already appears in a linked section prints a reference instead.
 """
 import re
 
-from reportlab.platypus import TableStyle
+from reportlab.lib.colors import Color, black
+from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.platypus import Flowable, Spacer, TableStyle
 
 from .. import components as c
 from .. import theme as T
@@ -260,45 +262,149 @@ def build(data, ctx):
     return out
 
 
+POINTS_TEXT = re.compile(r'\d\s*points?\b|\bout of \d|/\s*\d{3}\b|\b360\b', re.I)    # hidden scoring in source text
+
+
+def grade_walk(cur, proj):
+    """Grades from current up to projected, worst -> best (T.GRADE_BAR). None when either is missing or
+    unknown, or the projection is below the current grade: no staircase is drawn then."""
+    bar = T.GRADE_BAR
+    if cur not in bar or proj not in bar or bar.index(proj) < bar.index(cur):
+        return None
+    return bar[bar.index(cur):bar.index(proj) + 1]
+
+
+class GradeSteps(Flowable):
+    """Staircase from the current grade to the projected one (never from D), rising left -> right. Current
+    and projected steps carry their own grade tone (light tint, grade-colour border and tread, darker grade
+    text and tag), so the reader sees the condition now and the better one ahead; the steps between stay
+    pale grey with a thin coloured tread. No scores or points."""
+    MAXW, BASE, RISE_MAX, RISE_SUM, TREAD, TAG = 74.0, 26.0, 9.0, 54.0, 3.0, 12.0
+    SIZE = T.STYLES['note'].fontSize
+
+    def __init__(self, steps, pcts=(None, None)):
+        super().__init__()
+        self.steps, self.pcts = steps, pcts                      # rating score % at current / projected
+
+    def wrap(self, aw, ah):
+        n = len(self.steps)
+        self.w = min(self.MAXW, aw / n)
+        self.rise = min(self.RISE_MAX, self.RISE_SUM / max(1, n - 1))
+        self.base = self.BASE + (10 if any(p is not None for p in self.pcts) else 0)
+        self.lab = 2 * (self.SIZE + 2) + 3                       # grade meaning, two lines at most
+        self.width, self.height = aw, self.lab + self.base + (n - 1) * self.rise + self.TAG + 4
+        return self.width, self.height
+
+    def _label(self, x, y, text, font, color):
+        cv, maxw = self.canv, self.w - 4
+        cv.setFont(font, self.SIZE)
+        cv.setFillColor(color)
+        lines = text.rsplit(' ', 1) if stringWidth(text, font, self.SIZE) > maxw and ' ' in text else [text]
+        for i, ln in enumerate(lines):
+            cv.drawCentredString(x, y - i * (self.SIZE + 2), ln)
+
+    @staticmethod
+    def _mix(col, to, t):
+        """col moved a fraction t toward `to` (white = tint, black = shade)."""
+        return Color(*(a + (b - a) * t for a, b in zip(col.rgb(), to.rgb())))
+
+    def _tag(self, x, y, text, fill):
+        cv, size = self.canv, self.SIZE - 0.5
+        tw = stringWidth(text, T.MEDIUM, size) + 10
+        cv.setFillColor(fill)
+        cv.roundRect(x, y, tw, self.TAG, 3, stroke=0, fill=1)
+        cv.setFillColor(T.WHITE)
+        cv.setFont(T.MEDIUM, size)
+        cv.drawString(x + 5, y + 3.6, text)
+
+    def draw(self):
+        cv, n, y0 = self.canv, len(self.steps), self.lab
+        for i, g in enumerate(self.steps):
+            x, h, end = i * self.w + 1, self.base + i * self.rise, i in (0, n - 1)
+            w, col = self.w - 2, T.GRADE[g]
+            dark = self._mix(col, black, .38)                   # grade tone dark enough for text
+            cv.setFillColor(self._mix(col, T.WHITE, .86) if end else T.SURFACE)
+            cv.setStrokeColor(col)
+            cv.setLineWidth(1.25)
+            cv.rect(x, y0, w, h, stroke=int(end), fill=1)
+            tread = self.TREAD + (2 if end else 0)
+            cv.setFillColor(col)
+            cv.rect(x, y0 + h - tread, w, tread, stroke=0, fill=1)
+            cv.setFillColor(dark if end else T.MUTED)
+            cv.setFont(T.SEMIBOLD if end else T.LIGHT, 12 if end else 8.5)
+            cv.drawCentredString(x + w / 2, y0 + h - (20 if end else 15), g)
+            pct = self.pcts[0 if i == 0 else 1] if end else None
+            if pct is not None:
+                cv.setFont(T.MEDIUM, self.SIZE + .5)
+                cv.drawCentredString(x + w / 2, y0 + h - 31, f'{pct}%')
+            self._label(x + w / 2, self.lab - self.SIZE - 1, T.GRADE_MARK[g], T.MEDIUM if end else T.LIGHT,
+                        dark if end else T.MUTED)
+            if end:
+                tag = 'Current and projected' if n == 1 else ('Current' if i == 0 else 'Projected')
+                self._tag(x, y0 + h + 3, tag, dark)
+
+
 def remediation_block(ri, report=None):
-    """'Projected rating after remediation' (source p9 of the 2026-10 samples): current and projected
-    grade with their scores as printed, the recoverable points and the source's own conditions.
+    """'Projected rating after remediation' (source p9 of the 2026-10 samples): one line "Up n grades, from
+    BB (Sufficient) to AA (Very good); rating score from 54% to 81%" over a staircase from the current to the
+    projected grade, then the active issues and the source's own conditions. The rating score prints only as
+    a percent of the pool (score / pool); scores, the pool and recoverable points are never printed (hidden
+    scoring) and a source narrative that quotes points is held back.
     Values come from the payload only; nothing is projected here. A null record or a block with no
-    values draws nothing. Exposed credentials are a separate count, never part of the active issues."""
+    printable values draws nothing. Exposed credentials are a separate count, never part of the active issues."""
     if not isinstance(ri, dict) or c.is_missing(ri):
         return []
+    from .. import qa
     v = lambda x, k: c.val((x or {}).get(k)) if isinstance(x, dict) else None
-    def side(x):
-        g, sc, pool = v(x, 'grade'), v(x, 'score'), v(x, 'pool')
-        if not g:
-            return {'value': None, 'reason_code': 'not_printed_in_source'}
-        return f'{g} · score {c.fmt_number(sc)} / {c.fmt_number(pool)}' if sc is not None and pool else str(g)
+    cur, pro = ri.get('current'), ri.get('projected')
+    g_cur, g_pro = (str(v(x, 'grade') or '').strip().upper() or None for x in (cur, pro))
     ai = ri.get('active_issues') if isinstance(ri.get('active_issues'), dict) else {}
     n = {k: v(ai, k) for k in ('total', 'privacy', 'vulnerability', 'credentials')}
-    pts = c.val(ri.get('points_recoverable'))
-    if not any([v(ri.get('current'), 'grade'), v(ri.get('projected'), 'grade'), pts is not None,
-                *(x is not None for x in n.values())]):
+    num = lambda x: isinstance(x, (int, float)) and not isinstance(x, bool)
+    s_cur, s_pro, pts = v(cur, 'score'), v(pro, 'score'), c.val(ri.get('points_recoverable'))
+    if num(s_cur) and num(s_pro) and num(pts) and s_pro - s_cur != pts:
+        qa.add('data_mismatch', 'warn', f's02: projected score - current score != recoverable points', once=True)
+    steps = grade_walk(g_cur, g_pro)
+    if steps is None and (g_cur or g_pro):     # missing, unknown or downward: no staircase, no fallback table
+        qa.add('data_mismatch', 'warn', f's02: projected rating not drawn (current {g_cur}, projected {g_pro})',
+               once=True)
+    if not steps and all(x is None for x in n.values()):
         return []
-    pairs = [('Current rating', side(ri.get('current'))), ('Projected rating', side(ri.get('projected')))]
-    if pts is not None:
-        pairs.append(('Recoverable', c.fmt_value(pts, 'points')))
+    head = c.val(ri.get('title')) or c.val(ri.get('title_source')) or 'Projected rating after remediation'
+    cap = c.val(ri.get('caption_source'))      # source wording, verbatim
+    out = [c.heading(head, 2), *([c.note(cap)] if cap else [])]
+    # rating score as a percent of the pool (owner 2026-10-21): shows the condition without the pool or points
+    pct = lambda x: (min(100, max(0, int(100 * v(x, 'score') / v(x, 'pool') + .5)))
+                     if num(v(x, 'score')) and num(v(x, 'pool')) and v(x, 'pool') > 0 else None)
+    p_cur, p_pro = pct(cur), pct(pro)
+    if steps:
+        mark = lambda g: f'<font name="{T.MEDIUM}">{g}</font> ({T.GRADE_MARK[g]})'
+        k = len(steps) - 1
+        if k:
+            line = f'Up {k} grade{"s" if k > 1 else ""}, from {mark(g_cur)} to {mark(g_pro)}'
+            line += f'; rating score from {p_cur}% to {p_pro}%.' if None not in (p_cur, p_pro) else '.'
+        else:
+            line = f'No change in grade projected: {mark(g_cur)}' + (f', rating score {p_cur}%.' if p_cur is not None else '.')
+        out += [c.M(line, 'body', spaceAfter=4), GradeSteps(steps, (p_cur, p_pro)), Spacer(1, 6)]
+    pairs = []
     parts = [f'{c.fmt_number(n[k])} {k}' for k in ('privacy', 'vulnerability') if n[k] is not None]
     if n['total'] is not None:
         pairs.append(('Active issues', c.fmt_number(n['total']) + (f' ({" + ".join(parts)})' if parts else '')))
-        num = all(isinstance(n[k], (int, float)) and not isinstance(n[k], bool)    # text counts: no sum check
-                  for k in ('total', 'privacy', 'vulnerability'))
-        if num and n['privacy'] + n['vulnerability'] != n['total']:
-            from .. import qa
+        if all(num(n[k]) for k in ('total', 'privacy', 'vulnerability')) and \
+                n['privacy'] + n['vulnerability'] != n['total']:          # text counts: no sum check
             qa.add('data_mismatch', 'warn', f's02: active issues {n["total"]} != privacy {n["privacy"]} + '
                    f'vulnerability {n["vulnerability"]}', once=True)
     if n['credentials'] is not None:
         pairs.append(('Exposed credentials', c.fmt_number(n['credentials']) +
                       (' (counted separately; not part of the active issues)' if n['total'] is not None else '')))
-    head = c.val(ri.get('title')) or c.val(ri.get('title_source')) or 'Projected rating after remediation'
-    cap = c.val(ri.get('caption_source'))      # source wording, verbatim
-    out = [c.heading(head, 2), *([c.note(cap)] if cap else []), c.key_value_list(pairs)]
-    if c.val(ri.get('narrative_source')):
-        out.append(c.P(c.val(ri['narrative_source']), 'body', spaceBefore=6))
+    if pairs:
+        out.append(c.key_value_list(pairs))
+    narrative = c.val(ri.get('narrative_source'))
+    if narrative and POINTS_TEXT.search(str(narrative)):
+        qa.add('hidden_scoring_in_source', 'warn', 's02: narrative_source quotes points or the point pool; '
+               'not printed', once=True)
+    elif narrative:
+        out.append(c.P(narrative, 'body', spaceBefore=6))
     note = ['Projection as reported by the source, not a commitment.']
     if c.val(ri.get('conditional_on_rescan')):
         note.append('Vulnerability fixes count only after a fresh scan confirms them.')

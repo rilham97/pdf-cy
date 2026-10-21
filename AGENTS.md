@@ -84,6 +84,11 @@ Each was asked for or approved by the product owner; changing one needs their ap
 - Labels stay short: no "(as reported)" / "(as sent)" suffixes in column heads; a missing fourth-party sector
   prints "Unknown", an unrated vendor "Not rated" (a real reason only when the payload gives one).
   Appendix A report details carry no methodology version or time zone rows.
+- Projected rating (02): "Up n grades, from X to Y" + a staircase that starts at the current grade (not D) and ends at the
+  projected one; Current / Projected steps carry their own grade tone (tint, border, tag; owner-approved exception to
+  colour on small markers only), steps between stay pale grey. The rating score prints only as a percent
+  (score / pool, rounded) in the summary line and on the two end steps; never print raw scores, the point pool (360) or
+  recoverable points; a source narrative quoting points is held back (QA `hidden_scoring_in_source`).
 - Privacy (03): no "Policy state" row for a valid, assessed policy; other policy states still print it.
 - Appendix C methodology page follows the reference brief (`05_Desain_Terbaru/02-methodology-and-typography/CYBERRANK_methodologyOverview.pdf`):
   signals as bordered tags, each callout under its own step with `callout_emphasis` in bold, scale caption on its own line,

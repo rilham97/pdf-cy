@@ -253,7 +253,7 @@ reports in 02_PDF_Assessment_Valid print Low / Medium).
 | rating | `risk_band` (code) + `risk_band_label_source` (display) | Chip text from the display string, colour from the code |
 | rating | `net`, `pool` (printed by the remediation page) | "Net score" / "Point pool" rows in the rating panel; `snapshot.score_context` is not printed |
 | 02 | `actions[].title_source`, `category` | Issue-based actions (title = category); text quoted in 03 prints "Described in 03 (Issue n)" |
-| 02 | `remediation_impact {current, projected {grade, score, pool}, points_recoverable, active_issues {total, privacy, vulnerability, credentials}, conditional_on_rescan, narrative_source}` | "Projected rating after remediation" block, values as reported |
+| 02 | `remediation_impact {current, projected {grade, score, pool}, points_recoverable, active_issues {total, privacy, vulnerability, credentials}, conditional_on_rescan, narrative_source}` | "Projected rating after remediation" block: grade staircase current → projected; score, pool and points read for QA only, never printed |
 | 03 | `policy.issues[] {label, category, text}` | Active issues table |
 | 08 | `data_residency.observed_hosting[]` `country` null + `reason_code: country_code_placeholder` | "Location not identified (the source printed the placeholder code “XX”)" |
 | 12 | `security_resourcing.roles_found[] {role, sources[]}` | "Role found: Data Protection Officer (source: …)" |

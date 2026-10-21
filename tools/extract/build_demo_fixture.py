@@ -679,8 +679,8 @@ cloud_infrastructure = sec(
 # --- 01 / 02 -------------------------------------------------------------------------------------------------
 executive_overview = sec(
     '01', 'Executive overview', OV, 'findings',
-    f'{ORG} ({DOMAIN}) holds an IISRI external rating of BB (Sufficient, medium risk band), with 196 of 360 '
-    'points. The largest gaps are vulnerabilities and credential exposure.',
+    f'{ORG} ({DOMAIN}) holds an IISRI external rating of BB (Sufficient, medium risk band). '
+    'The largest gaps are vulnerabilities and credential exposure.',
     scope_and_coverage={
         'primary_domain': DOMAIN,
         'observed_targets': [metric('scanned_subdomains', 'Scanned subdomains', len(SUBS), 'subdomains',
@@ -721,7 +721,7 @@ executive_overview = sec(
         'performance_gap': {'value': 'You are 8 points below the sector average.'},
         'cohort': {'cohort_id': 'demo-financial-services-2026q3', 'cohort_size': 120, 'period': '2026 Q3',
                    'percentile_method': 'nearest rank', 'state': 'findings'},
-        'note': 'Your score (out of 100) is not the 360-point IISRI score.'})
+        'note': 'Your score (out of 100) is a sector comparison, separate from the rating grade.'})
 
 
 def action(n, prio, title, time, role, text, why, sections, ids=(), **kw):
@@ -765,8 +765,8 @@ priority_actions = sec(
                         'conditional_on_rescan': True,
                         'narrative_source': f'{len(ISSUES) + len(FINDINGS)} active issues were identified '
                                             f'({len(ISSUES)} privacy issues, {len(FINDINGS)} vulnerability findings). '
-                                            'Completing the recommended actions is expected to recover up to 94 '
-                                            'points, conditional on a fresh scan.',
+                                            'Completing the recommended actions is expected to raise the rating '
+                                            'from BB to AA, conditional on a fresh scan.',
                         'caption_source': 'Estimated improvement upon completion of the recommended actions'},
     note='Rank is the order of the recommendations. Estimated time is not a due date.')
 

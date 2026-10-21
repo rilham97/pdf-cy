@@ -13,7 +13,7 @@ Also reads linked sections (`linked_sections[]`), `sections.certifications.certi
 3. KPI strip: "Total", optional "Critical priority" (only when an action has it), "High priority", "Medium priority", "Low priority", optional "Priority not rated" (all in "actions").
 4. Action table, columns "#", "Priority" (siren only), "Action", "Effort", "Team"; one row per action, sorted by `rank` (`action_rows`; 01's Next pointer counts the same rows). Null Effort/Team cells print "Not available¹" with the reason once under the table.
 5. Note paragraph: shared owner/due/status gaps, held-for-review sentence, payload `note` (omitted when all are empty).
-6. "Projected rating after remediation" (H2, optional; `title` / `title_source` when sent): `caption_source` note, key/value rows, narrative, note, review flags.
+6. "Projected rating after remediation" (H2, optional; `title` / `title_source` when sent): `caption_source` note, "Up n grades, from BB (Sufficient) to AA (Very good); rating score from 54% to 81%." line and a staircase from the current to the projected grade (`GradeSteps`; Current / Projected steps in their own grade tone: light tint, grade-colour border and tread, darker grade text and tag; steps between pale grey), active-issue rows, narrative, note, review flags. No scores, pool or points are printed.
 
 With no actions, 3–6 are replaced by one body sentence, or by nothing when the state card above already prints the reason.
 
@@ -50,11 +50,12 @@ Action cell, line by line:
 | `note` | Appended verbatim to the note under the table | Omitted |
 | `remediation_impact.title` → `title_source` | H2, verbatim (e.g. "Projected Rating After Remediation") | "Projected rating after remediation" |
 | `remediation_impact.caption_source` | Note under the H2, verbatim | Omitted |
-| `remediation_impact.current/projected {grade, score, pool}` | "BB · score 196 / 360" (or the grade alone when score/pool missing) | No grade → "Not available (not provided in the assessment data)"; both missing → "Not available¹" + one footnote |
-| `remediation_impact.points_recoverable` | "Recoverable": "94 points" | Row omitted |
+| `remediation_impact.current/projected.grade` | Summary line + staircase from current to projected (never from D); equal grades: one step "Current and projected" | Either grade missing / unknown, or projected below current: no staircase and no rating rows (QA warn `data_mismatch`); the block keeps the active issues and note, or is omitted when there are none |
+| `remediation_impact.current/projected.score`, `.pool` | Rating score as a percent only (score / pool, rounded, 0–100): summary line and the two end steps; raw score and pool never printed | Percent omitted when score or pool is missing |
+| `remediation_impact.points_recoverable` | Never printed (hidden scoring); QA warn `data_mismatch` when projected − current score ≠ recoverable | — |
 | `remediation_impact.active_issues.total/privacy/vulnerability` | "Active issues": "18 (6 privacy + 12 vulnerability)"; a non-number prints as given | Row omitted without `total`; parts omitted when null |
 | `remediation_impact.active_issues.credentials` | "Exposed credentials": n (+ separation note) | Row omitted |
-| `remediation_impact.narrative_source` | Body paragraph, verbatim | Omitted |
+| `remediation_impact.narrative_source` | Body paragraph, verbatim; held back when it quotes points or the pool (QA warn `hidden_scoring_in_source`) | Omitted |
 | `remediation_impact.conditional_on_rescan` | Adds the rescan sentence to the note | Sentence omitted |
 | `remediation_impact.review_flags[]` + top-level `review_flags[]` | "Review flag RF-x: <text>" | Omitted |
 | `sections.certifications.state`, `.certificates[] {origin, approval_state, standard}` | Generator-added action (see Computed) | No added action (also when 13 is `not_assessed`/`not_applicable`/`unavailable`) |
@@ -81,11 +82,12 @@ Action cell, line by line:
 | "Wording and figures of action(s) <ranks> are as reported and held for review." | Note under table | `:249` |
 | "No priority actions are listed in the assessment data." | Body, no actions | `:259` |
 | "Review system-detected certificates", "Cyberrank admin", "Added by this report from the certificate records; not part of the assessment action list.", "{n} system-detected certificate(s) ({standards}) is/are awaiting approval. Check the source, then approve or reject it/each in Cyberrank." | Added action | `_cert_review :188-198`, `s13.review_text :181` |
-| "Projected rating after remediation" | H2 fallback | `:297` |
-| "Current rating", "Projected rating", "Recoverable", "Active issues", "Exposed credentials" | Remediation key/value | `:282-296` |
-| "<grade> · score <s> / <pool>", "points", "(<p> privacy + <v> vulnerability)", "(counted separately; not part of the active issues)" | Remediation values | `:275`, `:284-296` |
-| "Projection as reported by the source, not a commitment." | Remediation note, always | `:302` |
-| "Vulnerability fixes count only after a fresh scan confirms them." | Remediation note | `:304` |
+| "Projected rating after remediation" | H2 fallback | `remediation_block :347` |
+| "Up <n> grade(s), from <grade> (<meaning>) to <grade> (<meaning>).", "No change in grade projected: <grade> (<meaning>)[, rating score <p>%]."; "; rating score from <p>% to <q>%", "<p>%" on the end steps | Remediation summary line | `remediation_block :347` |
+| "Current", "Projected", "Current and projected", grade meanings (`T.GRADE_MARK`) | Staircase tags and labels | `GradeSteps :277` |
+| "Active issues", "Exposed credentials", "(<p> privacy + <v> vulnerability)", "(counted separately; not part of the active issues)" | Remediation key/value | `remediation_block :347` |
+| "Projection as reported by the source, not a commitment." | Remediation note, always | `remediation_block :347` |
+| "Vulnerability fixes count only after a fresh scan confirms them." | Remediation note | `remediation_block :347` |
 | "Not available (<reason>)", "Not available¹" | Nulls | shared (README §5) |
 
 Policy overrides: `lists.credential_exposure.unit_rules.priority_action_text` (note text);
