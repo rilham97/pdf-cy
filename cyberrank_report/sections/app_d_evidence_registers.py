@@ -496,8 +496,8 @@ def d24_mailboxes(s05, d, rid):
              ('Unknown Email', d['cross']['unknown_email'] if sum(d['cross']['unknown_email']) else None)]
     entries += [('row', [str(len(entries) + i), C.P(name, 'dense_muted'), *map(num, c), num(sum(c))])
                 for i, (name, c) in enumerate([x for x in extra if x[1]], 1)]
-    if len(s05.other_mailboxes(d)) <= s05.INLINE_DOMAINS and not sum(d['cross']['assessed_subdomain']):
-        return [C.heading(f'{rid}.4  Rows by email domain', 3, style=H3T),     # Section 05 shows every one
+    if not s05.mailbox_detail(d):          # only the assessed domain / Unknown Email: Section 05 shows it all
+        return [C.heading(f'{rid}.4  Rows by email domain', 3, style=H3T),
                 C.P(f'All email domains are listed in Section {SEC_NUM["s05"]}.', 'body')]
     t = register_table(['#', 'Account email domain', *s05.CROSS_COLS, 'Total'], entries,
                        title=f'{rid}.4 Rows by email domain', sec_id='s05', numeric_cols=(0, 2, 3, 4, 5), ident='regD44',

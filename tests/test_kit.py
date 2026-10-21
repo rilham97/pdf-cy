@@ -1192,8 +1192,10 @@ def test_mailbox_domains_named_and_own_subdomains_kept():               # owner,
     assert sum(d['cross']['assessed_subdomain']) == 5 and sum(d['cross']['other_domain']) == 4, d['cross']
     assert [n for n, _ in s05.other_mailboxes(d)] == ['example.net']
     t = _fixture_text('demo-preview', ['s05', 'appD'])
-    assert 'Subdomains of example.com' in t and 'example.net 1 3 0 4 Unknown Email' in t
-    assert 'Other email domains' not in t.split('Exposure timeline')[0]
+    sec05 = t.split('Exposure timeline')[0]                       # 05: three rows, names only in D.2.4
+    assert 'Subdomains of example.com 1 4 0 5 Other email domains 1 3 0 4 Unknown Email' in sec05
+    assert 'example.net' not in sec05 and 'Every email domain by name: Appendix D.2.4' in sec05
+    assert '3 example.net 1 3 0 4' in t                                # D.2.4 names it
     assert 'D.2.4 Rows by email domain' in t and 'D.2.5 Credential register' in t
     assert 'D.2.1–D.2.4 give the aggregates' not in t and 'Unit: register rows' not in t
 

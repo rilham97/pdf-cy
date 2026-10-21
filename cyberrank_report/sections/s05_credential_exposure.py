@@ -418,26 +418,16 @@ def other_mailboxes(d):
 
 
 def crosstab(d):
-    """Email domain of the exposed accounts (mailbox provider) x password category listed. Other email domains
-    are named, most rows first (owner 2026-10-21); more than INLINE_DOMAINS: the top TOP_DOMAINS plus one
-    '{n} other email domains' row, every domain in <D.n>.4."""
+    """Email domain of the exposed accounts (mailbox provider) x password category listed, three rows (owner
+    2026-10-21): the assessed domain, its subdomains, other email domains (+ Unknown Email when any). Every
+    domain by name is in <D.n>.4, linked when there is more than the assessed domain."""
     dom = d['assessed']
     cell = lambda n, lead=False: C.P(C.fmt_number(n), LEAD_C if lead and n else ZERO_C if n == 0 else 'cell_num')
     line = lambda name, c, lead=False, tech=False: [C.M(mono(name), 'cell') if tech else name,
                                                     *[cell(n, lead and j == 0) for j, n in enumerate(c)], cell(sum(c))]
-    rows = [line(dom or 'Assessed domain', d['cross']['assessed'], lead=True, tech=bool(dom))]
-    if sum(d['cross']['assessed_subdomain']):
-        rows.append(line(f'Subdomains of {dom}' if dom else 'Subdomains of the assessed domain',
-                         d['cross']['assessed_subdomain']))
-    others = other_mailboxes(d)
-    cut = others[:TOP_DOMAINS] if len(others) > INLINE_DOMAINS else others
-    rows += [line(n, c, tech=True) for n, c in cut]
-    rest = others[len(cut):]
-    if rest:
-        rows.append(line(f'{C.fmt_number(len(rest))} other email domains', [sum(c[j] for _, c in rest) for j in range(3)]))
-    unnamed = d['mail'].get(('other_domain', None))
-    if unnamed:
-        rows.append(line('Other email domains, name not given', unnamed))
+    rows = [line(dom or 'Assessed domain', d['cross']['assessed'], lead=True, tech=bool(dom)),
+            line(f'Subdomains of {dom}' if dom else 'Subdomains of the assessed domain', d['cross']['assessed_subdomain']),
+            line('Other email domains', d['cross']['other_domain'])]
     if sum(d['cross']['unknown_email']):
         rows.append(line('Unknown Email', d['cross']['unknown_email']))
     tot = [sum(d['cross'][k][j] for k in DOMAIN_CLASSES) for j in range(3)]
@@ -446,9 +436,14 @@ def crosstab(d):
     out = [C.heading('Email domain of exposed accounts', 2, style=H2T),
            gap(C.compact_table(['Account email domain', *CROSS_COLS, 'Total'], rows, numeric_cols=(1, 2, 3, 4),
                                widths=[T.CW - 4 * CROSS_WN] + [CROSS_WN] * 4), 6)]
-    if rest:
-        out.append(C.AppendixRef(f'All {C.fmt_number(len(others))} other email domains:', f'{RID["s05"]}.4'))
+    if mailbox_detail(d):
+        out.append(C.AppendixRef('Every email domain by name:', f'{RID["s05"]}.4'))
     return out + [C.note(CAVEAT)]
+
+
+def mailbox_detail(d):
+    """<D.n>.4 has something Section 05 does not show: a named subdomain or other email domain."""
+    return bool(other_mailboxes(d) or sum(d['cross']['assessed_subdomain']) or d['mail'].get(('other_domain', None)))
 
 
 def year_buckets(d, src='years'):

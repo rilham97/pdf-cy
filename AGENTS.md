@@ -82,7 +82,8 @@ Each was asked for or approved by the product owner; changing one needs their ap
   only when register rows carry `affected_domain` — then D.2.3 lists every domain and D.2.5 groups rows by domain,
   like the app. Years in fixed buckets: assessment year and the 4 before it one by one, "<year> and before",
   "Unknown". The email-domain table is the mailbox provider, not where the credential leaked, and stays separate
-  from "Affected domains": other mailbox domains are named (top 10 when > 30, all in D.2.4 "Rows by email domain");
+  from "Affected domains" (backend `affected_domain`, the leaked site): Section 05 shows three rows (main domain,
+  subdomains, other email domains); every name is in D.2.4 "Rows by email domain", linked;
   a subdomain of the assessed domain (mail.<domain>) is never "other".
   No repeats (owner 2026-10-21): findings state shows no summary paragraph (KPI only); tiles = Credential score %,
   records, open share, "with password on <domain>" (+ unique accounts); headline mismatch in one short line; no note restating the tiles; D.2.5 group rows name the domain only (no count);

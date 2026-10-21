@@ -21,10 +21,10 @@ Section 05 (state `findings` / `partial` / `pending_review` / `none_identified`,
 4. "Affected domains" (H2): Domain | Rows | With password | Latest year; with resolved rows Domain | Open | Resolved
    ("n (p%)") | With password (open) | Latest year. Only when rows carry `affected_domain`.
 5. "Email domain of exposed accounts" (H2): Account email domain | With password | Without password |
-   Password unknown | Total. Rows: the assessed domain, "Subdomains of {domain}", then every other mailbox
-   domain by name, most rows first (> 30 named: top 10 + "{n} other email domains" + "All {n} other email
-   domains: Appendix D.2.4."), "Other email domains, name not given", "Unknown Email", "All listed rows";
-   then the mailbox-provider caveat note.
+   Password unknown | Total. Three rows (owner 2026-10-21): the assessed domain, "Subdomains of {domain}", "Other
+   email domains" (+ "Unknown Email" when any), then "All listed rows"; "Every email domain by name: Appendix D.2.4,
+   page p." (linked) when D.2.4 has more; then the mailbox-provider caveat note. Kept apart from "Affected domains"
+   (the site of the leak, `affected_domain` from the backend).
 6. "Exposure timeline" (H2, replaces the old "Rows by latest exposure year" table; owner 2026-10-21, no caption):
    left, stacked Open (orange) / Resolved (blue) bars per fixed year bucket with "resolved/total" (or the total) at the bar end and the legend on the
    header line; right, "Last 12 months" columns ("resolved/total" or the total above each) up to the assessment month (`snapshot.assessed_at`), from the
@@ -48,7 +48,7 @@ Appendix D.2 (printed only for state `findings` / `partial` / `pending_review` w
 4. "D.2.3  Rows by affected domain": the Section 05 table columns for every domain, only when Section 05 cut the list
    (> 30 named domains); otherwise one line "All {n} domains are listed in Section 05.". **Or**, without
    `affected_domain`: "D.2.3  Exposure episodes and sources" + an "unavailable" sentence.
-5. "D.2.4  Rows by email domain" (only when Section 05 cut the other domains or grouped subdomains; otherwise "All
+5. "D.2.4  Rows by email domain" (whenever a subdomain or other email domain exists; otherwise "All
    email domains are listed in Section 05."): # | Account email domain | With password | Without password |
    Password unknown | Total: the assessed domain, each of its subdomains, then every other domain by rows;
    "Other email domains, name not given" and "Unknown Email" last.
@@ -102,7 +102,7 @@ The Appendix D index always has a D.2 row (title, state chip, content, location)
 | "Source metric “{label}” is {x}; the register rows give {y} (difference ±n).{ note}" / "Payload count (prepared from the source rows; not printed by the source) “{label}” …" | Reconciliation (`s05:336-340`) | First wording when the metric has `source_label` |
 | "Affected domains"; "Domain", "Rows", "With password", "Latest year"; "{n} other domains"; "Domain not given"; "Unknown" / "Not given" (latest-year cell) | Affected domains table (`s05:358-374`) | — |
 | "All {n} domains: Appendix D.2.3." | Under the domain table when cut (`s05:365`) | — |
-| "Email domain of exposed accounts"; "Account email domain", "With password", "Without password", "Password unknown", "Total"; "Subdomains of {domain}", "{n} other email domains", "Other email domains, name not given", "All {n} other email domains: Appendix D.2.4.", "Unknown Email", "All listed rows" | Crosstab (`s05:32,380-392`) | — |
+| "Email domain of exposed accounts"; "Account email domain", "With password", "Without password", "Password unknown", "Total"; "Subdomains of {domain}", "Other email domains", "Unknown Email", "All listed rows"; "Every email domain by name: Appendix D.2.4, page p." | Crosstab (`crosstab`, `mailbox_detail`) | — |
 | "The email domain is the account's mailbox provider, not the site where the credential leaked." | Note under the crosstab, always (`s05:51,393`) | — |
 | "Exposure timeline"; "Latest year", "Open", "Resolved", "Total"; bucket labels "{year}", "{A-5} and before", "Unknown", "Not given"; "Last 12 months", month abbreviations, year under the first month | Timeline (`by_year`, `charts.py`) | — |
 | "{n} row(s) without a status and {n} row(s) with status “{value}” count(s) as open."; "Domain", "Open", "Resolved", "With password (open)"; "All {n} domains are listed in Section 05." / "All email domains are listed in Section 05." | Status note (only for missing / other status), domain tables, D.2.3 / D.2.4 when Section 05 shows the full list (`status_line`, `domain_cols`, `app_d`) | — |
