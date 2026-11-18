@@ -201,15 +201,20 @@ def render_section(spec, report, identity, blueprint=False):
     flow += C.section_opener(spec.number, data.get('title') or spec.title, shown,
                              verdict=verdict, intro=data.get('intro_source'),
                              key=spec.anchor, group=GROUPS[spec.group], icon=spec.key)
+    carded = False
     if state in WITH_CARD or state in NO_RESULT:
         kw = default_card(data, state)
         if mod and hasattr(mod, 'card'):
             kw.update(mod.card(data, ctx))
-        flow.append(C.state_card(shown or state, **kw))
+        if not kw.pop('skip', False):      # a module drops a card that only repeats its verdict line
+            flow.append(C.state_card(shown or state, **kw))
+            carded = True
     if state in NO_RESULT:
         extra = mod.build_context(data, ctx) if mod and hasattr(mod, 'build_context') else []
-        if extra:      # the first context block travels with the card (no short block alone overleaf)
+        if extra and carded:      # the first context block travels with the card (no short block alone overleaf)
             flow += [C.keep(flow.pop(), extra[0])] + list(extra[1:])
+        else:
+            flow += list(extra)
         return flow
     flow += mod.build(data, ctx) if mod else blueprint_body(data, ctx)
     return flow

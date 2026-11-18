@@ -91,7 +91,10 @@ def adjust_compared(data, observed, has_data, name=None):
 
 def card(data, ctx):
     """Card reason: a pending review names its coded reason (the payload's state_reason is an
-    extraction note); a no-result card falls back to the source's own reason or narrative."""
+    extraction note); a no-result card falls back to the source's own reason or narrative. The generated
+    'Not compared' card is skipped: the verdict line under the title already says it."""
+    if data.get('_no_preference') and data.get('state_reason') == NOT_COMPARED:
+        return {'skip': True}
     if data.get('state') == 'pending_review' and data.get('reason_code'):
         why = C.reason_text({'reason_code': data['reason_code']})
         return {'reason': C.sentence(why if why.lower().startswith('held for review') else 'held for review: ' + why)}

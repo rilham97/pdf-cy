@@ -92,7 +92,7 @@ No `pol()` policy override keys.
 | Condition | What prints | Code |
 |---|---|---|
 | `allowed_set` absent or null | Taken from `snapshot.preferences_at_assessment.residency_allowed_countries` (when that is a list) before every rule below; s01 sees it too | `s08:32`, `_shared.py:47-53` |
-| (`enabled` false OR `allowed_set` empty) AND `observed_hosting` non-empty AND result state | State → `not_applicable` + card + QA `state_adjusted`; body prints with "Not compared" chips, navy circles, legend "Hosting country (not compared)", "Preferred countries" = "No preference set" (even when `allowed_set` lists countries); no KPI strip | `s08:33-34`, `_shared.py:83-85` |
+| (`enabled` false OR `allowed_set` empty) AND `observed_hosting` non-empty AND result state | State → `not_applicable` (no state card: the verdict line carries the no-preference reading) + QA `state_adjusted`; body prints with "Not compared" chips, navy circles, legend "Hosting country (not compared)", "Preferred countries" = "No preference set" (even when `allowed_set` lists countries); no KPI strip | `s08.adjust`, `_shared.adjust_compared`, `_shared.card` (skip) |
 | (`enabled` false OR `allowed_set` empty) AND no hosting rows AND result state | `not_applicable`, card only, QA `state_adjusted` | `_shared.py:86-87` |
 | (`enabled` false OR `allowed_set` empty) AND `observed_hosting` non-empty AND no-result state | Payload state and its card kept; body prints with "Not compared" everywhere (hosting comes from the scan, not from the preference list) | `s08:33-36` |
 | else `enabled` false (no-result state, no hosting rows) | `not_applicable`, card only | `_shared.py:70-71` |
@@ -159,7 +159,7 @@ No `pol()` policy override keys.
 | `pending_review` | Pending review | Card ("Held for review: …") + KPI + items 5–10 |
 | `none_identified` | None identified | Card + KPI + items 5–10 |
 | `not_assessed` / `not_applicable` / `unavailable` | Not assessed / Not applicable / Unavailable | Card; items 5–10 when `allowed_set` or `observed_hosting` present |
-| result state + no preference + hosting rows | Not applicable | Card + body, "Not compared" everywhere |
+| result state + no preference + hosting rows | Not applicable | Body, "Not compared" everywhere (no card) |
 | result state + no preference + no hosting rows | Not applicable | Card only |
 | no-result state + no preference + hosting rows | Payload state | Card + body, "Not compared" everywhere |
 | `enabled: false` (no-result state, no hosting rows) | Not applicable | Card only |

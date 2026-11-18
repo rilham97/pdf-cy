@@ -70,7 +70,7 @@ No `pol()` policy override keys.
 | Condition | What prints | Code |
 |---|---|---|
 | `allowed_set` absent or null | Taken from `snapshot.preferences_at_assessment.sovereignty_allowed_jurisdictions` (when that is a list) before every rule below; s01 sees it too | `s07:22`, `_shared.py:47-53` |
-| (`enabled` is `false` OR `allowed_set` empty) AND `observed_jurisdiction` has a value (not null / NullReason) AND state is a result state | State forced to `not_applicable` ("Not applicable" chip + card with the no-preference reason) and the body still prints; "Accepted jurisdictions" = "No preference set" (even when `allowed_set` lists countries); chip "Not compared: no preference set"; reading = no-preference text; QA `state_adjusted` | `s07:21-25`, `_shared.py:83-85` |
+| (`enabled` is `false` OR `allowed_set` empty) AND `observed_jurisdiction` has a value (not null / NullReason) AND state is a result state | State forced to `not_applicable` ("Not applicable" chip; no state card, the verdict line carries the no-preference reading) and the body still prints; "Accepted jurisdictions" = "No preference set" (even when `allowed_set` lists countries); chip "Not compared: no preference set"; QA `state_adjusted` | `s07.adjust`, `_shared.adjust_compared`, `_shared.card` (skip) |
 | Nothing found (see `observed_jurisdiction`) AND result state | State kept; body prints "Not found" (never "Not compared"), with or without a preference | `s07.adjust` |
 | else `enabled` is `false` (no-result state) | State `not_applicable`, card only (`_card_only`), no verdict unless `summary` | `_shared.py:70-71`, `s07:36`, `s07:72` |
 | else state is `not_assessed` / `not_applicable` / `unavailable` and neither `allowed_set` nor `observed_jurisdiction` | Card only | `_shared.py:72-73` |
@@ -115,7 +115,7 @@ The match itself is never computed: `match_state` is printed as sent.
 | `pending_review` | Pending review | Card ("Held for review: …" when `reason_code`) + KPI + items 5–8 |
 | `none_identified` | None identified | Card + KPI + items 5–8 |
 | `not_assessed` / `not_applicable` / `unavailable` | Not assessed / Not applicable / Unavailable | Card; items 5–8 too when `allowed_set` or `observed_jurisdiction` is present |
-| any result state + no preference + jurisdiction observed | Not applicable | Card + items 5–8 marked "Not compared: no preference set" |
+| any result state + no preference + jurisdiction observed | Not applicable | Items 5–8 marked "Not compared: no preference set" (no card) |
 | any result state + nothing found | Payload state | Body with "Not found" |
 | `enabled: false` (no-result state) | Not applicable | Card only |
 
