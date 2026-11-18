@@ -19,7 +19,7 @@ when `intro_source` is empty. A null old object leaves the section missing ("Una
 2. State chip + verdict: `summary`, else the generated reading (see Conditional rules).
 3. State card (card states and no-result states only).
 4. KPI strip from `metrics[]` (result states only; never derived).
-5. Key/value list: "Governing law / courts found", "Accepted jurisdictions", "Against the preference", optional "Source verdict".
+5. Key/value list: "Governing law / courts found", "Accepted jurisdictions", "Against the preference", optional "Source result".
 6. Generated reading paragraph (only when `summary` is present and the reading is not the same text).
 7. "Policy text: “…”" (`quote_source`).
 8. Note: "Source text: “…”" (`narrative_source`) + optional review note; no Note when both are empty.
@@ -34,9 +34,9 @@ when `intro_source` is empty. A null old object leaves the section missing ("Una
 | `summary` | Opener verdict, verbatim; also switches on the body reading paragraph when it differs from the reading (`s07:53-54`) | Generated reading used as verdict |
 | `enabled` | `false` = no preference: see Conditional rules (`_shared.py:38-39`); the accepted list is then not printed (`_shared.py:42-44`) | Treated as enabled |
 | `allowed_set[]` | "Accepted jurisdictions" value, comma-joined (`_shared.py:24-25`); `{allowed}` in the reading | Absent or null: `snapshot.preferences_at_assessment.sovereignty_allowed_jurisdictions` (`_shared.py:47-53`, `s07:22`); none there either, or an empty list: no preference, "No preference set" |
-| `observed_jurisdiction` (string or `{value}`) | "Governing law / courts found" value (`s07:45`) | NullReason: its `source_label` if set, else "Not available (<reason>)", muted (`s07:41-43`); a NullReason counts as nothing observed (`s07:23`) |
+| `observed_jurisdiction` (string, `{value}`, or a list of them) | "Governing law / courts found": the countries from the legal terms / statements, comma-joined (not IP based; separate from 08) | Absent, empty, or NullReason `not_identified` / `not_found` in a result state: "Not found" (value and chip), whatever the preference; other NullReasons: `source_label` or "Not available (<reason>)", muted |
 | `match_state` | "Against the preference" chip + choice of reading (`_shared.py:103-106`) | Missing or any value other than match / mismatch / unknown / no_preference: read as `unknown` → "Cannot be compared" |
-| `verdict_source` (string or `{value}`) | Extra row "Source verdict" = “…” (`s07:49-51`) | Row omitted |
+| `verdict_source` (string or `{value}`) | Extra row "Source result" = “…” | Row omitted |
 | `quote_source` | "Policy text: “<text>”" body paragraph (`_shared.py:33-35`) | Omitted |
 | `narrative_source` (string or `{value}`) | Note "Source text: “<text>”" (`s07:56-62`) | Omitted; a NullReason prints nothing |
 | `metrics[]` | KPI strip tiles, verbatim (`s07:66-68`) | No strip |
@@ -53,13 +53,14 @@ when `intro_source` is empty. A null old object leaves the section missing ("Una
 | "No governing-law or court clause could be matched in the published policies, so legal location cannot be compared with {owner} ({allowed}). Treat it as unresolved until confirmed." | Verdict / reading, `unknown` | `s07:16-17` |
 | {owner} = "the preference set by the report owner/requestor" | Inside the readings | `_shared.py:12` |
 | {allowed} / empty value = "No preference set" | Readings, "Accepted jurisdictions" | `_shared.py:24` |
-| "Governing law / courts found", "Accepted jurisdictions", "Against the preference", "Source verdict" | Key/value labels | `s07:47-51` |
+| "Governing law / courts found", "Accepted jurisdictions", "Against the preference", "Source result" | Key/value labels | `s07._body` |
 | "Matches the preference" (check, green) / "Does not match the preference" (x, red) / "Cannot be compared" (neutral) / "Not compared: no preference set" (neutral) | "Against the preference" chip | `_shared.py:13-16` |
 | "Policy text: “…”" | Quote paragraph | `_shared.py:35` |
 | "Source text: “…”" | Note | `s07:57` |
-| " Review note: the source prints a verdict, but no governing-law clause was identified, so this report reads the comparison as “Cannot be compared” until the clause is confirmed." | Note, appended | `s07:58-60` |
+| " Review note: the source gives its own result, but no governing-law clause was found, so this report shows “<Cannot be compared / Not found>” until the clause is confirmed." | Note, appended | `s07._body` |
 | "Not compared: no preference set. The observed data is shown below without validation." | Card reason (no preference, data observed) | `_shared.py:17` |
-| "Not compared: no preference set." | Card reason when no preference and nothing observed, or `enabled: false`, and no `state_reason` | `_shared.py:86-88` |
+| "Not compared: no preference set." | Card reason when `enabled: false` in a no-result state and no `state_reason` | `_shared.py:86-88` |
+| "Not found" / "No governing law or court location was found in the published legal terms." | Value + chip / reading when nothing was found | `s07` `TEXT['not_found']`, `_shared.MATCH` |
 | "Held for review: <reason>." | Card reason, `pending_review` + `reason_code` | `_shared.py:94-96` |
 
 No `pol()` policy override keys.
@@ -70,7 +71,7 @@ No `pol()` policy override keys.
 |---|---|---|
 | `allowed_set` absent or null | Taken from `snapshot.preferences_at_assessment.sovereignty_allowed_jurisdictions` (when that is a list) before every rule below; s01 sees it too | `s07:22`, `_shared.py:47-53` |
 | (`enabled` is `false` OR `allowed_set` empty) AND `observed_jurisdiction` has a value (not null / NullReason) AND state is a result state | State forced to `not_applicable` ("Not applicable" chip + card with the no-preference reason) and the body still prints; "Accepted jurisdictions" = "No preference set" (even when `allowed_set` lists countries); chip "Not compared: no preference set"; reading = no-preference text; QA `state_adjusted` | `s07:21-25`, `_shared.py:83-85` |
-| (`enabled` is `false` OR `allowed_set` empty) AND nothing observed AND result state | State forced to `not_applicable`, card only ("Not compared: no preference set." unless `state_reason`); QA `state_adjusted` | `_shared.py:86-87` |
+| Nothing found (see `observed_jurisdiction`) AND result state | State kept; body prints "Not found" (never "Not compared"), with or without a preference | `s07.adjust` |
 | else `enabled` is `false` (no-result state) | State `not_applicable`, card only (`_card_only`), no verdict unless `summary` | `_shared.py:70-71`, `s07:36`, `s07:72` |
 | else state is `not_assessed` / `not_applicable` / `unavailable` and neither `allowed_set` nor `observed_jurisdiction` | Card only | `_shared.py:72-73` |
 | else no-result state with data | Card + body (items 5–8), no KPI strip | `__init__.py:205-209`, `s07:71-72` |
@@ -79,7 +80,7 @@ No `pol()` policy override keys.
 | `summary` present and equal to the reading | Printed once (verdict only) | `s07:53` |
 | `match_state` not one of match / mismatch / unknown / no_preference | Read as `unknown`: chip "Cannot be compared" and the `unknown` reading (never "None") | `_shared.py:103-106` |
 | `observed_jurisdiction` missing / NullReason with `source_label` | `source_label` printed muted | `s07:41-43` |
-| `verdict_source` set | "Source verdict" row | `s07:50-51` |
+| `verdict_source` set | "Source result" row | `s07._body` |
 | `verdict_source` set AND comparison is `unknown` | Review note appended to the Source-text note | `s07:58-60` |
 | Source text or review note non-empty | Note printed (nothing printed when both are empty) | `s07:56-62` |
 
@@ -115,7 +116,7 @@ The match itself is never computed: `match_state` is printed as sent.
 | `none_identified` | None identified | Card + KPI + items 5–8 |
 | `not_assessed` / `not_applicable` / `unavailable` | Not assessed / Not applicable / Unavailable | Card; items 5–8 too when `allowed_set` or `observed_jurisdiction` is present |
 | any result state + no preference + jurisdiction observed | Not applicable | Card + items 5–8 marked "Not compared: no preference set" |
-| any result state + no preference + nothing observed | Not applicable | Card only |
+| any result state + nothing found | Payload state | Body with "Not found" |
 | `enabled: false` (no-result state) | Not applicable | Card only |
 
 ## QA checks raised

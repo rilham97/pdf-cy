@@ -30,6 +30,10 @@ def _hosting(data):
 
 def adjust(data, report):
     data = S.with_snapshot_pref(data, report, 'residency_allowed_countries')
+    if _hosting(data) and S.no_pref(data) and data.get('state') in S.NO_RESULT and not data.get('_card_only'):
+        # preference list off but hosts observed (the scan's data, not the preference's): the hosting still
+        # prints, marked 'Not compared', whatever no-result state the payload sends; its own card stays
+        data = {**data, '_no_preference': True}
     out = S.adjust_compared(data, bool(data.get('observed_hosting')),
                             data.get('allowed_set') or data.get('observed_hosting'), 'Data residency')
     intro = out.get('intro_source')

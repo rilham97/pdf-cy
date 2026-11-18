@@ -513,6 +513,15 @@ def pref_edges_d():
                                 'public_ai_policy': {'value': 'not_found', 'state': 'findings'}}})
 
 
+def pref_edges_e():
+    """08 preference list switched off and the payload sends a no-result state, but hosts were observed:
+    the hosting countries still print (marked Not compared) under the payload's own card."""
+    return _secs(base(), data_residency={
+        'state': 'not_applicable', 'enabled': False, 'allowed_set': [],
+        'state_reason': 'The vendor has not enabled a preferred country list.',
+        'observed_hosting': [{'country_code': 'US', 'hosts': 5}, {'country_code': 'DE', 'hosts': 2}]})
+
+
 def vulns_c():
     """N7 scanned domains / subdomains list; N8 active scan results (Clean / Scanned, reported vs listed
     counts, informational findings); a High severity finding."""
@@ -745,6 +754,7 @@ VARIANTS = [
     ('pref_edges_b', ['enabled false lists nothing', 'null host counts'], ('s07', 's08'), pref_edges_b),
     ('pref_edges_c', ['no preference, nothing observed', 'portal flag null'], ('s07', 's09'), pref_edges_c),
     ('pref_edges_d', ['summary = reading', 'context chips', 'signal count'], ('s07', 's10'), pref_edges_d),
+    ('pref_edges_e', ['preference off, no-result state, hosts observed'], 's08', pref_edges_e),
     ('vulns_c', ['N7 scanned assets', 'N8 active scan', 'High'], 's04', vulns_c),
     ('vendors_profile', ['N9 vendor profile'], 's14', vendors_profile),
     ('vendors_self12', ['s14 self-reference', 'alias', 'assessed_at'], 's14', vendors_self12),

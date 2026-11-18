@@ -945,7 +945,7 @@ def test_s01_rating_overview_concept_a():                         # user-approve
               'All aspects Privacy 13 active privacy issues Findings',
               'Vulnerabilities 15 finding types · 1 High, 6 Medium, 8 Low Findings',      # zero tiers omitted
               'Credential exposure 5,395 exposed account records',                    # register rows listed
-              'Data sovereignty Cannot be compared', 'Data residency 1 of 1 hosting country outside the preference',
+              'Data sovereignty Not found', 'Data residency 1 of 1 hosting country outside the preference',
               'Legal terms & conditions 0 of 2 customer-protection clauses found',
               'AI risk and governance No result Unavailable', 'Quantum security 30 high-risk findings',
               'Certifications 0 certifications None identified',
@@ -1025,7 +1025,8 @@ def test_s01_edge_values_and_pointer_counts_02_rows():                  # code r
     from cyberrank_report.sections.s01_executive_overview import aspect_rows
     report = adjust_report({'sections': {
         'privacy': {'state': 'clear'},
-        'data_sovereignty': {'state': 'findings', 'enabled': True, 'allowed_set': ['Australia'], 'match_state': 'odd'},
+        'data_sovereignty': {'state': 'findings', 'enabled': True, 'allowed_set': ['Australia'], 'match_state': 'odd',
+                             'observed_jurisdiction': 'Singapore'},
         'vulnerabilities': {'state': 'findings', 'metrics': [{'id': 'vulnerability_score', 'value': -5, 'unit': 'percent'}]},
         'credential_exposure': {'state': 'findings', 'aspect_score': -5}}})
     rows = {r[0].key: r for r in aspect_rows(report, [])}
@@ -1073,8 +1074,8 @@ def test_privacy_policy_state_and_sovereignty_verdict():                        
         t = _fixture_text(name, ['s03'])
         assert 'Policy state' not in t and 'Valid policy, assessed' not in t and 'Policy source' in t, name
         t = _fixture_text(name, ['s07'])                     # sovereignty is its own section (item 15)
-        assert 'Source verdict “does not match the jurisdictions your organisation accepts' in t, name
-        assert 'Review note: the source prints a verdict' in t and 'Cannot be compared' in t, name
+        assert 'Source result “does not match the jurisdictions your organisation accepts' in t, name
+        assert 'Review note: the source gives its own result' in t and 'report shows “Not found”' in t, name
 
 
 def test_credential_action_quotes_source():                                            # item 4
@@ -1335,7 +1336,7 @@ def test_new_sections_render_in_every_state():
             if st in ('not_assessed', 'not_applicable', 'unavailable', 'clear', 'partial', 'pending_review'):
                 assert C.CARD_TITLES[st] in text, (sid, st)                         # state card
             if st == 'findings':                                                    # body + verdict
-                assert {'s07': 'Source verdict “does not match”', 's08': '3 hosts',
+                assert {'s07': 'Source result “does not match”', 's08': '3 hosts',
                         's09': 'One clause found; not counted against the rating.',
                         's12': 'Not detected in the sources checked'}[sid] in text, (sid, text[:600])
 
@@ -1371,9 +1372,14 @@ def test_s07_s10_review_fixes():                                       # code re
     assert {i['detail'].split(':')[0] for i in issues if i['check'] == 'state_adjusted'} >= \
         {'Data sovereignty', 'Data residency'}
     text, issues = _gap('pref_edges_c')
-    assert 'Not compared: no preference set.' in text and 'Governing law' not in text     # card only
+    assert 'Governing law / courts found Not found' in text and 'Against the preference Not found' in text
+    assert 'Not compared' not in text[text.index('07 · '):text.index('09 · ')]            # nothing found: Not found
     assert 'clause found' not in text and 'Customer portal terms Detected' in text       # portal unknown
     assert 'Login / payment portal Not available (not provided in the assessment data)' in text
+    text, _ = _gap('pref_edges_e')     # preference off + no-result state: observed hosting still listed
+    assert 'The vendor has not enabled a preferred country list' in text
+    assert 'United States of America (US)' in text and 'Germany (DE)' in text, text
+    assert 'Not compared: no preference set' in text
     text, _ = _gap('pref_edges_d')
     assert text.count(GF.SOV_MATCH_TEXT) == 1                                             # reading = summary
     assert '2 signals AI signals observed' in text

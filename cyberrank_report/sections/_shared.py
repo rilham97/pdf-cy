@@ -13,7 +13,8 @@ OWNER = 'the preference set by the report owner/requestor'
 MATCH = {'match': ('Matches the preference', True),            # label, yes/no flag, status key
          'mismatch': ('Does not match the preference', False),
          'unknown': ('Cannot be compared', None, 'cannot_compare'),
-         'no_preference': ('Not compared: no preference set', None, 'not_compared')}
+         'no_preference': ('Not compared: no preference set', None, 'not_compared'),
+         'not_found': ('Not found', None, 'not_compared')}
 NOT_COMPARED = 'Not compared: no preference set. The observed data is shown below without validation.'
 
 
@@ -101,6 +102,8 @@ def card(data, ctx):
 
 
 def matched(data, nopref_key='_no_preference'):
-    """Comparison key, always a MATCH key: a match_state outside it reads as 'unknown'."""
+    """Comparison key, always a MATCH key: nothing found wins (07); a match_state outside MATCH reads as 'unknown'."""
+    if data.get('_not_found'):
+        return 'not_found'
     m = data.get('match_state')
     return 'no_preference' if data.get(nopref_key) else m if m in MATCH else 'unknown'
