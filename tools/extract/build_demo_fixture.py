@@ -345,6 +345,39 @@ observed_hosting = [{'country_code': cc, 'country': name, 'hosts': n, 'evidence_
                      'match_state': 'match' if cc in PREF else 'mismatch'} for cc, name, n in HOSTING]
 observed_hosting.append({'country': None, 'hosts': 1, 'state': 'unavailable', 'reason_code': 'location_unknown',
                          'evidence_kind': {'value': 'IP geolocation'}})
+residency_locations = [
+    # GB (9 domains — deliberately unsorted in payload to verify Opsi 1 ordering: main -> www -> A-Z)
+    {'host': h('portal'), 'ips': [{'ip_address': '203.0.113.24', 'country_code': 'GB'}]},
+    {'host': h('auth'), 'ips': [{'ip_address': '203.0.113.11', 'country_code': 'GB'}]},
+    {'host': h('www'), 'ips': [{'ip_address': '203.0.113.10', 'country_code': 'GB'}]},
+    {'host': h(''), 'ips': [{'ip_address': '203.0.113.10', 'country_code': 'GB'}]},
+    {'host': h('billing'), 'ips': [{'ip_address': '203.0.113.12', 'country_code': 'GB'}]},
+    {'host': h('docs'), 'ips': [{'ip_address': '203.0.113.13', 'country_code': 'GB'}]},
+    {'host': h('files'), 'ips': [{'ip_address': '203.0.113.14', 'country_code': 'GB'}]},
+    {'host': h('status'), 'ips': [{'ip_address': '203.0.113.15', 'country_code': 'GB'}]},
+    {'host': h('support'), 'ips': [{'ip_address': '203.0.113.16', 'country_code': 'GB'}]},
+    # US (5 domains)
+    {'host': h('api'), 'ips': [{'ip_address': '198.51.100.40', 'country_code': 'US'}]},
+    {'host': h('cdn'), 'ips': [{'ip_address': '198.51.100.41', 'country_code': 'US'}]},
+    {'host': h('assets'), 'ips': [{'ip_address': '198.51.100.42', 'country_code': 'US'}]},
+    {'host': h('img'), 'ips': [{'ip_address': '198.51.100.43', 'country_code': 'US'}]},
+    {'host': h('webhook'), 'ips': [{'ip_address': '198.51.100.44', 'country_code': 'US'}]},
+    # DE (4 domains)
+    {'host': h('mail'), 'ips': [{'ip_address': '198.51.100.7', 'country_code': 'DE'}]},
+    {'host': h('eu-api'), 'ips': [{'ip_address': '198.51.100.8', 'country_code': 'DE'}]},
+    {'host': h('smtp-eu'), 'ips': [{'ip_address': '198.51.100.9', 'country_code': 'DE'}]},
+    {'host': h('vpn'), 'ips': [{'ip_address': '192.0.2.15', 'country_code': 'DE'}]},
+    # SG (2 domains)
+    {'host': h('apac-api'), 'ips': [{'ip_address': '203.0.113.50', 'country_code': 'SG'}]},
+    {'host': h('sg-edge'), 'ips': [{'ip_address': '203.0.113.51', 'country_code': 'SG'}]},
+    # AU (2 domains)
+    {'host': h('au-portal'), 'ips': [{'ip_address': '203.0.113.60', 'country_code': 'AU'}]},
+    {'host': h('syd-edge'), 'ips': [{'ip_address': '203.0.113.61', 'country_code': 'AU'}]},
+    # BR (1 domain — outside preference)
+    {'host': h('legacy'), 'ips': [{'ip_address': '192.0.2.80', 'country_code': 'BR'}]},
+    # Unknown location (1 domain)
+    {'host': h('dev'), 'ips': [{'ip_address': None, 'country_code': None, 'reason_code': 'location_unknown'}]},
+]
 hosted = ', '.join(f'{name} ({n} host{"s" if n > 1 else ""})' for _, name, n in HOSTING) + ', 1 host with unknown location'
 
 data_sovereignty = sec(
@@ -366,7 +399,8 @@ data_residency = sec(
     'one host could not be located.',
     state_label_source=hosted,
     intro_source="Where this organisation's public systems are hosted, compared with where you allow data to live",
-    enabled=True, observed_hosting=observed_hosting, allowed_set=PREF, match_state='mismatch',
+    enabled=True, observed_hosting=observed_hosting, locations=residency_locations,
+    allowed_set=PREF, match_state='mismatch',
     rows=[{'label': 'Where we found their systems', 'value_source': hosted},
           {'label': 'Countries you prefer', 'value_source': 'United Kingdom, Germany, Ireland, United States, Singapore, Australia'}],
     narrative_source='We found one public system hosted in a country outside the countries you prefer.')

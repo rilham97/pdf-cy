@@ -23,7 +23,7 @@ are in [AGENTS.md](../../AGENTS.md). This page covers the rules that apply to **
 | 05 | Credential exposure (+ D.2) | `sections.credential_exposure` | [05-credential-exposure.md](05-credential-exposure.md) |
 | 06 | Data breach and leak history (+ D.3) | `sections.data_leak_history` | [06-data-leak-history.md](06-data-leak-history.md) |
 | 07 | Data sovereignty | `sections.data_sovereignty` | [07-data-sovereignty.md](07-data-sovereignty.md) |
-| 08 | Data residency | `sections.data_residency` | [08-data-residency.md](08-data-residency.md) |
+| 08 | Data residency (+ D.1.3 on overflow) | `sections.data_residency` | [08-data-residency.md](08-data-residency.md) |
 | 09 | Legal terms & conditions | `sections.legal_terms` | [09-legal-terms.md](09-legal-terms.md) |
 | 10 | AI Risk | `sections.ai_risk_governance` | [10-ai-risk-governance.md](10-ai-risk-governance.md) |
 | 11 | Quantum security (+ D.4) | `sections.quantum_security` | [11-quantum-security.md](11-quantum-security.md) |
@@ -123,8 +123,8 @@ an error.
 ## 7. Long lists and the external policy file
 
 - A table with up to 30 rows prints inline. A longer list gets an overview in the section and the full
-  register in Appendix D. Register ids follow section order: D.1 vulns, D.2 credentials, D.3 breach,
-  D.4 quantum, D.5 certificate documents, D.6 fourth party.
+  register in Appendix D. Register ids follow section order: D.1 vulns (D.1.2 IP rep, D.1.3 domain locations on overflow), D.2 credentials, D.3 breach,
+  D.4 quantum, D.5 certificate documents, D.6 fourth party, D.7 cloud endpoints.
 - Some labels and templates read `pol('<path>', default)` from an **optional** policy file:
   `CYBERRANK_LONG_LIST_POLICY`, or `../long-list-rules/long_list_policy.json`. When the file is missing,
   the built-in defaults in the code apply. Each section file names the override keys it uses.

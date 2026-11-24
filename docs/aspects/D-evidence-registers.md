@@ -8,7 +8,7 @@ their sections:
 
 | Id | Register | File |
 |---|---|---|
-| D.1 (+ D.1.2) | Affected assets by finding (+ IP reputation, index row only) | [04-vulnerabilities.md](04-vulnerabilities.md) |
+| D.1 (+ D.1.2, D.1.3) | Affected assets by finding (+ IP reputation; + D.1.3 hosting locations by domain when Section 08 overflows `MAX_LINES = 5`) | [04-vulnerabilities.md](04-vulnerabilities.md), [08-data-residency.md](08-data-residency.md) |
 | D.2 (D.2.1–D.2.5) | Credential exposure — supporting tables | [05-credential-exposure.md](05-credential-exposure.md) |
 | D.3 | Data leak event details (always an index row only) | [06-data-leak-history.md](06-data-leak-history.md) |
 | D.4 (D.4.1–D.4.2) | Quantum scope breakdown | [11-quantum-security.md](11-quantum-security.md) |
@@ -85,7 +85,8 @@ with a page break, its `PageBreakIfNotEmpty` adds no blank page.
 | Condition | What prints | Code |
 |---|---|---|
 | Register ids | `REG_SECS` (s04, s05, s06, s11, s13, s14, s15) are numbered D.1…D.7 in `REGISTRY` order. An absent register keeps its slot. | `app_d:37-42` |
-| Index order | Sorted numerically: D.1, D.1.2, D.2, … D.7 | `app_d:781` |
+| Index order | Sorted numerically: D.1, D.1.2, [D.1.3 on demand], D.2, … D.7 | `app_d` |
+| **D.1.3 printed** only if Section 08 domain-level mode has at least one country overflowing `MAX_LINES = 5` grid rows (`s08.has_overflow`) | Full `D.1.3 Hosting locations by domain` grouped table (ident `regD13`, Opsi 1 domain order, backlink to Section 08) + `End of register · N rows.` | `d13_locations` |
 | **D.7 printed** only if `sections.cloud_infrastructure.assets[]` has > 30 active endpoints (`T2`) and `state` ∈ `findings`/`partial`/`pending_review` | Full `D.7.1 Cloud infrastructure endpoints` grouped table (ident `regD71`, Opsi 1 domain order) + unresolved DNS card + `End of register · N endpoints.` | `d7_cloud` |
 | D.1.2 IP reputation | Index row only (`_absent`) | `app_d:675-676` |
 | D.3 data leak events | Index row only: "Not required — all N event(s) shown in Section 06" (events counted after the canonical merge) | `d3_leaks`, `app_d:631` |

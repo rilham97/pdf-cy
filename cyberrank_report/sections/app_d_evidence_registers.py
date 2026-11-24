@@ -35,7 +35,7 @@ _DEFAULTS = {   # used only when the policy file is missing (policy: inline <= 3
 }
 TEXT_ROW_LINES = 12      # text-cell registers: lines per table row before a tall row continues in a new one
 REG_SECS = ('s04', 's05', 's06', 's11', 's13', 's14', 's15')      # sections with an Appendix D register slot
-SEC_NUM = {s: BY_ID[s].number for s in REG_SECS}
+SEC_NUM = {s: BY_ID[s].number for s in BY_ID}
 # register ids follow the section order of the registry (user decision 2026-10-15): D.1 = first section
 # with a register, ... An absent register keeps its slot (index row only), so ids never shift per report.
 _ORDER = [s.id for s in REGISTRY]
@@ -731,6 +731,39 @@ def _index(regs):
     return Lazy(make)
 
 
+def d13_locations(report, as_of):
+    """D.1.3: full per-domain hosting locations register (emitted only when Section 08 overflows MAX_LINES)."""
+    from ..page import org_name
+    from . import s08_data_residency as s08
+    if not s08.has_overflow(report):
+        return None
+    sec = (report.get('sections') or {}).get('data_residency') or {}
+    rid, title = s08.REG_ID, 'Hosting locations by domain'
+    groups, unique_total = s08.register_data(report)
+    entries, row_count = [], 0
+    for grp_title, rows in groups:
+        entries.append(('group', group_row(
+            C.P(grp_title, 'dense_head'),
+            C.P(f'{len(rows)} row{"s" if len(rows) != 1 else ""}', 'dense_muted'), T.CW - 2 * T.CELL_PAD_H),
+            grp_title))
+        for dom, ips, country, status in rows:
+            row_count += 1
+            entries.append(('row', [str(row_count), dom, ips, country, status]))
+    flow = opening(rid, title, 's08', [
+        f'{rid} lists all observed domain-to-country hosting records for {org_name(report)}, grouped as in '
+        'Section 08 (outside the preference first, then preferred, then undetected) and sorted main domain '
+        'first, then www., then A–Z within each country.'], [])
+    t = register_table(['#', 'Domain', 'IP address(es)', 'Country / location', 'Status'], entries,
+                       title=f'{rid} {title}', sec_id='s08', numeric_cols=(0,), ident='regD13',
+                       widths=[28, 178, 108, 118, T.CW - 432], tech_cols=(1, 2))
+    flow += const_line(t) + [gap(t)]
+    extra = (f'{C.fmt_number(unique_total)} unique domain{"s" if unique_total != 1 else ""} across '
+             f'{C.fmt_number(row_count)} country assignment{"s" if row_count != 1 else ""}.')
+    flow += closing(rid, [], extra, rows=row_count, unit='rows')
+    return {'rid': rid, 'title': title, 'state': sec.get('state'), 'sec': 's08',
+            'flow': flow, 'content': f'{C.fmt_number(unique_total)} domains ({C.fmt_number(row_count)} rows)'}
+
+
 def d7_cloud(report, sec, as_of):
     """<D.n> cloud infrastructure endpoints (Section 15 T2 register when >30 active endpoints)."""
     from ..page import org_name
@@ -781,7 +814,10 @@ def build(data, ctx):
             d4_credentials(rep, ctx.identity, as_of), d5_quantum(rep, as_of),
             cert_documents(rep, secs.get('certifications') or {}),
             d7_cloud(rep, ci, as_of)]
-    regs.sort(key=lambda r: [int(x) for x in r['rid'][2:].split('.')])     # D.1, D.1.2, D.2, ...
+    d13 = d13_locations(rep, as_of)
+    if d13 is not None:
+        regs.append(d13)
+    regs.sort(key=lambda r: [int(x) for x in r['rid'][2:].split('.')])     # D.1, D.1.2, D.1.3, D.2, ...
     out = [c.P(pol('naming.appendix_d.note', 'Evidence registers support findings; layout and row caps do not '
                                              'change any score.'), 'body'),
            c.heading('Register index', 3), _index(regs),

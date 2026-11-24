@@ -853,6 +853,58 @@ def ai_risk_high_risk():
     })
 
 
+def residency_domains_pref():
+    """s08 upgraded domain-grid view: preference ID/MY/SG (MY unused), outside US/DE/AU, undetected + long subdomain."""
+    locs = [
+        {'host': f'zeta.{DOMAIN}', 'ips': [{'ip_address': '203.0.113.20', 'country_code': 'ID'}]},
+        {'host': f'www.{DOMAIN}', 'ips': [{'ip_address': '203.0.113.10', 'country_code': 'ID'}]},
+        {'host': DOMAIN, 'ips': [{'ip_address': '203.0.113.10', 'country_code': 'ID'}]},
+        {'host': f'api.{DOMAIN}', 'ips': [{'ip_address': '203.0.113.11', 'country_code': 'ID'}]},
+        {'host': f'sg-edge.{DOMAIN}', 'ips': [{'ip_address': '203.0.113.30', 'country_code': 'SG'}]},
+        {'host': f'cdn.{DOMAIN}', 'ips': [{'ip_address': '198.51.100.10', 'country_code': 'US'}]},
+        {'host': f'img.{DOMAIN}', 'ips': [{'ip_address': '198.51.100.11', 'country_code': 'US'}]},
+        {'host': f'files.{DOMAIN}', 'ips': [{'ip_address': '198.51.100.12', 'country_code': 'US'}]},
+        {'host': f'backup.{DOMAIN}', 'ips': [{'ip_address': '198.51.100.20', 'country_code': 'DE'}]},
+        {'host': f'server.monitoring.root.{DOMAIN}', 'ips': [{'ip_address': '198.51.100.30', 'country_code': 'AU'}]},
+        {'host': f'alt711811314892810745.{DOMAIN}', 'ips': [{'ip_address': None, 'country_code': None,
+                                                            'reason_code': 'location_unknown'}]},
+        {'host': f'_submission._tcp.{DOMAIN}', 'ips': [], 'reason_code': 'not_resolved'},
+        {'host': f'staging-xx.{DOMAIN}', 'ips': [{'ip_address': '192.0.2.55', 'country_code': 'XX'}]},
+    ]
+    return report_with({
+        '_key': 'data_residency', 'title': 'Data residency (domains, preference)', 'state': 'findings',
+        'enabled': True, 'allowed_set': ['ID', 'MY', 'SG'], 'match_state': 'mismatch',
+        'locations': locs,
+    })
+
+
+def residency_domains_nopref():
+    """s08 upgraded domain-grid view with no preference set."""
+    r = residency_domains_pref()
+    sec = r['sections']['data_residency']
+    sec.update(title='Data residency (domains, no preference)', enabled=False, allowed_set=[])
+    sec.pop('match_state', None)
+    return r
+
+
+def residency_domains_t2():
+    """s08 upgraded domain-grid view overflowing MAX_LINES (>15 domains in ID) -> linked D.1.3 register."""
+    locs = ([{'host': DOMAIN, 'ips': [{'ip_address': '203.0.113.10', 'country_code': 'ID'}]},
+             {'host': f'www.{DOMAIN}', 'ips': [{'ip_address': '203.0.113.10', 'country_code': 'ID'}]}]
+            + [{'host': f'mta{i:02d}.{DOMAIN}', 'ips': [{'ip_address': f'203.0.113.{10 + i}', 'country_code': 'ID'}]}
+               for i in range(1, 35)]
+            + [{'host': f'cdn.{DOMAIN}', 'ips': [{'ip_address': '198.51.100.10', 'country_code': 'US'}]},
+               {'host': f'files.{DOMAIN}', 'ips': [{'ip_address': '198.51.100.11', 'country_code': 'US'}]},
+               {'host': f'dev.{DOMAIN}', 'ips': [], 'reason_code': 'not_resolved'}])
+    r = report_with({
+        '_key': 'data_residency', 'title': 'Data residency (domains, D.1.3 overflow)', 'state': 'findings',
+        'enabled': True, 'allowed_set': ['ID', 'SG'], 'match_state': 'mismatch',
+        'locations': locs,
+    })
+    r['appendices']['d_evidence_registers'] = {'state': 'findings'}
+    return r
+
+
 VARIANTS = [
     ('privacy_a', ['P5', 'P8/P9', 'P11/P16', 'P13/P14'], PRIVACY_SET, privacy_a),
     ('privacy_b', ['P3/P7', 'P14'], PRIVACY_SET, privacy_b),
@@ -891,6 +943,9 @@ VARIANTS = [
     ('ai_risk_no_usage', ['s10 Concept B no AI'], 's10', ai_risk_no_usage),
     ('ai_risk_providers_no_annex', ['s10 Concept B providers'], 's10', ai_risk_providers_no_annex),
     ('ai_risk_high_risk', ['s10 Concept B Annex III'], 's10', ai_risk_high_risk),
+    ('residency_domains_pref', ['s08 domain-grid preference'], 's08', residency_domains_pref),
+    ('residency_domains_nopref', ['s08 domain-grid no preference'], 's08', residency_domains_nopref),
+    ('residency_domains_t2', ['s08 domain-grid D.1.3 overflow'], ('s08', 'appD'), residency_domains_t2),
     ('leaks_nulls', ['null forms s06'], 's06', leaks_nulls),
     ('actions_nulls', ['null forms s02'], 's02', actions_nulls),
     ('vulns_d', ['null scanned assets', 'scan recommendations'], 's04', vulns_d),

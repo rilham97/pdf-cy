@@ -1386,6 +1386,225 @@
      }
     }
    ],
+   "locations": [
+    {
+     "host": "portal.example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.24",
+       "country_code": "GB"
+      }
+     ]
+    },
+    {
+     "host": "auth.example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.11",
+       "country_code": "GB"
+      }
+     ]
+    },
+    {
+     "host": "www.example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.10",
+       "country_code": "GB"
+      }
+     ]
+    },
+    {
+     "host": "example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.10",
+       "country_code": "GB"
+      }
+     ]
+    },
+    {
+     "host": "billing.example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.12",
+       "country_code": "GB"
+      }
+     ]
+    },
+    {
+     "host": "docs.example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.13",
+       "country_code": "GB"
+      }
+     ]
+    },
+    {
+     "host": "files.example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.14",
+       "country_code": "GB"
+      }
+     ]
+    },
+    {
+     "host": "status.example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.15",
+       "country_code": "GB"
+      }
+     ]
+    },
+    {
+     "host": "support.example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.16",
+       "country_code": "GB"
+      }
+     ]
+    },
+    {
+     "host": "api.example.com",
+     "ips": [
+      {
+       "ip_address": "198.51.100.40",
+       "country_code": "US"
+      }
+     ]
+    },
+    {
+     "host": "cdn.example.com",
+     "ips": [
+      {
+       "ip_address": "198.51.100.41",
+       "country_code": "US"
+      }
+     ]
+    },
+    {
+     "host": "assets.example.com",
+     "ips": [
+      {
+       "ip_address": "198.51.100.42",
+       "country_code": "US"
+      }
+     ]
+    },
+    {
+     "host": "img.example.com",
+     "ips": [
+      {
+       "ip_address": "198.51.100.43",
+       "country_code": "US"
+      }
+     ]
+    },
+    {
+     "host": "webhook.example.com",
+     "ips": [
+      {
+       "ip_address": "198.51.100.44",
+       "country_code": "US"
+      }
+     ]
+    },
+    {
+     "host": "mail.example.com",
+     "ips": [
+      {
+       "ip_address": "198.51.100.7",
+       "country_code": "DE"
+      }
+     ]
+    },
+    {
+     "host": "eu-api.example.com",
+     "ips": [
+      {
+       "ip_address": "198.51.100.8",
+       "country_code": "DE"
+      }
+     ]
+    },
+    {
+     "host": "smtp-eu.example.com",
+     "ips": [
+      {
+       "ip_address": "198.51.100.9",
+       "country_code": "DE"
+      }
+     ]
+    },
+    {
+     "host": "vpn.example.com",
+     "ips": [
+      {
+       "ip_address": "192.0.2.15",
+       "country_code": "DE"
+      }
+     ]
+    },
+    {
+     "host": "apac-api.example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.50",
+       "country_code": "SG"
+      }
+     ]
+    },
+    {
+     "host": "sg-edge.example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.51",
+       "country_code": "SG"
+      }
+     ]
+    },
+    {
+     "host": "au-portal.example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.60",
+       "country_code": "AU"
+      }
+     ]
+    },
+    {
+     "host": "syd-edge.example.com",
+     "ips": [
+      {
+       "ip_address": "203.0.113.61",
+       "country_code": "AU"
+      }
+     ]
+    },
+    {
+     "host": "legacy.example.com",
+     "ips": [
+      {
+       "ip_address": "192.0.2.80",
+       "country_code": "BR"
+      }
+     ]
+    },
+    {
+     "host": "dev.example.com",
+     "ips": [
+      {
+       "ip_address": null,
+       "country_code": null,
+       "reason_code": "location_unknown"
+      }
+     ]
+    }
+   ],
    "allowed_set": [
     "GB",
     "DE",

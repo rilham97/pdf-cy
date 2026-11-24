@@ -2013,6 +2013,51 @@ def test_s10_ai_risk_concept_b():                                          # own
     assert 'AI Risk' in ov and 'Medium AI risk · Annex III 5(b)' in ov and 'AI issues' not in ov, ov
 
 
+def test_s08_residency_by_domain():                                          # owner decision 2026-11-24
+    import pymupdf
+    from cyberrank_report.sections import s08_data_residency as s08
+    # Case 1: preference set (Outside -> Preferred + unused MY -> Location not detected)
+    t1, issues1 = _gap('residency_domains_pref')
+    assert '5 of 13' in t1 and 'domains hosted outside the preferred countries' in t1, t1
+    assert 'Outside the preference · 3 countries' in t1 and 'Preferred · 2 countries' in t1, t1
+    assert 'Malaysia · preferred, no domain hosted' in t1 and 'Location not detected · 3 domains' in t1, t1
+    assert 'Placeholder code “XX”' in t1 and 'No IP address found' in t1, t1
+    assert 'alt711811314892810745.example.com' in t1 and 'more in D.1.3' not in t1, t1
+    assert not [i for i in issues1 if i['severity'] == 'error'], issues1
+    # Verify Opsi 1 domain order inside Indonesia: example.com -> www.example.com -> api -> zeta
+    idx_root = t1.index('example.com')
+    idx_www = t1.index('www.example.com')
+    idx_api = t1.index('api.example.com')
+    idx_zeta = t1.index('zeta.example.com')
+    assert idx_root < idx_www < idx_api < idx_zeta, (idx_root, idx_www, idx_api, idx_zeta)
+    # Verify NO dead https:// URI links on domain names
+    import gap_fixtures as GF
+    out = Path(tempfile.mkdtemp()) / 's08_links.pdf'
+    GF.render(out, only=['residency_domains_pref'])
+    uris = [lk.get('uri') for p in pymupdf.open(out) for lk in p.get_links() if lk.get('uri')]
+    assert not any('example.com' in u for u in uris), uris
+    # Case 2: no preference set -> Hosting countries, No preference set
+    t2, issues2 = _gap('residency_domains_nopref')
+    assert 'No preference set' in t2 and '5 hosting countries' in t2, t2
+    assert 'Hosting countries · 5 countries' in t2 and 'Outside the preference' not in t2, t2
+    assert not [i for i in issues2 if i['severity'] == 'error'], issues2
+    # Case 3: >MAX_LINES domains in one country -> '+N more in D.1.3' + real D.1.3 register in Appendix D
+    t3, issues3 = _gap('residency_domains_t2')
+    assert 'more in D.1.3' in t3 and 'D.1.3 Hosting locations by domain' in t3, t3
+    assert 'End of register · 39 rows.' in t3 and 'mta34.example.com' in t3, t3
+    assert not [i for i in issues3 if i['severity'] == 'error'], issues3
+    # Shared vulnerability scanned_assets.locations[] fallback works even without observed_hosting
+    rep = {'identity': {'domain': 'example.com'},
+           'sections': {'vulnerabilities': {'scanned_assets': {'locations': [
+               {'host': 'b.example.com', 'ips': [{'ip_address': '203.0.113.2', 'country_code': 'SG'}]},
+               {'host': 'example.com', 'ips': [{'ip_address': '203.0.113.1', 'country_code': 'SG'}]},
+           ]}}, 'data_residency': {'state': 'clear', 'enabled': True, 'allowed_set': ['SG'], 'match_state': 'match'}}}
+    adj = s08.adjust(rep['sections']['data_residency'], rep)
+    assert len(adj['_locations']) == 2 and adj['observed_hosting'][0]['country_code'] == 'SG'
+    hosts, _, _ = s08.by_country(adj['_locations'], 'example.com')
+    assert hosts['SG'] == ['example.com', 'b.example.com'], hosts
+
+
 if __name__ == '__main__':
     for name, fn in list(globals().items()):
         if name.startswith('test_'):
