@@ -399,10 +399,21 @@ def _cloud(sec, report):
     return None if n is None else count(n, 'cloud provider', 'cloud providers')
 
 
+def _ai_risk(sec, report):
+    from . import s10_ai_risk_governance as s10
+    if s10.is_structured_ai(sec):
+        rl = s10.risk_level(sec)
+        hr = s10.high_risk_uses(sec)
+        u = s10._use_of_ai(sec)['level']
+        qual = [hr[0]['clause']] if hr else [f'{u} AI use']
+        return ('', f'{rl} AI risk', qual)
+    n = _metric(sec.get('metrics'), 'ai_issues')
+    return None if n is None else count(n, 'AI risk finding', 'AI risk findings')
+
+
 RESULTS = {'privacy': _privacy, 'vulnerabilities': _vulnerabilities, 'credential_exposure': _credentials,
            'data_leak_history': _leaks, 'data_sovereignty': _sovereignty, 'data_residency': _residency,
-           'legal_terms': _legal, 'ai_risk_governance': _counted('ai_issues', 'AI governance issue',
-                                                                 'AI governance issues'),
+           'legal_terms': _legal, 'ai_risk_governance': _ai_risk,
            'quantum_security': _counted('high_risk', 'high-risk finding', 'high-risk findings'),
            'security_resourcing': _resourcing, 'certifications': _certifications,
            'fourth_party_vendors': _vendors, 'cloud_infrastructure': _cloud}

@@ -65,7 +65,7 @@ REGISTRY = [
     SectionSpec('s07', 'data_sovereignty', '07', 'Data sovereignty', 'assessment_details', 's07_data_sovereignty'),
     SectionSpec('s08', 'data_residency', '08', 'Data residency', 'assessment_details', 's08_data_residency'),
     SectionSpec('s09', 'legal_terms', '09', 'Legal terms & conditions', 'assessment_details', 's09_legal_terms'),
-    SectionSpec('s10', 'ai_risk_governance', '10', 'AI risk and governance', 'assessment_details',
+    SectionSpec('s10', 'ai_risk_governance', '10', 'AI Risk', 'assessment_details',
                 's10_ai_risk_governance'),
     SectionSpec('s11', 'quantum_security', '11', 'Quantum security', 'assessment_details', 's11_quantum_security'),
     SectionSpec('s12', 'security_resourcing', '12', 'Security resourcing', 'assessment_details',

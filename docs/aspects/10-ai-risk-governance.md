@@ -1,10 +1,17 @@
-# 10 AI risk and governance
+# 10 AI Risk
 
 Payload key: `sections.ai_risk_governance` · Module: [s10_ai_risk_governance.py](../../cyberrank_report/sections/s10_ai_risk_governance.py) · Shared rules: [README](README.md)
 
-Demerit rule H. When the module did not run, the narrative signals print as **context only** (RF-04): neutral
-styling, nothing reads as a result. The narrative is quoted, never corrected. No `adjust()` and no `verdict()`:
-the opener verdict comes from `summary` only. Not part of the old `sections.privacy` shape (no lift).
+Demerit rule H. Section renamed from "AI Issues" / "AI risk and governance" to **AI Risk** (owner decision 2026-11-24).
+
+Supports two payload shapes:
+- **Structured AI Risk payload (Concept B, owner-approved 2026-11-24):**
+  - 3-column posture strip: **AI risk level** (`Low | Medium | High | Critical` + scale caption), **Use of AI** (`Unlikely | Possible | Likely | Almost certain` + scale caption), and **EU AI Act high-risk** (clause such as `Annex III 4(a)` or `None found` — no governance count subtitle).
+  - **Observed AI use** *(shown only when public quote, capabilities, or AI providers exist)*: `key_value_list` ordered as `Public evidence` (verbatim quote + clickable URL) → `Observed capabilities` (tags) → `AI providers` (tags, optional — combined here, no separate section, no AI models).
+  - **High-risk use · EU AI Act** *(shown only when `high_risk_uses[]` is non-empty)*: orange-accented neutral card with category, clause, verbatim quote, and URL.
+  - **AI governance** (`AI policy`, `ISO 42001 certificate` with clickable evidence URLs): table shown when `Use of AI != Unlikely` or at least one control is found; otherwise (`Unlikely` + no controls) collapses into a single concise check note with no redundant `clear` state card.
+  - Section 01 Executive overview prints `<Risk level> AI risk · <Annex III clause or Use of AI>` (e.g. `Medium AI risk · Annex III 5(b)`).
+- **Legacy `narrative_observation` payload:** preserved verbatim for older payloads and RF-04 context mode when `state` is `not_assessed` / `not_applicable` / `unavailable`.
 
 ## Layout (top to bottom)
 

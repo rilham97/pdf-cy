@@ -793,6 +793,66 @@ def cloud_t2():
         assets=assets))
 
 
+def ai_risk_no_usage():
+    """Concept B Case 1: Unlikely AI use, no capabilities/providers/high-risk/governance."""
+    return report_with({
+        '_key': 'ai_risk_governance', 'title': 'AI Risk (no usage)', 'state': 'clear',
+        'risk_level': 'Low',
+        'use_of_ai': {'level': 'Unlikely', 'position': 0.1},
+        'capabilities': [], 'ai_providers': [], 'high_risk_uses': [],
+        'governance': {
+            'ai_policy': {'found': False},
+            'iso_42001': {'found': False},
+        },
+    })
+
+
+def ai_risk_providers_no_annex():
+    """Concept B Case 2: Almost certain AI use + AI providers + AI policy, no EU AI Act Annex III."""
+    return report_with({
+        '_key': 'ai_risk_governance', 'title': 'AI Risk (providers, no Annex III)', 'state': 'findings',
+        'risk_level': 'Low',
+        'use_of_ai': {
+            'level': 'Almost certain', 'position': 0.95,
+            'quote': 'Teams use AI assistants across workflows.',
+            'source_url': f'https://www.{DOMAIN}/',
+        },
+        'capabilities': ['LLM text generation'],
+        'ai_providers': ['OpenAI', 'Anthropic'],
+        'high_risk_uses': [],
+        'governance': {
+            'ai_policy': {'found': True, 'url': f'https://www.{DOMAIN}/trust/ai'},
+            'iso_42001': {'found': False},
+        },
+    })
+
+
+def ai_risk_high_risk():
+    """Concept B Case 3: Medium AI risk + EU AI Act Annex III 4(a) + ISO 42001, no AI providers."""
+    return report_with({
+        '_key': 'ai_risk_governance', 'title': 'AI Risk (EU AI Act high-risk)', 'state': 'findings',
+        'risk_level': 'Medium',
+        'use_of_ai': {
+            'level': 'Almost certain', 'position': 0.96,
+            'quote': 'Candidates work alongside AI in a browser IDE.',
+            'source_url': f'https://www.{DOMAIN}/interview',
+        },
+        'capabilities': ['LLM text generation', 'Scoring or ranking people'],
+        'ai_providers': [],
+        'high_risk_uses': [{
+            'category': 'Recruitment, screening & candidate ranking',
+            'clause': 'Annex III 4(a)',
+            'quote': 'Screening candidates helps identify skills rapidly.',
+            'source_url': f'https://www.{DOMAIN}/screen',
+        }],
+        'governance': {
+            'ai_policy': {'found': False},
+            'iso_42001': {'found': True, 'note': 'Registry listing',
+                          'url': f'https://registry.{DOMAIN}/cert?search=Example'},
+        },
+    })
+
+
 VARIANTS = [
     ('privacy_a', ['P5', 'P8/P9', 'P11/P16', 'P13/P14'], PRIVACY_SET, privacy_a),
     ('privacy_b', ['P3/P7', 'P14'], PRIVACY_SET, privacy_b),
@@ -828,6 +888,9 @@ VARIANTS = [
     ('cloud_old_scan', ['no stale flag'], 's15', cloud_old_scan),
     ('cloud_rich', ['Concept B rich cloud'], 's15', cloud_rich),
     ('cloud_t2', ['Concept B T2 D.7'], ('s15', 'appD'), cloud_t2),
+    ('ai_risk_no_usage', ['s10 Concept B no AI'], 's10', ai_risk_no_usage),
+    ('ai_risk_providers_no_annex', ['s10 Concept B providers'], 's10', ai_risk_providers_no_annex),
+    ('ai_risk_high_risk', ['s10 Concept B Annex III'], 's10', ai_risk_high_risk),
     ('leaks_nulls', ['null forms s06'], 's06', leaks_nulls),
     ('actions_nulls', ['null forms s02'], 's02', actions_nulls),
     ('vulns_d', ['null scanned assets', 'scan recommendations'], 's04', vulns_d),

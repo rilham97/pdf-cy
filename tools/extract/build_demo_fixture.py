@@ -421,36 +421,33 @@ privacy = sec(
             'areas': nr(note='Per-area A-P scores not printed.'),
             'issues': [{'label': f'Issue {i}', 'category': c, 'text': t} for i, (c, t) in enumerate(ISSUES, start=1)]})
 
-# --- 10 AI ---------------------------------------------------------------------------------------------------
+# --- 10 AI Risk ----------------------------------------------------------------------------------------------
 ai_risk_governance = sec(
-    '10', 'AI risk and governance', AD, 'findings',
-    'AI is used in customer-facing services; no public AI policy was found and the privacy policy explains AI use '
-    'only in part.',
-    state_label_source='2 AI ISSUES', title_source='AI Usage & Risk Classification',
-    intro_source="What we observed about this organisation's use of artificial intelligence",
-    metrics=[metric('ai_issues', 'AI issues', 2, 'issues', source_label='2')],
-    narrative_observation={
-        'is_assessment_result': True,
-        'subtitle_source': "What we observed about this organisation's use of artificial intelligence",
-        'text_source': 'The organisation appears to use AI in customer-facing services. Its support site embeds a '
-                       'chat assistant, its content security policy allows calls to an AI service endpoint, and its '
-                       'careers page advertises machine-learning roles. Credit decisioning is listed among its '
-                       'services, an area the EU AI Act treats as high risk.',
-        'signals_observed': [
-            {'signal': 'ai_infrastructure', 'method': 'csp_header_analysis',
-             'example_source': 'CSP destination: api.ai-vendor.example.net'},
-            {'signal': 'ai_assistant_mention', 'method': 'public_pages',
-             'example_source': f'Chat assistant widget on support.{DOMAIN}'},
-            {'signal': 'ai_hiring', 'method': 'careers_pages',
-             'example_source': 'Careers page advertises a machine-learning engineer role'}],
-        'stated_conclusion_source': 'This organisation uses AI in customer-facing services.',
-        'annex_iii_high_risk_sector': {'value': 'apparent', 'state': 'findings',
-                                       'source_label': 'Credit decisioning is listed among its services (EU AI Act Annex III).'},
-        'public_ai_policy': {'value': 'not_found', 'state': 'findings',
-                             'source_label': 'We could not find a public AI policy explaining how they use or govern AI.'},
-        'privacy_policy_ai_disclosure': {'value': 'partial', 'state': 'partial',
-                                         'source_label': 'The privacy policy mentions automated decisions but not the '
-                                                         'chat assistant.'}})
+    '10', 'AI Risk', AD, 'findings',
+    'AI risk is assessed as Medium with almost certain AI use observed on public pages. '
+    'Potential EU AI Act high-risk use identified (Annex III 5(b)). No public AI policy or ISO 42001 certificate was found.',
+    state_label_source='MEDIUM AI RISK', title_source='AI Risk',
+    intro_source='Evaluates externally observable AI usage, capabilities, AI providers, '
+                 'EU AI Act high-risk classification, and published AI governance controls.',
+    risk_level='Medium',
+    use_of_ai={
+        'level': 'Almost certain', 'position': 0.94,
+        'quote': 'Automated credit scoring and an AI support assistant operate across our customer portal.',
+        'source_url': f'https://support.{DOMAIN}/ai-assistant',
+    },
+    capabilities=['LLM text generation', 'Scoring or ranking people'],
+    ai_providers=['Example AI Labs', 'Sample LLM Cloud'],
+    high_risk_uses=[{
+        'category': 'Creditworthiness assessment & credit scoring',
+        'clause': 'Annex III 5(b)',
+        'quote': 'Credit decisioning models evaluate applicant affordability and risk tier automatically during onboarding.',
+        'source_url': f'https://www.{DOMAIN}/products/credit-scoring',
+    }],
+    governance={
+        'ai_policy': {'found': False, 'label': 'AI policy', 'note': "Not found on the vendor's website"},
+        'iso_42001': {'found': False, 'label': 'ISO 42001 certificate',
+                      'note': "Not found on the vendor's website or in certification body registers"},
+    })
 
 # --- 11 quantum ----------------------------------------------------------------------------------------------
 ALGOS = [  # category, algorithm, protocols, PQC alternative, base risk

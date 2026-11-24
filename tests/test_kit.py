@@ -1278,7 +1278,7 @@ LAYOUT = [('s01', '01', 'Executive overview'), ('s02', '02', 'Priority actions')
           ('s04', '04', 'Vulnerabilities'), ('s05', '05', 'Credential exposure'),
           ('s06', '06', 'Data breach and leak history'), ('s07', '07', 'Data sovereignty'),
           ('s08', '08', 'Data residency'), ('s09', '09', 'Legal terms & conditions'),
-          ('s10', '10', 'AI risk and governance'), ('s11', '11', 'Quantum security'),
+          ('s10', '10', 'AI Risk'), ('s11', '11', 'Quantum security'),
           ('s12', '12', 'Security resourcing'), ('s13', '13', 'Certifications'),
           ('s14', '14', 'Fourth-party vendors'), ('s15', '15', 'Cloud infrastructure')]
 SUBAREA_MARKERS = ('Accepted jurisdictions', 'Governing law', 'Preferred countries', 'Hosts observed',
@@ -1976,6 +1976,26 @@ def test_s15_cloud_concept_b():                                            # own
     assert 'Hosting providers summary' in t2 and 'D.7.1 Cloud infrastructure endpoints' in t2, t2
     assert 'Full register' in t2 and 'End of register · 34 endpoints.' in t2, t2
     assert 'svc-34.example.com' in t2 and 'dead.example.com' in t2, t2
+
+
+def test_s10_ai_risk_concept_b():                                          # owner decision 2026-11-24
+    # Case 1: no AI usage -> optional & governance tables omitted, no repetitive card, concise 1-line check note
+    t1, _ = _gap('ai_risk_no_usage')
+    assert 'Unlikely' in t1 and 'Checked public website pages and certification registers' in t1, t1
+    assert 'Observed AI use' not in t1 and 'High-risk use' not in t1 and 'AI governance' not in t1, t1
+    assert 'No public AI risk signals observed' not in t1 and 'public controls found' not in t1 and 'AI issues' not in t1, t1
+    # Case 2: AI usage + AI providers inside Observed AI use, no Annex III high-risk section
+    t2, _ = _gap('ai_risk_providers_no_annex')
+    assert 'Observed AI use' in t2 and 'AI providers' in t2 and 'OpenAI' in t2 and 'Anthropic' in t2, t2
+    assert 'AI providers and models' not in t2 and 'High-risk use · EU AI Act' not in t2, t2
+    assert 'AI governance' in t2 and 'AI policy published' in t2 and 'public controls found' not in t2, t2
+    # Case 3: EU AI Act Annex III high-risk + ISO 42001, no AI providers row
+    t3, _ = _gap('ai_risk_high_risk')
+    assert 'Annex III 4(a)' in t3 and 'Recruitment, screening & candidate ranking' in t3, t3
+    assert 'AI providers' not in t3 and 'Registry listing' in t3, t3
+    # Demo overview uses 'AI Risk' and 'Medium AI risk · Annex III 5(b)'
+    ov = _fixture_text('demo-preview', ['s01'])
+    assert 'AI Risk' in ov and 'Medium AI risk · Annex III 5(b)' in ov and 'AI issues' not in ov, ov
 
 
 if __name__ == '__main__':
