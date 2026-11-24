@@ -2,21 +2,44 @@
 
 Payload key: `sections.cloud_infrastructure` · Module: [s15_cloud_infrastructure.py](../../cyberrank_report/sections/s15_cloud_infrastructure.py) · Shared rules: [README](README.md)
 
-Inventory section. The section lists cloud providers seen in public DNS / IP-range / MX / NS records. Here
-`findings` means providers were observed, not risk, so the chip reads **Identified**. An empty result reads
-"not detected with the methods used", never "no cloud". There is no long-list register. The scan date is
-shown without any staleness flag (business answer 8, `s15:91`).
+Inventory section. The section lists cloud providers and public hosting infrastructure seen in DNS
+(A, CNAME, MX, NS) and IP/ASN records. Here `findings` means providers/endpoints were observed, not
+risk, so the chip reads **Identified**. An empty result reads "not detected with the methods used",
+never "no cloud". The scan date is shown without any staleness flag (business answer 8).
+
+Supports two payload shapes:
+- **Rich endpoint payload (Concept B, owner-approved 2026-11-24):** `assets[]` + `detected_providers`
+  (`detectedProviders`) + `cloud_summary` (or raw `summary` object normalised at load) + optional `evidence[]`.
+  Shows a 4-tile KPI strip, **Infrastructure footprint by layer** (stacked proportion bar + layer table +
+  neutral architecture note — never claims failover redundancy from layer split alone), and **Endpoints grouped
+  by hosting provider** (inline up to 30 active endpoints; above 30, Section 15 prints a provider summary +
+  `RegisterPointer` to **Appendix D.7**, where `D.7.1` lists all active endpoints grouped by provider).
+  Unresolved DNS hostnames collapse into a single summary line below the table. Non-public IPs (RFC 1918 /
+  RFC 6598 CGNAT) are tagged `Non-public IP in DNS`.
+- **Legacy provider-only payload:** `providers[]` + `metrics[]` + `last_scanned` + `detection_methods[]`
+  (no `assets[]`). Keeps the original KPI strip + **Detected providers** table.
 
 ## Layout (top to bottom)
 
+### Rich endpoint payload (when `assets[]` is non-empty)
+1. Eyebrow "15 · ASSESSMENT DETAILS", H1 `title` or "Cloud infrastructure" (cloud icon), `intro_source`.
+2. Chip + verdict (`summary` string, or generated fallback `verdict()` when absent).
+3. Card (card states / no-result states).
+4. 4-tile KPI strip: Cloud providers detected, Observed endpoints (active/unresolved), Countries observed, Primary compute + Last scanned date (no staleness flag).
+5. H2 "Infrastructure footprint by layer": `LayerBar` stacked proportion bar + Layer breakdown table (`Layer · Providers observed · Locations · Endpoints`) + neutral architecture note.
+6. If active endpoints ≤ 30 (T1): H2 "Endpoints grouped by hosting provider" + 4-column grouped `CompactTable` (`Host / Target · IP / Record · Services · Location`) with provider/ASN group headers (detected cloud providers first, other observed hosting second) + unresolved DNS summary line.
+7. If active endpoints > 30 (T2): H2 "Hosting providers summary" + compact provider rollup + unresolved DNS summary line + `RegisterPointer` to Appendix `D.7.1 Cloud infrastructure endpoints`.
+8. Detection methods note.
+
+### Legacy payload (when `assets[]` is absent/empty)
 1. Eyebrow "15 · ASSESSMENT DETAILS", then the H1 `title` or "Cloud infrastructure" with the cloud icon, then `intro_source`.
 2. Chip + verdict (`summary`).
 3. Card (card states / no-result states).
-4. KPI strip: the payload `metrics[]` + a "Last scanned" tile (`s15:42-49`).
+4. KPI strip: the payload `metrics[]` + a "Last scanned" tile.
 5. H2 "Detected providers" (also an outline entry).
 6. Providers table (Provider · Detected by · Observed) + a note. **Or** "No cloud provider detected with the methods used." + a methods note.
 
-`clear` with no providers: card only, no body (`s15:89-90`).
+`clear` with no providers and no assets: card only, no body.
 
 ## From the system (payload)
 

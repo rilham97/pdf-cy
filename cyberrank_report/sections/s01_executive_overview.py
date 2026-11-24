@@ -389,8 +389,12 @@ def _vendors(sec, report):
 
 def _cloud(sec, report):
     n = _metric(sec.get('metrics'), 'cloud_providers_detected')
-    if n is None and isinstance(sec.get('providers'), list):
-        n = len([p for p in sec['providers'] if isinstance(p, dict)])
+    if n is None:
+        det = sec.get('detected_providers') or sec.get('detectedProviders')
+        if isinstance(det, list):
+            n = len([p for p in det if p])
+        elif isinstance(sec.get('providers'), list):
+            n = len([p for p in sec['providers'] if isinstance(p, dict)])
     n = 0 if n is None and sec.get('state') == 'clear' else n
     return None if n is None else count(n, 'cloud provider', 'cloud providers')
 

@@ -731,6 +731,68 @@ def vulns_d():
 
 PRIVACY_SET = ('s03', 's07', 's08', 's09', 's12')     # privacy + its former sub-areas
 UNVALIDATED = {'privacy_b'}     # deliberately breaks the load contract (no-result state without a reason)
+def cloud_rich():
+    """Concept B rich cloud payload (raw backend camelCase shape: summary dict, scannedAt, detectedProviders,
+    assets with CNAME, MX, NS, non-public IP, unresolved DNS)."""
+    return report_with({
+        '_key': 'cloud_infrastructure', 'title': 'Cloud infrastructure (rich endpoints)', 'state': 'findings',
+        'summary': {'multiCloud': True, 'endpointCount': 7, 'providerCount': 2,
+                    'countries': ['Singapore', 'United States'], 'primaryCompute': 'OVH'},
+        'scannedAt': '2026-11-18T04:32:52.810Z',
+        'detectedProviders': ['OVH', 'Azure'],
+        'assets': [
+            {'provider': 'OVH', 'countryCode': 'SG', 'ip': '203.0.113.10', 'host': DOMAIN, 'cname': '',
+             'location': 'Singapore, Singapore', 'services': ['80 HTTP', '443 HTTPS'], 'source': 'A Record',
+             'category': 'IaaS / Cloud Compute', 'ips': ['203.0.113.10', '203.0.113.11'],
+             'asn': 'AS64512 OVH Example', 'webStatus': '200 OK'},
+            {'provider': 'OVH', 'countryCode': 'SG', 'ip': '203.0.113.10', 'host': f'www.{DOMAIN}',
+             'cname': 'edge.example.net', 'location': 'Singapore, Singapore', 'services': ['443 HTTPS'],
+             'source': 'CNAME: edge.example.net', 'category': 'IaaS / Cloud Compute', 'ips': ['203.0.113.10'],
+             'asn': 'AS64512 OVH Example', 'webStatus': '200 OK'},
+            {'provider': 'Azure', 'countryCode': '', 'ip': '-', 'host': DOMAIN, 'cname': '',
+             'location': 'Global Cloud', 'services': ['25 SMTP'], 'source': 'MX: mail.example.net',
+             'category': 'SaaS / Email & Productivity', 'ips': [], 'asn': 'Azure Mail', 'webStatus': 'Active'},
+            {'provider': 'Example Org ASN', 'countryCode': 'US', 'ip': '198.51.100.20', 'host': f'api.{DOMAIN}',
+             'cname': '', 'location': 'San Francisco, United States', 'services': ['443 HTTPS'], 'source': 'A Record',
+             'category': 'Hosting / Infrastructure', 'ips': ['198.51.100.20'],
+             'asn': 'AS64513 Example Org Example Org', 'webStatus': '200 OK'},
+            {'provider': 'Dedicated Host', 'countryCode': '', 'ip': '10.17.0.92', 'host': f'internal.{DOMAIN}',
+             'cname': '', 'location': '-', 'services': ['443 HTTPS'], 'source': 'A Record',
+             'category': 'Hosting / Infrastructure', 'ips': ['10.17.0.92'], 'asn': '-', 'webStatus': '200 OK'},
+            {'provider': 'Dedicated Host', 'countryCode': '', 'ip': '-', 'host': f'staging.{DOMAIN}',
+             'cname': '', 'location': '-', 'services': [], 'source': 'A Record',
+             'category': 'Hosting / Infrastructure', 'ips': [], 'asn': '-', 'webStatus': '—'},
+            {'provider': 'Cloudflare', 'countryCode': '', 'ip': '-', 'host': DOMAIN, 'cname': '',
+             'location': 'Global Anycast', 'services': ['53 DNS'], 'source': 'NS: ns1.example.net',
+             'category': 'DNS / Traffic Management', 'ips': [], 'asn': 'Cloudflare DNS', 'webStatus': 'Active'},
+        ],
+        'evidence': [
+            {'provider': 'OVH', 'source': 'a_record', 'host': DOMAIN},
+            {'provider': 'Azure', 'source': 'mx_record', 'host': DOMAIN},
+        ],
+    })
+
+
+def cloud_t2():
+    """34 active endpoints (> 30: T2 summary in Section 15 + full grouped register in Appendix D.7)."""
+    assets = [{'provider': 'GCP' if i <= 20 else 'AWS', 'countryCode': 'US', 'ip': f'203.0.113.{i}',
+               'host': f'svc-{i:02d}.{DOMAIN}', 'cname': '', 'location': 'United States',
+               'services': ['443 HTTPS'], 'source': 'A Record', 'category': 'IaaS / Cloud Compute',
+               'ips': [f'203.0.113.{i}'], 'asn': 'AS64512 Example Cloud', 'webStatus': '200 OK'}
+              for i in range(1, 35)]
+    assets.append({'provider': 'Dedicated Host', 'countryCode': '', 'ip': '-', 'host': f'dead.{DOMAIN}',
+                   'cname': '', 'location': '-', 'services': [], 'source': 'A Record',
+                   'category': 'Hosting / Infrastructure', 'ips': [], 'asn': '-', 'webStatus': '—'})
+    return report_with(section(
+        'cloud_infrastructure', 'Cloud infrastructure (T2 >30 endpoints)', 'findings',
+        '2 cloud providers detected across 35 observed endpoints.',
+        detected_providers=['GCP', 'AWS'],
+        cloud_summary={'multi_cloud': True, 'endpoint_count': len(assets), 'provider_count': 2,
+                       'countries': ['United States'], 'primary_compute': 'GCP'},
+        last_scanned={'value': '2026-11-20', 'precision': 'day'},
+        assets=assets))
+
+
 VARIANTS = [
     ('privacy_a', ['P5', 'P8/P9', 'P11/P16', 'P13/P14'], PRIVACY_SET, privacy_a),
     ('privacy_b', ['P3/P7', 'P14'], PRIVACY_SET, privacy_b),
@@ -764,6 +826,8 @@ VARIANTS = [
     ('ai_missing', ['N11 not in source'], 's10', ai_missing),
     ('quantum_q6', ['N12-N15', 'Q6'], 's11', quantum_q6),
     ('cloud_old_scan', ['no stale flag'], 's15', cloud_old_scan),
+    ('cloud_rich', ['Concept B rich cloud'], 's15', cloud_rich),
+    ('cloud_t2', ['Concept B T2 D.7'], ('s15', 'appD'), cloud_t2),
     ('leaks_nulls', ['null forms s06'], 's06', leaks_nulls),
     ('actions_nulls', ['null forms s02'], 's02', actions_nulls),
     ('vulns_d', ['null scanned assets', 'scan recommendations'], 's04', vulns_d),

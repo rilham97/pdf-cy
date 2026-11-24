@@ -42,7 +42,8 @@ Each was asked for or approved by the product owner; changing one needs their ap
 - Structure is fixed so every report reads the same: 01 Executive overview, 02 Priority actions,
   03 Privacy … 15 Cloud infrastructure (order = `sections.REGISTRY`), Appendices A–D. Every section starts
   on a new page. Appendix D register ids follow section order and never shift between reports
-  (D.1 vulns, D.2 credentials, D.3 breach, D.4 quantum, D.5 uploaded certificate documents, D.6 fourth-party).
+  (D.1 vulns, D.2 credentials, D.3 breach, D.4 quantum, D.5 uploaded certificate documents, D.6 fourth-party,
+  D.7 cloud infrastructure endpoints).
 - Long lists: ≤30 rows inline, longer ones get an overview in the section and the full register in
   Appendix D (`../long-list-rules/long_list_policy.json` when present, built-in defaults otherwise).
   Split tables repeat the header under "<title> · continued / Rows a–b of N" and end with

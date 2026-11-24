@@ -129,6 +129,14 @@ def normalise(report):
         for m in sc.get('metrics') or []:
             if isinstance(m, dict) and str(m.get('id', '')).startswith('industry_'):
                 m['id'] = 'sector_' + m['id'][len('industry_'):]
+    ci = (report.get('sections') or {}).get('cloud_infrastructure')
+    if isinstance(ci, dict):
+        # raw backend cloud payload puts an object in `summary` and camelCase `scannedAt`;
+        # keep `summary` for the one-sentence verdict string and move the object to `cloud_summary`.
+        if isinstance(ci.get('summary'), dict):
+            ci.setdefault('cloud_summary', ci.pop('summary'))
+        if 'scannedAt' in ci and 'last_scanned' not in ci:
+            ci['last_scanned'] = ci['scannedAt']
     return report
 
 

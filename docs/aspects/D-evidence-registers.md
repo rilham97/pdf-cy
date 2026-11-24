@@ -14,6 +14,7 @@ their sections:
 | D.4 (D.4.1–D.4.2) | Quantum scope breakdown | [11-quantum-security.md](11-quantum-security.md) |
 | D.5 (D.5.n) | Uploaded certificate documents | [13-certifications.md](13-certifications.md) |
 | D.6 (D.6.1) | Fourth-party vendors and technologies | this file + [14-fourth-party-vendors.md](14-fourth-party-vendors.md) |
+| D.7 (D.7.1) | Cloud infrastructure endpoints (>30 active endpoints) | this file + [15-cloud-infrastructure.md](15-cloud-infrastructure.md) |
 
 **Not a reference appendix:** `appD` is not in `REFERENCE` (`__init__.py:33`). It shows a state chip from
 `d_evidence_registers.state`; a no-result state adds a card, and the index and registers still follow (they

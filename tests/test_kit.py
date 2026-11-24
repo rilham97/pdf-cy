@@ -1493,13 +1493,13 @@ def test_appendix_d_ids_follow_section_order():                       # user dec
     import pymupdf
     from cyberrank_report.sections import BY_ID
     from cyberrank_report.sections.app_d_evidence_registers import RID
-    assert RID == {'s04': 'D.1', 's05': 'D.2', 's06': 'D.3', 's11': 'D.4', 's13': 'D.5', 's14': 'D.6'}
+    assert RID == {'s04': 'D.1', 's05': 'D.2', 's06': 'D.3', 's11': 'D.4', 's13': 'D.5', 's14': 'D.6', 's15': 'D.7'}
     assert [RID[s] for s in sorted(RID, key=lambda s: int(BY_ID[s].number))] == sorted(RID.values())
     doc = pymupdf.open(_full_pdf('claude-2026-10-02'))
     text = '\n'.join(p.get_text() for p in doc)
     index = text.split('Register index', 1)[1].split('Registers that are not required', 1)[0]
     ids = re.findall(r'^(D\.\d(?:\.\d)?)$', index, re.M)
-    assert ids == ['D.1', 'D.1.2', 'D.2', 'D.3', 'D.4', 'D.5', 'D.6'], ids
+    assert ids == ['D.1', 'D.1.2', 'D.2', 'D.3', 'D.4', 'D.5', 'D.6', 'D.7'], ids
     marks = [t.split()[0] for _, t, _ in doc.get_toc() if re.match(r'D\.\d', t)]
     assert marks == sorted(marks) and marks[0] == 'D.2', marks   # D.1 (28 rows <= 30): index row only
     assert 'D.2.5 Credential register' in ' '.join(text.split())
@@ -1963,6 +1963,20 @@ def test_backend_aspect_score_in_rating_overview():                       # owne
     assert 'Legal terms & conditions 100%' in block and '140%' not in block, block
     assert 'Cloud infrastructure' not in block, block
     assert 'demerit' not in text.lower() and 'cap ' not in text.lower(), text
+
+def test_s15_cloud_concept_b():                                            # owner decision Concept B
+    text, _ = _gap('cloud_rich')
+    assert 'Infrastructure footprint by layer' in text and 'Endpoints grouped by hosting provider' in text, text
+    assert 'OVH · Cloud provider' in text and 'Azure · Cloud provider' in text, text
+    assert 'Non-public IP in DNS' in text and 'Unresolved DNS hostnames' in text and 'staging.example.com' in text, text
+    assert 'AS64513 Example Org' in text and 'Example Org Example Org' not in text, text
+    assert 'does not confirm active failover redundancy' in text and 'Redundancy Detected' not in text, text
+    assert '18 Nov 2026' in text and 'OVH' in text, text
+    t2, _ = _gap('cloud_t2')
+    assert 'Hosting providers summary' in t2 and 'D.7.1 Cloud infrastructure endpoints' in t2, t2
+    assert 'Full register' in t2 and 'End of register · 34 endpoints.' in t2, t2
+    assert 'svc-34.example.com' in t2 and 'dead.example.com' in t2, t2
+
 
 if __name__ == '__main__':
     for name, fn in list(globals().items()):

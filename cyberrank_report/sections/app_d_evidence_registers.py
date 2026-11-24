@@ -34,7 +34,7 @@ _DEFAULTS = {   # used only when the policy file is missing (policy: inline <= 3
               'top_n_default': 10, 'T3_overview_file': {'appendix_sample_rows': 100}},
 }
 TEXT_ROW_LINES = 12      # text-cell registers: lines per table row before a tall row continues in a new one
-REG_SECS = ('s04', 's05', 's06', 's11', 's13', 's14')      # sections with an Appendix D register slot
+REG_SECS = ('s04', 's05', 's06', 's11', 's13', 's14', 's15')      # sections with an Appendix D register slot
 SEC_NUM = {s: BY_ID[s].number for s in REG_SECS}
 # register ids follow the section order of the registry (user decision 2026-10-15): D.1 = first section
 # with a register, ... An absent register keeps its slot (index row only), so ids never shift per report.
@@ -731,6 +731,39 @@ def _index(regs):
     return Lazy(make)
 
 
+def d7_cloud(report, sec, as_of):
+    """<D.n> cloud infrastructure endpoints (Section 15 T2 register when >30 active endpoints)."""
+    from ..page import org_name
+    from . import s15_cloud_infrastructure as s15
+    rid = RID['s15']
+    title = pol('lists.cloud_endpoints.register_title', 'Cloud infrastructure endpoints')
+    assets = s15.assets_list(sec)
+    active = s15.active_assets(sec)
+    info = {'rid': rid, 'title': title, 'state': sec.get('state'), 'sec': 's15'}
+    if not assets or sec.get('state') not in ('findings', 'partial', 'pending_review') or s15.endpoint_tier(sec) == 'T1':
+        if not assets and sec.get('state') in ('findings', 'partial', 'pending_review'):
+            info['content'] = f'Not required — provider summary shown in Section {SEC_NUM["s15"]}.'
+        else:
+            info['content'] = state_message(sec, SEC_NUM['s15'], 'endpoints', len(active) if assets else None,
+                                            list_key='cloud_endpoints')
+        return info
+    groups = s15.provider_groups(sec)
+    tbl_title = f'{rid}.1 Cloud infrastructure endpoints'
+    tbl = s15.grouped_endpoints_table(groups, tbl_title, ident='regD71')
+    un = s15.unresolved_note(sec)
+    unres_n = len(s15.unresolved_assets(sec))
+    extra = f'{unres_n} unresolved DNS hostname{"s" if unres_n != 1 else ""} listed above.' if unres_n else ''
+    flow = opening(rid, title, 's15', [
+        f'{rid}.1 lists all {len(active)} active endpoints observed for {org_name(report)}, '
+        'grouped by hosting provider (detected cloud providers first).'], [])
+    flow += [C.heading(f'{rid}.1  Cloud infrastructure endpoints', 3, key=f'reg-{rid}.1', style=H3T), gap(tbl)]
+    if un:
+        flow.append(un)
+    flow += closing(rid, [], extra, rows=len(active), unit='endpoints')
+    info.update(flow=flow, content=f'{len(active)} of {len(active)} active endpoints')
+    return info
+
+
 def build(data, ctx):
     """Index + every register, built from the section data (the appendix payload only sets the frame)."""
     c, rep = ctx.c, ctx.report
@@ -740,11 +773,13 @@ def build(data, ctx):
     as_of = c.fmt_date((rep.get('snapshot') or {}).get('assessed_at'))
     secs = rep.get('sections') or {}
     dl, fp = secs.get('data_leak_history') or {}, secs.get('fourth_party_vendors') or {}
+    ci = secs.get('cloud_infrastructure') or {}
     regs = [d1_assets(rep, as_of), d12_ip(rep, as_of),
             d3_leaks(dl),
             d6_vendors(rep, fp, as_of),
             d4_credentials(rep, ctx.identity, as_of), d5_quantum(rep, as_of),
-            cert_documents(rep, secs.get('certifications') or {})]
+            cert_documents(rep, secs.get('certifications') or {}),
+            d7_cloud(rep, ci, as_of)]
     regs.sort(key=lambda r: [int(x) for x in r['rid'][2:].split('.')])     # D.1, D.1.2, D.2, ...
     out = [c.P(pol('naming.appendix_d.note', 'Evidence registers support findings; layout and row caps do not '
                                              'change any score.'), 'body'),
