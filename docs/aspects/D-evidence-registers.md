@@ -84,8 +84,9 @@ with a page break, its `PageBreakIfNotEmpty` adds no blank page.
 
 | Condition | What prints | Code |
 |---|---|---|
-| Register ids | `REG_SECS` (s04, s05, s06, s11, s13, s14) are numbered D.1… in `REGISTRY` order. An absent register keeps its slot. | `app_d:36-41` |
-| Index order | Sorted numerically: D.1, D.1.2, D.2, … D.6 | `app_d:650` |
+| Register ids | `REG_SECS` (s04, s05, s06, s11, s13, s14, s15) are numbered D.1…D.7 in `REGISTRY` order. An absent register keeps its slot. | `app_d:37-42` |
+| Index order | Sorted numerically: D.1, D.1.2, D.2, … D.7 | `app_d:781` |
+| **D.7 printed** only if `sections.cloud_infrastructure.assets[]` has > 30 active endpoints (`T2`) and `state` ∈ `findings`/`partial`/`pending_review` | Full `D.7.1 Cloud infrastructure endpoints` grouped table (ident `regD71`, Opsi 1 domain order) + unresolved DNS card + `End of register · N endpoints.` | `d7_cloud` |
 | D.1.2 IP reputation | Index row only (`_absent`) | `app_d:675-676` |
 | D.3 data leak events | Index row only: "Not required — all N event(s) shown in Section 06" (events counted after the canonical merge) | `d3_leaks`, `app_d:631` |
 | A register has a `flow` | Printed after the index. Location = page range. | `app_d:623,655-656` |

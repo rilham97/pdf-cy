@@ -25,16 +25,16 @@ are in [AGENTS.md](../../AGENTS.md). This page covers the rules that apply to **
 | 07 | Data sovereignty | `sections.data_sovereignty` | [07-data-sovereignty.md](07-data-sovereignty.md) |
 | 08 | Data residency | `sections.data_residency` | [08-data-residency.md](08-data-residency.md) |
 | 09 | Legal terms & conditions | `sections.legal_terms` | [09-legal-terms.md](09-legal-terms.md) |
-| 10 | AI risk and governance | `sections.ai_risk_governance` | [10-ai-risk-governance.md](10-ai-risk-governance.md) |
+| 10 | AI Risk | `sections.ai_risk_governance` | [10-ai-risk-governance.md](10-ai-risk-governance.md) |
 | 11 | Quantum security (+ D.4) | `sections.quantum_security` | [11-quantum-security.md](11-quantum-security.md) |
 | 12 | Security resourcing | `sections.security_resourcing` | [12-security-resourcing.md](12-security-resourcing.md) |
 | 13 | Certifications (+ D.5) | `sections.certifications` | [13-certifications.md](13-certifications.md) |
 | 14 | Fourth-party vendors (+ D.6) | `sections.fourth_party_vendors` | [14-fourth-party-vendors.md](14-fourth-party-vendors.md) |
-| 15 | Cloud infrastructure | `sections.cloud_infrastructure` | [15-cloud-infrastructure.md](15-cloud-infrastructure.md) |
+| 15 | Cloud infrastructure (+ D.7) | `sections.cloud_infrastructure` | [15-cloud-infrastructure.md](15-cloud-infrastructure.md) |
 | A | About this report | `appendices.a_about` | [A-about.md](A-about.md) |
 | B | IISRI rating scale | `appendices.b_rating_scale` | [B-rating-scale.md](B-rating-scale.md) |
 | C | Methodology | `appendices.c_methodology` | [C-methodology.md](C-methodology.md) |
-| D | Evidence registers (frame, D.6) | `appendices.d_evidence_registers` | [D-evidence-registers.md](D-evidence-registers.md) |
+| D | Evidence registers (frame, D.6, D.7) | `appendices.d_evidence_registers` | [D-evidence-registers.md](D-evidence-registers.md) |
 
 The order of sections is fixed in `sections.REGISTRY` ([sections/__init__.py](../../cyberrank_report/sections/__init__.py)).
 Each section starts on a new page.
@@ -43,7 +43,7 @@ Each section starts on a new page.
 
 | Step | What it does | Code |
 |---|---|---|
-| `normalise` | Converts old payload shapes to the current one. Old aliases are `identity.industry`, `sector_comparison.industry`, metric ids `industry_*`, and `sections.privacy.{sovereignty, residency, terms_conditions, resourcing}`, which become their own sections. Values are never translated. | `build.py` `normalise` |
+| `normalise` | Converts old/raw payload shapes to the current one: `identity.industry` → `sector`, `sector_comparison.industry` → `sector`, metric ids `industry_*` → `sector_*`, `sections.privacy.{sovereignty, residency, terms_conditions, resourcing}` lifted to own sections, and `sections.cloud_infrastructure.summary` (when object) → `cloud_summary` + `scannedAt` → `last_scanned`. Values are never translated. | `build.py` `normalise` |
 | `validate` | Checks the input contract. On failure it exits with **code 1** and lists every offending path. See §2. | `build.py` `validate` |
 | `adjust_report` | Runs each module's `adjust()` hook. A hook can move a section to `pending_review` through `hold()` when the payload contradicts itself. This raises QA `state_adjusted` (info). Section 01 sees the adjusted states. | `sections/__init__.py` |
 | render | Calls `render_section` for every section (§3). | `sections/__init__.py` |

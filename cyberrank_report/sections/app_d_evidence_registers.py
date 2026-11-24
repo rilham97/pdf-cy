@@ -747,10 +747,11 @@ def d7_cloud(report, sec, as_of):
             info['content'] = state_message(sec, SEC_NUM['s15'], 'endpoints', len(active) if assets else None,
                                             list_key='cloud_endpoints')
         return info
-    groups = s15.provider_groups(sec)
+    dom = (report.get('identity') or {}).get('domain')
+    groups = s15.provider_groups(sec, dom)
     tbl_title = f'{rid}.1 Cloud infrastructure endpoints'
     tbl = s15.grouped_endpoints_table(groups, tbl_title, ident='regD71')
-    un = s15.unresolved_note(sec)
+    un = s15.unresolved_note(sec, dom)
     unres_n = len(s15.unresolved_assets(sec))
     extra = f'{unres_n} unresolved DNS hostname{"s" if unres_n != 1 else ""} listed above.' if unres_n else ''
     flow = opening(rid, title, 's15', [

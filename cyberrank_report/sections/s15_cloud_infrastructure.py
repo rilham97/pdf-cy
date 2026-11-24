@@ -195,11 +195,35 @@ def endpoint_tier(data):
     return 'T1' if len(active) <= D.t1_max('cloud_endpoints') else 'T2'
 
 
-def provider_groups(data):
+def _root_domain(data, domain=None):
+    """Main domain for ordering (identity.domain when present in assets, else shortest bare host)."""
+    hosts = [str(_clean(a.get('host')) or '').lower() for a in assets_list(data) if _clean(a.get('host'))]
+    dom = str(domain or '').strip().lower()
+    if dom and (dom in hosts or any(h.endswith('.' + dom) for h in hosts)):
+        return dom
+    return min(hosts, key=lambda h: (h.count('.'), len(h), h)) if hosts else dom
+
+
+def _host_sort_key(asset, root):
+    """Opsi 1 order: main domain -> www.<main> -> other subdomains A-Z -> MX/NS protocol records."""
+    host = str(_clean(asset.get('host')) or '').lower()
+    if _is_protocol_record(asset):
+        src = _short_source(asset)
+        return (3, 0 if src == 'MX' else 1, host, str(_source_target(asset) or '').lower())
+    if root and host == root:
+        return (0, 0, host, '')
+    if root and host == f'www.{root}':
+        return (1, 0, host, '')
+    return (2, 0, host, '')
+
+
+def provider_groups(data, root_domain=None):
     """Build grouped (group_title, subtitle, active_items) tuples for Concept B & Appendix D.7.
-    Detected cloud providers come first, followed by other observed hosting."""
+    Detected cloud providers come first, followed by other observed hosting.
+    Inside each group: main domain -> www. -> other subdomains A-Z -> MX/NS protocol records."""
     det = detected_providers(data)
     det_set = set(det)
+    root = _root_domain(data, root_domain)
     grouped = OrderedDict((p, []) for p in det)
     for a in active_assets(data):
         p = _clean(a.get('provider')) or 'Unidentified'
@@ -209,6 +233,7 @@ def provider_groups(data):
     for p, items in grouped.items():
         if not items:
             continue
+        items = sorted(items, key=lambda a: _host_sort_key(a, root))
         role = 'Cloud provider' if p in det_set else 'Other observed hosting'
         asns = list(OrderedDict.fromkeys(_clean_asn(a.get('asn')) for a in items if _clean_asn(a.get('asn'))))
         cats = list(OrderedDict.fromkeys(_layer_of(a) for a in items))
@@ -609,11 +634,13 @@ def grouped_endpoints_table(groups, title='Endpoints grouped by hosting provider
     return C.numbered(t, rowno, title=title, rowgrp=rowgrp)
 
 
-def unresolved_note(data):
+def unresolved_note(data, root_domain=None):
     """Structured neutral callout block for DNS hostnames that returned no IP address."""
     unres = unresolved_assets(data)
     if not unres:
         return None
+    root = _root_domain(data, root_domain)
+    unres = sorted(unres, key=lambda a: _host_sort_key(a, root))
     names = [_clean(a.get('host')) or 'unnamed' for a in unres]
     n = len(names)
     inner_w = T.CW - 22  # 10 left + 10 right + 2 accent rule
@@ -725,13 +752,14 @@ def _build_rich(data, ctx):
     out = [c.kpi_strip(_rich_kpis(data, ctx), per_row=4)]
     out += _layer_block(data, ctx)
 
-    groups = provider_groups(data)
+    dom = (ctx.identity or {}).get('domain')
+    groups = provider_groups(data, dom)
     active = active_assets(data)
     if endpoint_tier(data) == 'T1':
         if groups:
             out.append(c.heading('Endpoints grouped by hosting provider', 2, style=_H2_TIGHT))
             out.append(grouped_endpoints_table(groups, 'Hosting endpoints'))
-        un = unresolved_note(data)
+        un = unresolved_note(data, dom)
         if un:
             out.append(un)
     else:
@@ -740,7 +768,7 @@ def _build_rich(data, ctx):
         s_rows = [[title, sub or '—', len(items)] for title, sub, items in groups]
         out.append(c.compact_table(['Provider', 'ASN / Layer', 'Endpoints'], s_rows,
                                    widths=[172, T.CW - 234, 62], numeric_cols=(2,)))
-        un = unresolved_note(data)
+        un = unresolved_note(data, dom)
         if un:
             out.append(un)
         rid = D.RID.get('s15', 'D.7')

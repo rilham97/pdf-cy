@@ -1,141 +1,181 @@
 # 15 Cloud infrastructure
 
-Payload key: `sections.cloud_infrastructure` · Module: [s15_cloud_infrastructure.py](../../cyberrank_report/sections/s15_cloud_infrastructure.py) · Shared rules: [README](README.md)
+Payload key: `sections.cloud_infrastructure` · Module: [s15_cloud_infrastructure.py](../../cyberrank_report/sections/s15_cloud_infrastructure.py) · Register: **D.7** ([app_d_evidence_registers.py](../../cyberrank_report/sections/app_d_evidence_registers.py)) · Shared rules: [README](README.md)
 
-Inventory section. The section lists cloud providers and public hosting infrastructure seen in DNS
-(A, CNAME, MX, NS) and IP/ASN records. Here `findings` means providers/endpoints were observed, not
-risk, so the chip reads **Identified**. An empty result reads "not detected with the methods used",
-never "no cloud". The scan date is shown without any staleness flag (business answer 8).
+Inventory section. Lists cloud providers and public hosting infrastructure seen in DNS (`A`, `CNAME`, `MX`, `NS`) and IP/ASN records. Here `findings` means providers/endpoints were observed, not risk, so the chip reads **Identified**. An empty result reads *"not detected with the methods used"*, never *"no cloud"*. The scan date is shown without any staleness flag (business answer 8).
 
 Supports two payload shapes:
-- **Rich endpoint payload (Concept B, owner-approved 2026-11-24):** `assets[]` + `detected_providers`
-  (`detectedProviders`) + `cloud_summary` (or raw `summary` object normalised at load) + optional `evidence[]`.
-  Shows a 4-tile KPI strip, **Infrastructure footprint by layer** (stacked proportion bar + layer table +
-  neutral architecture note — never claims failover redundancy from layer split alone), and **Endpoints grouped
-  by hosting provider** (inline up to 30 active endpoints; above 30, Section 15 prints a provider summary +
-  `RegisterPointer` to **Appendix D.7**, where `D.7.1` lists all active endpoints grouped by provider).
-  Unresolved DNS hostnames collapse into a single summary line below the table. Non-public IPs (RFC 1918 /
-  RFC 6598 CGNAT) are tagged `Non-public IP in DNS`.
-- **Legacy provider-only payload:** `providers[]` + `metrics[]` + `last_scanned` + `detection_methods[]`
-  (no `assets[]`). Keeps the original KPI strip + **Detected providers** table.
+- **Rich endpoint payload (Concept B, owner-approved 2026-11-24):** `assets[]` + `detected_providers` (`detectedProviders`) + `cloud_summary` (or raw backend `summary` object auto-normalised at load) + optional `evidence[]`.
+- **Legacy provider-only payload:** `providers[]` + `metrics[]` + `last_scanned` + `detection_methods[]` (when `assets[]` is absent/empty).
 
 ## Layout (top to bottom)
 
 ### Rich endpoint payload (when `assets[]` is non-empty)
-1. Eyebrow "15 · ASSESSMENT DETAILS", H1 `title` or "Cloud infrastructure" (cloud icon), `intro_source`.
-2. Chip + verdict (`summary` string, or generated fallback `verdict()` when absent).
-3. Card (card states / no-result states).
-4. 4-tile KPI strip: Cloud providers detected, Observed endpoints (active/unresolved), Countries observed, Primary compute + Last scanned date (no staleness flag).
-5. H2 "Infrastructure footprint by layer": `LayerBar` stacked proportion bar + Layer breakdown table (`Layer · Providers observed · Locations · Endpoints`) + neutral architecture note.
-6. If active endpoints ≤ 30 (T1): H2 "Endpoints grouped by hosting provider" + 4-column grouped `CompactTable` (`Host / Target · IP / Record · Services · Location`) with provider/ASN group headers (detected cloud providers first, other observed hosting second) + unresolved DNS summary line.
-7. If active endpoints > 30 (T2): H2 "Hosting providers summary" + compact provider rollup + unresolved DNS summary line + `RegisterPointer` to Appendix `D.7.1 Cloud infrastructure endpoints`.
+1. Eyebrow `15 · ASSESSMENT DETAILS`, H1 `title` or `"Cloud infrastructure"` (cloud icon), `intro_source`.
+2. Chip (`Identified`) + verdict (`summary` string, or generated fallback `verdict()` when absent).
+3. Card (card states / no-result states only).
+4. 4-tile KPI strip: Cloud providers detected · Observed endpoints (active/unresolved) · Countries observed · Primary compute + Last scanned date.
+5. H2 `Infrastructure footprint by layer`: `LayerBar` stacked proportion bar + Layer breakdown table (`Layer · Providers observed · Locations · Endpoints`) + neutral architecture note (never claims failover redundancy from layer split alone).
+6. **If active endpoints ≤ 30 (T1):** H2 `Endpoints grouped by hosting provider` + 4-column grouped `CompactTable` (`Host / Target · IP / Record · Services · Location`) with provider/ASN group headers, vector country flags / ISO-2 badges / global globe icons, and Opsi 1 ordering inside each group (`main domain` → `www.` → other subdomains A–Z → `MX`/`NS` protocol records) + structured `Unresolved DNS hostnames` card (hostnames sorted A–Z).
+7. **If active endpoints > 30 (T2):** H2 `Hosting providers summary` + compact provider rollup + `Unresolved DNS hostnames` card + `RegisterPointer` linking to **Appendix D.7** (`D.7.1 Cloud infrastructure endpoints`).
 8. Detection methods note.
 
 ### Legacy payload (when `assets[]` is absent/empty)
-1. Eyebrow "15 · ASSESSMENT DETAILS", then the H1 `title` or "Cloud infrastructure" with the cloud icon, then `intro_source`.
-2. Chip + verdict (`summary`).
-3. Card (card states / no-result states).
-4. KPI strip: the payload `metrics[]` + a "Last scanned" tile.
-5. H2 "Detected providers" (also an outline entry).
-6. Providers table (Provider · Detected by · Observed) + a note. **Or** "No cloud provider detected with the methods used." + a methods note.
+1. Opener + card (as above).
+2. KPI strip (`metrics[]` + `last_scanned`).
+3. H2 `Detected providers` + legacy table (`Provider · Detected by · Observed`) or empty sentence.
 
-`clear` with no providers and no assets: card only, no body.
+`clear` with no `providers[]` and no `assets[]`: card only, no body.
 
-## From the system (payload)
+---
+
+## From the system (dynamic payload fields)
+
+> **Backend compatibility:** `build.normalise()` automatically moves a dict in `sections.cloud_infrastructure.summary` to `cloud_summary` and aliases `scannedAt` → `last_scanned`. Both `camelCase` (raw backend API output) and `snake_case` are accepted.
 
 | Field path | Printed as / used for | If missing or null |
 |---|---|---|
-| `title` | H1 | "Cloud infrastructure" |
+| `title` | H1 | `"Cloud infrastructure"` |
 | `intro_source` | Intro under H1 | Omitted |
-| `state` | Chip / card / body (see States) | Validation error (exit 1) |
-| `summary` | Verdict, verbatim | No verdict text (chip alone) |
-| `state_reason` | Card reason (all card states) | `clear`: `reason_code` text, then `empty_state_source.text`, then `CLEAR_REASON`. Other states: `reason_code` text, then `STATE_REASON_FALLBACK`. |
-| `reason_code` | Card reason when there is no `state_reason` | — |
-| `what_checked` / `empty_state_source.coverage` | Card "What was checked" | `clear`: generated list (see below). Other states: omitted. |
-| `empty_state_source.text` | `clear` card reason when there is no `state_reason` / `reason_code` | `CLEAR_REASON` |
-| `next_step` | Card "What happens next" / "How it becomes assessed" | `not_assessed`: hardcoded next step (`s15:36-38`) |
-| `metrics[]` (each needs `unit`) | One KPI tile each: value + unit + `label`. A chip is added when the metric `state` ≠ `findings`. | No metric tiles. A null value prints "Not available" + its reason. |
-| `last_scanned` (Date) | Last tile: DD Mon YYYY. Also used in the `clear` "What was checked" list. | Tile "Not available" + "Scan date not recorded." (null record: its reason; its `state` adds a chip) |
-| `detection_methods[]` (codes, section level) | "Detection methods: DNS records, IP ranges, MX records, NS records." in the note | Note sentence omitted |
-| `providers[]` (non-dicts skipped) | One table row each | Empty → "No cloud provider detected with the methods used." |
-| `providers[].provider` | Provider column, verbatim | "Not available (provider name not recorded)" |
-| `providers[].detection_methods` (list or single code) | "Detected by", comma-joined method names | "Not available (<reason>)". If null for **every** row, the column is dropped and noted. |
-| `providers[].observed_at` (Date) | "Observed", DD Mon YYYY | Same column-collapse rule |
-| `identity`/`snapshot.assessed_at` (via `ctx.identity`) | "Report assessed {date}" in the tile. "(report assessment date {date})" in the `clear` card. | "Not available" |
+| `state` | Chip / card / body (`findings` shows as `Identified`) | Validation error (exit 1) |
+| `summary` (string) | Opener verdict, verbatim | Generated by `verdict()` for rich payloads; omitted for legacy |
+| `cloud_summary` (or raw `summary` object) | Structured summary object: `countries[]`, `primary_compute`/`primaryCompute`, `endpoint_count`/`endpointCount`, `provider_count`/`providerCount`, `multi_cloud`/`multiCloud` | Derived from `assets[]` where possible; `primary_compute` absent → tile 4 shows `last_scanned` |
+| `detected_providers[]` (alias `detectedProviders[]`) | KPI tile 1 count + subtitle; placed first in provider groups (tagged `Cloud provider`); Section 01 `n cloud provider(s)` | Falls back to `providers[].provider` |
+| `last_scanned` (Date; aliases `scanned_at`, `scannedAt`) | Subtitle under tile 4 (rich) or tile value (legacy), `DD Mon YYYY`. Never compared / no staleness wording | `"Not available (scan date not recorded)"` |
+| `assets[]` | Drives Concept B layout (layer bar, layer table, grouped endpoints table, Appendix D.7 when >30 active) | Falls back to legacy `providers[]` table |
+| `assets[].provider` | Provider group header + layer breakdown | `"Unidentified"` |
+| `assets[].host` | Host column (JetBrains Mono) | `"Not recorded"` |
+| `assets[].cname` | Sub-line `CNAME: <target>` under host (JetBrains Mono) | Omitted (unless `source` starts with `CNAME:`) |
+| `assets[].ip`, `assets[].ips[]` | IP column (JetBrains Mono); extra IPs show `+<n> more IPs`; RFC 1918 / RFC 6598 CGNAT IPs show sub-label `Non-public IP in DNS` | `""` / `"-"` / `"—"` → `MX record`/`NS record` for protocol records, else moved to **Unresolved DNS hostnames** card |
+| `assets[].services[]` | Services column, comma-joined (e.g. `80 HTTP, 443 HTTPS`, `25 SMTP`, `53 DNS`) | `"None observed"` |
+| `assets[].source` | Identifies protocol records (`MX: …`, `NS: …`, `CNAME: …`) shown as sub-line under host | Treated as `A Record` |
+| `assets[].category` | Layer classification (`IaaS / Cloud Compute`, `Hosting / Infrastructure`, `SaaS / Email & Productivity`, `DNS / Traffic Management`) | `"Hosting / Infrastructure"` (unresolved → `"Unresolved / No IP"`) |
+| `assets[].asn` | Group header subtitle (duplicate org names like `Org Org` are deduplicated) | Falls back to category names |
+| `assets[].location` | Location column text | `"Not identified"` (muted, no icon) |
+| `assets[].country_code` (alias `countryCode`) | Renders crisp vector country flag (major countries) or ISO-2 pill badge beside Location. Global/protocol rows render vector globe icon | No flag icon (`Global…` gets globe icon) |
+| `evidence[].source` | Fallback for `detection_methods` note (`a_record`, `cname_record`, `mx_record`, `ns_record`) when `detection_methods[]` is omitted | Omitted |
+| `detection_methods[]` | Note line `"Detection methods: …"` and `clear` card "What was checked" | Derived from `evidence[].source`, else omitted |
+| `providers[]` (legacy) | Legacy provider table when `assets[]` is absent | Empty → `"No cloud provider detected with the methods used."` |
+| `metrics[]` (legacy) | Legacy KPI tiles + Section 01 `cloud_providers_detected` | Ignored in rich mode (rich mode builds its 4 KPI tiles from `detected_providers`, `assets`, `cloud_summary`, `last_scanned`) |
 
-Method codes → labels (`METHODS`, `s15:7-8`): `dns_records` "DNS records", `ip_ranges` "IP ranges",
-`mx_records` "MX records", `ns_records` "NS records". An unknown code prints with `_` replaced by a space.
+---
 
-## Hardcoded in the generator
+## Hardcoded in the generator (static text & labels)
 
-| Text or label (exact) | Where it prints | Notes |
-|---|---|---|
-| "Only providers visible in public DNS, IP-range, MX and NS records can be detected. Services reached through other providers or used only internally are not visible to this check." | `clear` card reason | `CLEAR_REASON`, `s15:10-12` |
-| "Detection methods: {methods}." | `clear` card "What was checked" item 1. Also the note under the table / empty sentence. | `s15:34,78,97` |
-| "Last scanned: {date} (report assessment date {date})." | `clear` card "What was checked" item 2 | `s15:35` |
-| "Run the cloud infrastructure module for this organisation. Providers are then detected from public DNS records, IP ranges, MX records and NS records." | `not_assessed` card "How it becomes assessed" | `s15:37-38` |
-| "Last scanned, cloud module" / "Report assessed {date}" | Two-line label of the last KPI tile | `s15:46` |
-| "scan date not recorded" | Tile reason when `last_scanned` is absent | `s15:45` |
-| "Detected providers" | H2 | `s15:92` |
-| "Provider", "Detected by", "Observed" | Table heads | `s15:55` |
-| "provider name not recorded", "not recorded" | Reasons for missing cells | `s15:60,62` |
-| "{Labels} per provider: not available ({reason})." | Note for a column that was dropped, e.g. "Detected by and observed per provider: not available (…)." | `s15:79-80` |
-| "No cloud provider detected with the methods used." | Body when there are no providers (and the state is not `clear`) | `NOT_DETECTED`, `s15:9,96` |
+| Exact static text / label | Where it prints |
+|---|---|
+| `"Cloud infrastructure"` | Default H1 when `title` is absent |
+| `"Cloud providers detected"`, `"Observed endpoints"`, `"Countries observed"`, `"Primary compute"` | Rich mode 4 KPI tile labels |
+| `"All endpoints resolved / active"`, `"{n} active, {m} unresolved"`, `"Last scanned {date}"` | KPI tile sub-lines |
+| `"Infrastructure footprint by layer"` | H2 above layer bar & table |
+| Layer display labels: `"Cloud compute"`, `"Hosting / own ASN"`, `"Email (MX)"`, `"DNS (NS)"`, `"Unresolved DNS"` | `LayerBar` legend & Layer column (`LAYER_SHORT`) |
+| `"Layer"`, `"Providers observed"`, `"Locations"`, `"Endpoints"` | Layer table column headers |
+| `"Architecture note: Multiple providers are used across separate service layers; public cloud compute was observed on {cp} only. Using different providers for separate layers does not confirm active failover redundancy."` (or multi-compute / single-provider variant) | Neutral architecture note under layer table (replaces frontend's green redundancy banner) |
+| `"Endpoints grouped by hosting provider"` / `"Hosting endpoints"` | H2 (T1) and continuation table caption |
+| `"Host / Target"`, `"IP / Record"`, `"Services"`, `"Location"` | Grouped endpoint table headers |
+| `"Cloud provider"`, `"Other observed hosting"` | Group role tags in provider group headers |
+| `"Non-public IP in DNS"`, `"+{n} more IPs"`, `"MX record"`, `"NS record"`, `"None observed"`, `"Not identified"` | Endpoint cell annotations |
+| `"Unresolved DNS hostnames"`, `"{n} hostname(s)"`, `"No public IP address was returned for these hostnames during this scan."` | Structured unresolved DNS callout card |
+| `"Hosting providers summary"`, `"Provider"`, `"ASN / Layer"`, `"Endpoints"` | T2 (>30 active endpoints) summary table |
+| `"D.7.1 Cloud infrastructure endpoints"` | Register pointer & Appendix D.7 heading (T2) |
+| `"Detection methods: {methods}."` | Footer note under section body |
+| `"Only providers visible in public DNS, IP-range, MX and NS records can be detected. Services reached through other providers or used only internally are not visible to this check."` | Default `clear` card reason (`CLEAR_REASON`) |
+| `"Run the cloud infrastructure module for this organisation. Providers are then detected from public DNS records, IP ranges, MX records and NS records."` | Default `not_assessed` card next step |
+
+---
 
 ## Conditional rules (if / else)
 
-| Condition | What prints | Code |
-|---|---|---|
-| `state == clear` and no providers | Card only (reason + "What was checked"). No KPI strip, no table. | `s15:89-90` |
-| `state == clear` | Card reason = `state_reason`, else the `reason_code` text, else `empty_state_source.text` (shared `default_card`), else `CLEAR_REASON` | `s15` `card` |
-| `clear` and no `what_checked` and no `empty_state_source.coverage` | Generated "What was checked": the methods line (only if `detection_methods` is set) + the "Last scanned" line | `s15:32-35` |
-| `state == not_assessed` and no `next_step` | Hardcoded next step | `s15:36-38` |
-| Any other state that has a body | KPI strip + H2 + table or empty sentence | `s15:91-97` |
-| A provider column (other than Provider) is null for **every** row | Column removed. Its label goes into the note, grouped by the first row's reason. | `s15:67-73,79-80` |
-| One column left | Auto widths. Otherwise Provider = 1/3 of the width and the rest is split equally. | `s15:75` |
-| `detection_methods` set | "Detection methods: …." starts the note (table) or follows the empty sentence | `s15:78,96-97` |
-| `last_scanned` missing / null | Tile "Not available" + reason. A `state` on the null record adds a chip. | `s15:45-48` |
-| Metric `state` ≠ `findings` | State chip in that tile (`components.py:403-404`) | — |
+| Condition | What prints |
+|---|---|
+| `state == clear` and no `providers[]` and no `assets[]` | Card only (reason + "What was checked"). No KPI strip, no tables. |
+| `assets[]` is non-empty | **Concept B rich layout** (4 KPI tiles, layer bar + table, architecture note, grouped endpoints or T2 pointer). |
+| `assets[]` is absent / empty | **Legacy layout** (legacy KPI strip + `Detected providers` table). |
+| Active endpoints ≤ 30 (T1) | Full grouped endpoints table prints inline in Section 15; Appendix D.7 is index row only (`Not required — all N endpoints shown in Section 15.`). |
+| Active endpoints > 30 (T2) | Section 15 shows `Hosting providers summary` + `RegisterPointer`; full grouped table prints in **Appendix D.7** (`D.7.1`). |
+| Unresolved endpoints exist (`ip` is empty/`-`/`—` and not `MX:`/`NS:`) | Excluded from provider groups and placed in the neutral `Unresolved DNS hostnames` card (2-col JetBrains Mono grid when ≤ 8; comma-separated `TechText` when > 8). |
+| Unresolved endpoints = 0 | `Unresolved DNS hostnames` card is omitted. |
+| IP in RFC 1918 / RFC 6598 CGNAT / loopback / link-local (excludes RFC 5737 demo IPs) | Tagged with sub-line `Non-public IP in DNS`. |
+| `countryCode` is valid ISO-2 (not `XX`/`ZZ`) | Vector mini-flag (24+ major countries) or ISO-2 pill badge beside Location. |
+| `location` contains `"global"` or record is `MX:`/`NS:` (no country code) | Vector globe icon beside Location. |
+| `location` missing / `"-"` | `"Not identified"` in muted text, no icon. |
+| Multiple compute providers vs single compute provider across layers | Architecture note adjusts neutrally; **never** prints *"Multi-Cloud Redundancy Detected"*. |
+
+---
 
 ## Computed by the generator
 
-| Value | Formula / source fields | Code |
-|---|---|---|
-| Method labels | `METHODS[code]`, else the code with `_` → space | `s15:15-16` |
-| Dropped-column note | Groups missing columns by reason text | `s15:67-80` |
-| Dates | `fmt_date` (precision-aware, never compared) | `s15:25,48,65` |
+| Value | Rule |
+|---|---|
+| Active vs unresolved split | Unresolved = no IP (`""`/`"-"`/`"—"`) AND not an `MX:` / `NS:` protocol record. |
+| Provider group order | `detected_providers[]` first (in payload order, labelled `Cloud provider`), then remaining providers from `assets[]` (labelled `Other observed hosting`). |
+| Domain order inside each group (Opsi 1) | 1. Main domain (`identity.domain`, or inferred bare root) → 2. `www.<main>` → 3. Other subdomains A–Z → 4. Protocol records (`MX` then `NS`). Same sorting applies to `Unresolved DNS hostnames`. |
+| Layer counts & locations | Counted from `assets[].category` (unresolved counted under `Unresolved / No IP`); up to 3 distinct locations shown in the layer table (`+N` overflow). |
+| ASN deduplication | Repeated org suffix (`AS399358 Org Org` → `AS399358 Org`) cleaned for display. |
+| Fallback `verdict()` | Built from `detected_providers`, total/unresolved `assets[]`, and `countries[]` when string `summary` is omitted. |
 
-No counts are derived. The provider count comes only from your `metrics[]`.
+---
 
 ## Read but never printed
 
 | Field | Why it is read |
 |---|---|
-| `metrics[id=cloud_providers_detected]`, `providers[]` | Section 01 "All aspects" line: "n cloud provider(s)". It uses the metric, else the number of providers, else 0 when `clear` (`s01_executive_overview.py:407-412`). |
-| Not read at all | `lead_source`, `state_label_source`, `note`, `metrics[].source_label` |
+| `cloud_summary.multi_cloud` / `multiCloud` | Kept in payload; generator derives the neutral architecture note from actual layers/providers rather than printing a redundancy claim. |
+| `assets[].web_status` / `webStatus` | Not printed in the PDF table (kept for raw payload parity). |
+| `evidence[].detail` | Kept in payload; `evidence[].source` is used as a fallback for `detection_methods`. |
+| `metrics[id=cloud_providers_detected]`, `detected_providers[]`, `providers[]` | Section 01 "All aspects" line: `N cloud provider(s)`. |
 
-## States
+---
 
-| Payload state | Chip shown | Body |
-|---|---|---|
-| `findings` | Identified | KPI + table (or the empty sentence) |
-| `clear` | No findings | Card. Body only when providers are present. |
-| `partial` | Partial coverage | Banner + body |
-| `pending_review` | Pending review | Card + body |
-| `none_identified` | None identified | Card + body (KPI + "No cloud provider detected…") |
-| `not_assessed` / `not_applicable` / `unavailable` | Not assessed / Not applicable / Unavailable | Card only |
+## Example JSON payload (for backend devs)
 
-## QA checks raised
-
-| check id | severity | when |
-|---|---|---|
-| — | — | No section-specific checks. Shared checks only (see README). |
+```json
+"cloud_infrastructure": {
+  "state": "findings",
+  "scannedAt": "2026-11-18T04:32:52.810Z",
+  "detectedProviders": ["OVH", "Azure"],
+  "summary": {
+    "multiCloud": true,
+    "endpointCount": 3,
+    "providerCount": 2,
+    "countries": ["Singapore"],
+    "primaryCompute": "OVH"
+  },
+  "assets": [
+    {
+      "provider": "OVH",
+      "countryCode": "SG",
+      "ip": "203.0.113.10",
+      "ips": ["203.0.113.10"],
+      "host": "example.com",
+      "cname": "",
+      "location": "Singapore, Singapore",
+      "services": ["80 HTTP", "443 HTTPS"],
+      "source": "A Record",
+      "category": "IaaS / Cloud Compute",
+      "asn": "AS64512 OVH Example"
+    },
+    {
+      "provider": "Azure",
+      "countryCode": "",
+      "ip": "-",
+      "ips": [],
+      "host": "example.com",
+      "cname": "",
+      "location": "Global Cloud",
+      "services": ["25 SMTP"],
+      "source": "MX: example-com.mail.protection.outlook.com",
+      "category": "SaaS / Email & Productivity",
+      "asn": "Azure Mail"
+    }
+  ]
+}
+```
 
 ## Backend checklist
 
-- Send `metrics[]` with `id: cloud_providers_detected`, `unit: providers` and the count. The generator never counts providers for the KPI.
-- Send `last_scanned` as an ISO date (it is validated). A null needs a `reason_code`.
-- Send the section-level `detection_methods[]` as codes (`dns_records`, `ip_ranges`, `mx_records`, `ns_records`).
-- Per provider: `provider` (name), `detection_methods` (codes), `observed_at` (Date). If a field is not known, send a NullReason. When it is null for every provider, the column is replaced by a single note.
-- For an empty result, use `clear` (card only) and not `findings` with an empty list (that prints a KPI strip + "No cloud provider detected…").
-- `summary` is the verdict. Nothing is generated when it is missing.
+- **Required:** `state` (`findings` when providers/assets observed; `clear` when scan ran and found nothing; `not_assessed` / `unavailable` + `reason_code` otherwise).
+- **Rich mode (recommended):** send `detectedProviders` (or `detected_providers`), `assets[]`, `scannedAt` (or `last_scanned` ISO 8601), and `cloud_summary` (or raw `summary` object — auto-normalised; if you want a custom verdict sentence, send string `summary` + object `cloud_summary`).
+- **Country icons:** send ISO 3166-1 alpha-2 `countryCode` (`US`, `SG`, `CA`, `GB`, `DE`, `ID`, …) on geolocated rows; leave empty `""` for `Global Cloud` / `Global Anycast` (gets globe icon) and unresolved rows.
+- **No staleness flag:** `last_scanned` prints as a date only.
+- **Long lists:** send all `assets[]` directly; the generator automatically switches to T2 summary + Appendix D.7 above 30 active endpoints.

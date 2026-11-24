@@ -1976,6 +1976,21 @@ def test_s15_cloud_concept_b():                                            # own
     assert 'Hosting providers summary' in t2 and 'D.7.1 Cloud infrastructure endpoints' in t2, t2
     assert 'Full register' in t2 and 'End of register · 34 endpoints.' in t2, t2
     assert 'svc-34.example.com' in t2 and 'dead.example.com' in t2, t2
+    # Opsi 1 ordering inside each provider group: main domain -> www. -> A-Z -> MX/NS
+    from cyberrank_report.sections import s15_cloud_infrastructure as s15
+    ordered_sample = {'detected_providers': ['GCP'], 'assets': [
+        {'provider': 'GCP', 'host': 'example.com', 'ip': '-', 'source': 'MX: mx.example.net'},
+        {'provider': 'GCP', 'host': 'z.example.com', 'ip': '203.0.113.3', 'source': 'A Record'},
+        {'provider': 'GCP', 'host': 'www.example.com', 'ip': '203.0.113.2', 'source': 'A Record'},
+        {'provider': 'GCP', 'host': 'a.example.com', 'ip': '203.0.113.4', 'source': 'A Record'},
+        {'provider': 'GCP', 'host': 'example.com', 'ip': '203.0.113.1', 'source': 'A Record'},
+    ]}
+    hosts = [(a['host'], a['source']) for a in s15.provider_groups(ordered_sample, 'example.com')[0][2]]
+    assert hosts == [
+        ('example.com', 'A Record'), ('www.example.com', 'A Record'),
+        ('a.example.com', 'A Record'), ('z.example.com', 'A Record'),
+        ('example.com', 'MX: mx.example.net'),
+    ], hosts
 
 
 def test_s10_ai_risk_concept_b():                                          # owner decision 2026-11-24
